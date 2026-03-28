@@ -6,23 +6,25 @@ Inspired by Mendeley circa 2017: powerful enough to be useful, simple enough to 
 
 ## Quick Start
 
-**Open `paper_database.html` in your browser.** That's it — everything runs locally from the filesystem.
+**Double-click `START.bat`** (Windows) or run `python serve.py` (macOS/Linux). This starts a local server and opens the database in your browser automatically. Close the terminal window to stop the server.
+
+> **Why a server?** The app uses sql.js (WASM-based SQLite). Browsers block WASM loading from `file://` URLs, so a lightweight localhost server is needed. `serve.py` also provides an arXiv API proxy that avoids CORS issues when searching.
 
 To add a paper from arXiv:
 
 1. Run the fetch script on your machine:
    ```bash
-   # macOS/Linux
-   bash tools/fetch.sh 2603.17921
-
    # Windows
    tools\fetch.bat 2603.17921
+
+   # macOS/Linux
+   bash tools/fetch.sh 2603.17921
    ```
 2. Run the processing pipeline (requires Python 3 + PyMuPDF):
    ```bash
    python3 tools/process_paper.py 2603.17921
    ```
-3. Refresh `paper_database.html`. Your paper is there with figures, citations, and auto-generated tags.
+3. Refresh the page. Your paper is there with figures, citations, and auto-generated tags.
 
 ## What It Does
 
@@ -57,13 +59,15 @@ paper_scraper.html   ──┼── db_utils.js ── scq_data.js (base64-enco
                        └── scraper_config.js (domain-specific config)
 ```
 
-The database lives in `scq_data.js` as a base64-encoded SQLite file. This works with `file://` protocol (no server needed) via [sql.js](https://github.com/sql-js/sql.js/) WASM. All database operations go through `db_utils.js`, which provides a shared API (`SCQ.init()`, `SCQ.getAllPapers()`, `SCQ.setNote()`, etc.).
+The database lives in `scq_data.js` as a base64-encoded SQLite file, loaded via [sql.js](https://github.com/sql-js/sql.js/) WASM. A lightweight local server (`serve.py`) serves the files over localhost and provides an arXiv API proxy — launch it with `START.bat` or `python serve.py`. All database operations go through `db_utils.js`, which provides a shared API (`SCQ.init()`, `SCQ.getAllPapers()`, `SCQ.setNote()`, etc.).
 
 Domain-specific configuration — search presets, auto-tag keywords, journal sources, arXiv categories — lives in `scraper_config.js`. Change this single file to adapt the system for a different research area.
 
 ## File Structure
 
 ```
+├── START.bat              Double-click to launch (Windows)
+├── serve.py               Local server + arXiv API proxy
 ├── paper_database.html    Main app (Library + Reading List + Cite)
 ├── paper_scraper.html     Paper discovery (Search + Inbox + Quick Search)
 ├── scq_data.js            SQLite DB as base64 (canonical data source)
@@ -140,8 +144,4 @@ The database can be shared between lab members:
 
 - **Export/Import**: Save database button downloads a `.db` file; import button restores it
 - **Merge**: "Merge .db" button combines another lab member's database with yours (new papers added, existing ones updated, nothing lost)
-- **Collection sharing**: Export a collection as a standalone `.db` file to share a curated reading list
-
-## License
-
-Personal research tool. Not currently packaged for distribution.
+- **Collection sharing**: Export a collec
