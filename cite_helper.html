@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCQ — Cite</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0e1117; --bg2: #161b22; --bg3: #1c2333;
+    --border: #2d3548; --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+    --accent: #58a6ff; --accent2: #1f6feb; --green: #3fb950; --orange: #d29922;
+    --red: #f85149; --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    padding: 12px; height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  .header-links { display: flex; gap: 8px; }
+  .header-links a {
+    font-size: 11px; color: var(--text3); text-decoration: none;
+    padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px;
+  }
+  .header-links a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Search */
+  .search-bar { position: relative; margin-bottom: 10px; flex-shrink: 0; }
+  .search-bar input {
+    width: 100%; padding: 8px 12px 8px 32px; border: 1.5px solid var(--border);
+    border-radius: var(--radius); font-size: 13px; background: var(--bg2);
+    color: var(--text); outline: none; font-family: inherit;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text3); }
+  .search-bar svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3);
+  }
+
+  /* Selected count bar */
+  .selection-bar {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 10px; flex-shrink: 0; min-height: 36px;
+  }
+  .selection-bar .count {
+    font-size: 12px; color: var(--text2); flex: 1;
+  }
+  .selection-bar .count strong { color: var(--accent); }
+  .sel-btn {
+    padding: 4px 12px; font-size: 11px; font-weight: 600; border-radius: 5px;
+    border: 1.5px solid var(--border); background: transparent; color: var(--text2);
+    cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap;
+  }
+  .sel-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sel-btn.primary { background: var(--accent2); border-color: var(--accent); color: #fff; }
+  .sel-btn.primary:hover { background: #2a7bf5; }
+  .sel-btn.success { background: rgba(63,185,80,0.15); border-color: var(--green); color: var(--green); }
+  .sel-btn.clear { border-color: var(--red); color: var(--red); font-size: 10px; }
+
+  /* Paper list */
+  .paper-list { flex: 1; overflow-y: auto; }
+
+  .paper-row {
+    display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
+    border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+    transition: all 0.1s; margin-bottom: 2px;
+  }
+  .paper-row:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
+  .paper-row.selected { background: rgba(88,166,255,0.08); border-color: var(--accent2); }
+
+  .paper-row input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none; width: 16px; height: 16px;
+    border: 2px solid var(--border); border-radius: 4px; cursor: pointer;
+    position: relative; transition: all 0.12s; flex-shrink: 0; margin-top: 2px;
+  }
+  .paper-row input[type="checkbox"]:checked {
+    background: var(--accent2); border-color: var(--accent);
+  }
+  .paper-row input[type="checkbox"]:checked::after {
+    content: "\2713"; position: absolute; top: -1px; left: 2px;
+    font-size: 11px; color: #fff; font-weight: 700;
+  }
+
+  .paper-info { flex: 1; min-width: 0; }
+  .paper-info .title {
+    font-size: 12.5px; font-weight: 600; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .paper-info .meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .paper-info .arxiv {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    color: var(--accent); margin-right: 6px;
+  }
+
+  .quick-cite {
+    display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+  }
+  .qc-btn {
+    padding: 3px 8px; font-size: 10px; font-weight: 600; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text3);
+    cursor: pointer; font-family: inherit; transition: all 0.1s; white-space: nowrap;
+  }
+  .qc-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .qc-btn.copied { border-color: var(--green); color: var(--green); }
+
+  /* Footer preview */
+  .preview-panel {
+    flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 8px;
+  }
+  .preview-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text3); margin-bottom: 4px;
+  }
+  .preview-box {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 8px 10px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text2); max-height: 100px; overflow-y: auto; white-space: pre-wrap;
+    word-break: break-word; line-height: 1.5;
+  }
+
+  /* Format toggle */
+  .format-toggle {
+    display: flex; gap: 4px; margin-bottom: 6px;
+  }
+  .fmt-btn {
+    padding: 3px 10px; font-size: 10px; font-weight: 600; border-radius: 4px;
+    border: 1px solid var(--border); background: transparent; color: var(--text3);
+    cursor: pointer; font-family: inherit; transition: all 0.12s;
+  }
+  .fmt-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.12); color: var(--accent); }
+
+  /* Scrollbar */
+  .paper-list::-webkit-scrollbar { width: 6px; }
+  .paper-list::-webkit-scrollbar-track { background: transparent; }
+  .paper-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#128203; Cite</h1>
+  <div class="header-links">
+    <a href="paper_database.html">Full database</a>
+    <a href="to_read.html">To read</a>
+  </div>
+</div>
+
+<div class="search-bar">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="search" placeholder="Search by author, title, keyword..." oninput="onSearch()">
+</div>
+
+<div class="selection-bar">
+  <div class="count" id="sel-count">Click papers to select, then copy</div>
+  <button class="sel-btn clear" id="clear-btn" style="display:none" onclick="clearSelection()">Clear</button>
+  <button class="sel-btn primary" id="copy-selected" style="display:none" onclick="copySelected()">Copy for Word</button>
+</div>
+
+<div class="paper-list" id="paper-list"></div>
+
+<div class="preview-panel" id="preview-panel" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div class="preview-label" id="preview-label">Preview</div>
+    <div class="format-toggle">
+      <button class="fmt-btn active" data-fmt="word" onclick="setFormat('word')">Word / Plain</button>
+      <button class="fmt-btn" data-fmt="bib" onclick="setFormat('bib')">.bib (LaTeX)</button>
+    </div>
+  </div>
+  <div class="preview-box" id="preview-box"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script src="scq_data.js"></script>
+<script src="db_utils.js"></script>
+<script>
+let PAPERS = [];
+let selected = new Set();
+let searchQuery = "";
+let format = "word";
+let copiedTimers = {};
+
+function _jp(s, fb) { try { return JSON.parse(s); } catch { return fb; } }
+
+function loadPapers() {
+  const rows = SCQ.getAllPapers();
+  PAPERS = rows.map(r => ({
+    id: r.id, title: r.title, authors: r.authors || "",
+    shortAuthors: r.short_authors || "", year: r.year,
+    group: r.group_name || "", tags: _jp(r.tags, []),
+    citeBib: r.cite_bib || "", citeTxt: r.cite_txt || ""
+  }));
+}
+
+function onSearch() {
+  searchQuery = document.getElementById("search").value.toLowerCase();
+  renderList();
+}
+
+function getFiltered() {
+  if (!searchQuery) return PAPERS;
+  return PAPERS.filter(p =>
+    p.title.toLowerCase().includes(searchQuery) ||
+    p.shortAuthors.toLowerCase().includes(searchQuery) ||
+    (p.authors || "").toLowerCase().includes(searchQuery) ||
+    p.group.toLowerCase().includes(searchQuery) ||
+    p.id.includes(searchQuery) ||
+    p.tags.some(t => t.toLowerCase().includes(searchQuery))
+  );
+}
+
+function toggleSelect(id) {
+  if (selected.has(id)) selected.delete(id); else selected.add(id);
+  renderList();
+  updatePreview();
+}
+
+function clearSelection() {
+  selected.clear();
+  renderList();
+  updatePreview();
+}
+
+function setFormat(fmt) {
+  format = fmt;
+  document.querySelectorAll(".fmt-btn").forEach(b => b.classList.remove("active"));
+  document.querySelector(`.fmt-btn[data-fmt="${fmt}"]`).classList.add("active");
+  updatePreview();
+}
+
+function getSelectedPapers() {
+  return PAPERS.filter(p => selected.has(p.id));
+}
+
+function buildCitation() {
+  const sel = getSelectedPapers();
+  if (sel.length === 0) return "";
+  if (format === "bib") {
+    return sel.map(p => p.citeBib).join("\n\n");
+  } else {
+    return sel.map((p, i) => `[${i + 1}] ${p.citeTxt}`).join("\n\n");
+  }
+}
+
+function copySelected() {
+  const text = buildCitation();
+  if (!text) return;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById("copy-selected");
+  btn.classList.add("success");
+  btn.textContent = "Copied!";
+  setTimeout(() => { btn.classList.remove("success"); btn.textContent = "Copy for Word"; }, 1500);
+}
+
+function quickCopy(id, fmt, btnEl) {
+  const p = PAPERS.find(x => x.id === id);
+  if (!p) return;
+  const text = fmt === "bib" ? p.citeBib : p.citeTxt;
+  navigator.clipboard.writeText(text);
+  btnEl.classList.add("copied");
+  const orig = btnEl.textContent;
+  btnEl.textContent = "\u2713";
+  clearTimeout(copiedTimers[id + fmt]);
+  copiedTimers[id + fmt] = setTimeout(() => { btnEl.classList.remove("copied"); btnEl.textContent = orig; }, 1200);
+}
+
+function updatePreview() {
+  const panel = document.getElementById("preview-panel");
+  const count = selected.size;
+  const countEl = document.getElementById("sel-count");
+  const copyBtn = document.getElementById("copy-selected");
+  const clearBtn = document.getElementById("clear-btn");
+
+  if (count === 0) {
+    countEl.innerHTML = "Click papers to select, then copy";
+    copyBtn.style.display = "none";
+    clearBtn.style.display = "none";
+    panel.style.display = "none";
+    return;
+  }
+
+  countEl.innerHTML = `<strong>${count}</strong> paper${count > 1 ? 's' : ''} selected`;
+  copyBtn.style.display = "";
+  clearBtn.style.display = "";
+  copyBtn.textContent = format === "bib" ? "Copy .bib" : "Copy for Word";
+
+  panel.style.display = "";
+  const label = format === "bib" ? "BibTeX Preview" : "Word Preview";
+  document.getElementById("preview-label").textContent = label;
+  document.getElementById("preview-box").textContent = buildCitation();
+}
+
+function renderList() {
+  const filtered = getFiltered();
+  const list = document.getElementById("paper-list");
+
+  list.innerHTML = filtered.map(p => {
+    const sel = selected.has(p.id);
+    return `<div class="paper-row ${sel ? 'selected' : ''}" onclick="toggleSelect('${p.id}')">
+      <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect('${p.id}')">
+      <div class="paper-info">
+        <div class="title">${p.title}</div>
+        <div class="meta">
+          <span class="arxiv">${p.id}</span>
+          ${p.shortAuthors} &middot; ${p.year} &middot; ${p.group}
+        </div>
+      </div>
+      <div class="quick-cite" onclick="event.stopPropagation()">
+        <button class="qc-btn" onclick="quickCopy('${p.id}', 'txt', this)">Word</button>
+        <button class="qc-btn" onclick="quickCopy('${p.id}', 'bib', this)">.bib</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "c" && selected.size > 0 && document.activeElement.tagName !== "INPUT") {
+    e.preventDefault();
+    copySelected();
+  }
+  if (e.key === "Escape") {
+    if (searchQuery) { document.getElementById("search").value = ""; searchQuery = ""; renderList(); }
+    else { clearSelection(); }
+  }
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT") {
+    e.preventDefault();
+    document.getElementById("search").focus();
+  }
+});
+
+SCQ.init().then(() => {
+  loadPapers();
+  renderList();
+  updatePreview();
+});
+</script>
+</body>
+</html>

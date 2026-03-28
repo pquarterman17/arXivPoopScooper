@@ -1,0 +1,28 @@
+# PDFs (large binaries — keep locally, don't track in git)
+papers/*.pdf
+
+# SQLite temp files
+*.db-journal
+*.db-wal
+*.db-shm
+.scq_tmp.db
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Auto-memory (Cowork session state)
+.auto-memory/
+
+# Editor
+*.swp
+*.swo
+*~

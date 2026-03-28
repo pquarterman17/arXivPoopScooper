@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCQ — arXiv Search</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0e1117; --bg2: #161b22; --bg3: #1c2333;
+    --border: #2d3548; --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+    --accent: #58a6ff; --accent2: #1f6feb; --green: #3fb950; --orange: #d29922;
+    --red: #f85149; --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    padding: 24px; max-width: 900px; margin: 0 auto;
+  }
+
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .header a { color: var(--accent); text-decoration: none; font-size: 13px; }
+  .header a:hover { text-decoration: underline; }
+
+  .search-form { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-form input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid var(--border);
+    border-radius: var(--radius); background: var(--bg2); color: var(--text);
+    font-size: 14px; font-family: inherit; outline: none;
+  }
+  .search-form input:focus { border-color: var(--accent); }
+  .search-form input::placeholder { color: var(--text3); }
+  .search-form button {
+    padding: 10px 20px; border: none; border-radius: var(--radius);
+    background: var(--accent2); color: #fff; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; white-space: nowrap;
+  }
+  .search-form button:hover { background: var(--accent); }
+  .search-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .preset-btn {
+    padding: 4px 10px; font-size: 11px; font-weight: 600; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 4px; background: transparent;
+    color: var(--text3); cursor: pointer; transition: all 0.12s;
+  }
+  .preset-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .status { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
+  .status.error { color: var(--red); }
+
+  .results-actions {
+    display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
+  }
+  .results-actions button {
+    padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 5px; background: transparent;
+    color: var(--text2); cursor: pointer; transition: all 0.12s;
+  }
+  .results-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .results-actions button.primary { background: var(--accent2); border-color: var(--accent); color: #fff; }
+  .results-actions button.primary:hover { background: var(--accent); }
+  .results-actions span { font-size: 12px; color: var(--text3); }
+
+  .result-card {
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--bg2); padding: 14px; margin-bottom: 8px;
+    display: flex; gap: 12px; align-items: flex-start;
+    transition: border-color 0.15s;
+  }
+  .result-card:hover { border-color: var(--accent2); }
+  .result-card.selected { border-color: var(--green); background: rgba(63,185,80,0.04); }
+  .result-card input[type="checkbox"] { margin-top: 3px; accent-color: var(--green); flex-shrink: 0; }
+  .result-info { flex: 1; min-width: 0; }
+  .result-title { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 3px; }
+  .result-meta { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .result-abstract { font-size: 12px; color: var(--text3); line-height: 1.45; }
+  .result-abstract.collapsed { max-height: 40px; overflow: hidden; position: relative; }
+  .result-abstract.collapsed::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 20px; background: linear-gradient(transparent, var(--bg2));
+  }
+  .result-card.selected .result-abstract.collapsed::after {
+    background: linear-gradient(transparent, rgba(22,27,34,0.97));
+  }
+  .result-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .result-tag {
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--text3);
+  }
+  .result-id { font-size: 10px; color: var(--accent); font-weight: 600; }
+  .toggle-abstract {
+    font-size: 10px; color: var(--accent); cursor: pointer; border: none;
+    background: none; font-family: inherit; padding: 0; margin-top: 2px;
+  }
+
+  .export-box {
+    margin-top: 16px; padding: 14px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .export-box h3 { font-size: 14px; margin-bottom: 8px; }
+  .export-box pre {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text2);
+    background: var(--bg); padding: 10px; border-radius: 4px;
+    overflow-x: auto; max-height: 300px; white-space: pre-wrap;
+  }
+  .export-box .actions { display: flex; gap: 6px; margin-top: 8px; }
+  .export-box .actions button {
+    padding: 5px 12px; font-size: 11px; font-weight: 600; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 4px; background: transparent;
+    color: var(--text2); cursor: pointer;
+  }
+  .export-box .actions button:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>arXiv Search</h1>
+  <p>Find papers and add them to your database</p>
+  <a href="paper_database.html">&larr; Back to database</a>
+</div>
+
+<div class="search-form">
+  <input type="text" id="search-input" placeholder="Search arXiv (e.g., superconducting qubit tantalum surface loss)..." autofocus>
+  <button id="search-btn" onclick="doSearch()">Search</button>
+</div>
+
+<div class="presets">
+  <button class="preset-btn" onclick="setQuery('superconducting qubit material')">SCQ materials</button>
+  <button class="preset-btn" onclick="setQuery('tantalum superconducting resonator')">Ta resonators</button>
+  <button class="preset-btn" onclick="setQuery('transmon qubit coherence')">Transmon coherence</button>
+  <button class="preset-btn" onclick="setQuery('Josephson junction fabrication')">JJ fabrication</button>
+  <button class="preset-btn" onclick="setQuery('two-level system loss microwave')">TLS loss</button>
+  <button class="preset-btn" onclick="setQuery('surface oxide superconducting')">Surface oxides</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div id="results-actions" style="display:none" class="results-actions">
+  <button onclick="selectAll()">Select all</button>
+  <button onclick="selectNone()">Clear selection</button>
+  <span id="selection-count">0 selected</span>
+  <button class="primary" onclick="exportSelected()">Export selected for Claude</button>
+</div>
+
+<div id="results"></div>
+<div id="export-area"></div>
+
+<script>
+let results = [];
+let selected = new Set();
+
+function setQuery(q) {
+  document.getElementById("search-input").value = q;
+  doSearch();
+}
+
+document.getElementById("search-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") doSearch();
+});
+
+async function doSearch() {
+  const query = document.getElementById("search-input").value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById("search-btn");
+  const status = document.getElementById("status");
+  btn.disabled = true;
+  btn.textContent = "Searching...";
+  status.textContent = "Querying arXiv API...";
+  status.className = "status";
+
+  try {
+    // arXiv API (Atom feed)
+    const encodedQuery = encodeURIComponent(query);
+    const url = `https://export.arxiv.org/api/query?search_query=all:${encodedQuery}&start=0&max_results=25&sortBy=submittedDate&sortOrder=descending`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("arXiv returned " + resp.status);
+    const xml = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, "application/xml");
+
+    const entries = doc.querySelectorAll("entry");
+    results = [];
+    entries.forEach(entry => {
+      const id = entry.querySelector("id")?.textContent || "";
+      const arxivId = id.replace("http://arxiv.org/abs/", "").replace(/v\d+$/, "");
+      const title = (entry.querySelector("title")?.textContent || "").replace(/\s+/g, " ").trim();
+      const summary = (entry.querySelector("summary")?.textContent || "").replace(/\s+/g, " ").trim();
+      const published = entry.querySelector("published")?.textContent || "";
+      const year = published ? new Date(published).getFullYear() : "";
+      const authors = [...entry.querySelectorAll("author name")].map(n => n.textContent);
+      const categories = [...entry.querySelectorAll("category")].map(c => c.getAttribute("term"));
+
+      results.push({ arxivId, title, summary, year, authors, categories, published });
+    });
+
+    selected.clear();
+    status.textContent = `Found ${results.length} results for "${query}"`;
+    document.getElementById("results-actions").style.display = results.length > 0 ? "flex" : "none";
+    renderResults();
+
+  } catch (err) {
+    status.textContent = "Search failed: " + err.message;
+    status.className = "status error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Search";
+  }
+}
+
+function toggleSelect(idx) {
+  if (selected.has(idx)) selected.delete(idx);
+  else selected.add(idx);
+  updateSelectionCount();
+  renderResults();
+}
+
+function selectAll() { results.forEach((_, i) => selected.add(i)); updateSelectionCount(); renderResults(); }
+function selectNone() { selected.clear(); updateSelectionCount(); renderResults(); }
+function updateSelectionCount() {
+  document.getElementById("selection-count").textContent = selected.size + " selected";
+}
+
+function toggleAbstract(idx) {
+  const el = document.getElementById("abstract-" + idx);
+  if (el) el.classList.toggle("collapsed");
+}
+
+function renderResults() {
+  const container = document.getElementById("results");
+  container.innerHTML = results.map((r, i) => {
+    const shortAuthors = r.authors.length > 3
+      ? r.authors[0].split(" ").pop() + " et al."
+      : r.authors.map(a => a.split(" ").pop()).join(", ");
+    return `
+    <div class="result-card ${selected.has(i) ? 'selected' : ''}" onclick="toggleSelect(${i})">
+      <input type="checkbox" ${selected.has(i) ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect(${i})">
+      <div class="result-info">
+        <div class="result-title">${r.title}</div>
+        <div class="result-meta">
+          <span class="result-id">${r.arxivId}</span> &mdash;
+          ${shortAuthors} (${r.year})
+        </div>
+        <div class="result-abstract collapsed" id="abstract-${i}">${r.summary}</div>
+        <button class="toggle-abstract" onclick="event.stopPropagation(); toggleAbstract(${i})">show/hide abstract</button>
+        <div class="result-tags">
+          ${r.categories.slice(0, 4).map(c => `<span class="result-tag">${c}</span>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function exportSelected() {
+  if (selected.size === 0) { alert("Select at least one paper."); return; }
+
+  const papers = [...selected].map(i => results[i]).map(r => {
+    const shortAuthors = r.authors.length > 3
+      ? r.authors[0].split(" ").pop() + " et al."
+      : r.authors.map(a => a.split(" ").pop()).join(", ");
+    return {
+      id: r.arxivId,
+      title: r.title,
+      authors: r.authors.join(", "),
+      shortAuthors: shortAuthors,
+      year: r.year,
+      summary: r.summary.substring(0, 300) + (r.summary.length > 300 ? "..." : ""),
+      categories: r.categories
+    };
+  });
+
+  const json = JSON.stringify(papers, null, 2);
+
+  document.getElementById("export-area").innerHTML = `
+    <div class="export-box">
+      <h3>Export for Claude (${papers.length} papers)</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">
+        Copy this JSON and paste it to Claude with: "Add these papers to the database"
+      </p>
+      <pre id="export-json">${json}</pre>
+      <div class="actions">
+        <button onclick="navigator.clipboard.writeText(document.getElementById('export-json').textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy JSON',1500)">Copy JSON</button>
+        <button onclick="downloadExport()">Download JSON</button>
+      </div>
+    </div>`;
+}
+
+function downloadExport() {
+  const json = document.getElementById("export-json").textContent;
+  const blob = new Blob([json], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "arxiv-papers-to-add.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>

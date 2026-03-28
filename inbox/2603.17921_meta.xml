@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/57HZANB45+4kBaso8HDikVHaP1w</id>
+  <title>arXiv Query: search_query=&amp;id_list=2603.17921&amp;start=0&amp;max_results=10</title>
+  <updated>2026-03-24T03:06:15Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=&amp;start=0&amp;max_results=10&amp;id_list=2603.17921" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>1</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2603.17921v2</id>
+    <title>Quantum-Material Josephson Junctions: Unconventional Barriers, Emerging Functionality</title>
+    <updated>2026-03-19T08:18:28Z</updated>
+    <link href="https://arxiv.org/abs/2603.17921v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2603.17921v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Josephson junctions translate quantum phase coherence into an electrical response and underpin superconducting sensors and quantum circuits. In conventional junctions, the barrier acts primarily as a passive weak link, however, when the barrier is a quantum material with its own internal degrees of freedom like magnetism, strong correlations, or switchable polarization, the Josephson effect becomes a sensitive probe of symmetry and many-body physics in the interlayer. Here we review progress in quantum-material Josephson junctions, (QMJJ) focusing on three rapidly advancing barrier families: 1. magnetic barriers, where exchange, noncollinearity, and spin-active scattering enable 0-π-φ ground states, singlet-triplet conversion, and nonreciprocal transport, 2. correlated barriers, where proximity effects acquire many-body character and recent van der Waals Kagome Mott interlayers exhibit field-free Josephson diode behavior, and 3. ferroelectric and multiferroic barriers, where nonvolatile polarization provides an internal control knob and can produce superconducting memory and memristive dynamics.</summary>
+    <category term="cond-mat.supr-con" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cond-mat.mtrl-sci" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-03-18T16:57:57Z</published>
+    <arxiv:comment>12 pages, 3 figures</arxiv:comment>
+    <arxiv:primary_category term="cond-mat.supr-con"/>
+    <author>
+      <name>Kathryn A. Pitton</name>
+    </author>
+    <author>
+      <name>Michiel P. Dubbelman</name>
+    </author>
+    <author>
+      <name>Trent M. Kyrk</name>
+    </author>
+    <author>
+      <name>Houssam El Mrabet Haje</name>
+    </author>
+    <author>
+      <name>Yaozu Tang</name>
+    </author>
+    <author>
+      <name>Roald J. H. van der Kolk</name>
+    </author>
+    <author>
+      <name>Yaroslav M. Blanter</name>
+    </author>
+    <author>
+      <name>Mazhar N Ali</name>
+    </author>
+  </entry>
+</feed>
