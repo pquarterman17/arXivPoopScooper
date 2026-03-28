@@ -410,6 +410,39 @@
   }
   .notes-toolbar button:hover, .notes-toolbar .toolbar-link:hover { color: var(--text2); border-color: var(--text2); }
   .toolbar-divider { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+  .settings-gear-btn { border: none !important; padding: 4px !important; color: var(--text3) !important; }
+  .settings-gear-btn:hover { color: var(--accent) !important; }
+
+  /* Settings modal */
+  .settings-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center; }
+  .settings-panel { background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;width:640px;max-width:90vw;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+  .settings-panel h2 { font-size:16px;font-weight:700;margin-bottom:16px; }
+  .settings-panel h3 { font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border); }
+  .settings-panel h3:first-of-type { border-top:none;padding-top:0; }
+  .settings-panel label { font-size:12px;color:var(--text2);font-weight:500; }
+  .settings-panel input[type="text"] {
+    width:100%;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:6px;
+    background:var(--bg);color:var(--text);font-family:inherit;margin-top:3px;
+  }
+  .settings-panel input[type="text"]:focus { border-color:var(--accent);outline:none; }
+  .settings-panel input[type="color"] { width:30px;height:24px;border:none;background:none;cursor:pointer;vertical-align:middle; }
+  .settings-row { display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:6px 8px;border-radius:6px;background:var(--bg); }
+  .settings-row .sr-label { flex:1;font-size:12px;font-weight:600; }
+  .settings-row .sr-detail { font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace; }
+  .settings-row .sr-toggle { width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background 0.15s; }
+  .settings-row .sr-toggle.on { background:var(--green); }
+  .settings-row .sr-toggle.off { background:var(--border); }
+  .settings-row .sr-toggle::after { content:'';position:absolute;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left 0.15s; }
+  .settings-row .sr-toggle.on::after { left:19px; }
+  .settings-row .sr-toggle.off::after { left:3px; }
+  .settings-del-btn { background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;opacity:0.5; }
+  .settings-del-btn:hover { opacity:1; }
+  .settings-add-btn { font-size:11px;font-weight:600;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:6px;padding:4px 12px;cursor:pointer;margin-top:4px;font-family:inherit; }
+  .settings-add-btn:hover { background:rgba(88,166,255,0.08); }
+  .settings-footer { display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:12px;border-top:1px solid var(--border); }
+  .settings-footer button { padding:6px 16px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;border:1.5px solid var(--border);background:transparent;color:var(--text2); }
+  .settings-footer button.primary { border-color:var(--accent);background:var(--accent2);color:#fff; }
+  .settings-footer button:hover { opacity:0.85; }
   .toolbar-more {
     position: relative; display: inline-block;
   }
@@ -778,6 +811,9 @@
     <span id="sync-indicator" style="font-size:10px;font-weight:600;color:var(--green)">synced</span>
     <button onclick="showAddWebsiteModal()" style="border-color:var(--green);color:var(--green)">+ Add link</button>
     <a href="paper_scraper.html" class="toolbar-link" style="border-color:var(--orange);color:var(--orange);text-decoration:none;display:inline-block">Paper scraper</a>
+    <button onclick="showSettingsModal()" class="settings-gear-btn" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
     <div class="toolbar-divider"></div>
     <div class="toolbar-more">
       <button onclick="this.nextElementSibling.classList.toggle('open')" title="More actions">More &#9662;</button>
@@ -901,6 +937,7 @@
 </div>
 
 <div id="modal-root"></div>
+<div id="settings-overlay" class="settings-overlay" style="display:none" onclick="if(event.target===this)closeSettingsModal()"></div>
 <div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
   <img id="lb-img" src="">
   <div class="lightbox-caption" id="lb-caption"></div>
@@ -969,6 +1006,7 @@ let currentPdfSrc = "";
 // ─── Init: load database then render ───
 SCQ.init().then(() => {
   window._scqOnDirty = function(dirty) { updateSyncIndicator(!dirty); };
+  _applySettingsToConfig();
   loadPapersFromDB();
   render();
   updateSyncIndicator(true);
@@ -2402,6 +2440,145 @@ function readingMarkRead(paperId) {
   renderReadingList();
 }
 
+/* ═══════════════════════════════════════════════════════════ */
+/* Settings Modal                                             */
+/* ═══════════════════════════════════════════════════════════ */
+
+let _settingsSources = [];
+let _settingsPresets = [];
+
+function showSettingsModal() {
+  // Load current config, overlaid with any saved DB settings
+  const saved = SCQ.getAllSettings();
+  _settingsSources = saved.sources
+    ? JSON.parse(JSON.stringify(saved.sources))
+    : Object.entries(SCRAPER_CONFIG.sources).map(([key, s]) => ({
+        key, label: s.label, color: s.color, enabled: s.enabled,
+        type: s.type, journalRef: s.journalRef || "", journalName: s.journalName || ""
+      }));
+  _settingsPresets = saved.presets
+    ? JSON.parse(JSON.stringify(saved.presets))
+    : SCRAPER_CONFIG.presets.map(p => ({ label: p.label, query: p.query }));
+
+  _renderSettingsModal();
+  document.getElementById("settings-overlay").style.display = "flex";
+}
+
+function closeSettingsModal() {
+  document.getElementById("settings-overlay").style.display = "none";
+}
+
+function _renderSettingsModal() {
+  const overlay = document.getElementById("settings-overlay");
+
+  let srcHtml = _settingsSources.map((s, i) => `
+    <div class="settings-row">
+      <input type="color" value="${s.color}" onchange="_settingsSources[${i}].color=this.value" title="Badge color">
+      <span class="sr-label">${_esc(s.label)}</span>
+      <span class="sr-detail">${s.type === 'arxiv' ? 'arXiv direct' : _esc(s.journalRef || '')}</span>
+      <button class="sr-toggle ${s.enabled ? 'on' : 'off'}" onclick="_toggleSource(${i})" title="${s.enabled ? 'Enabled' : 'Disabled'}"></button>
+      ${s.type !== 'arxiv' ? `<button class="settings-del-btn" onclick="_delSource(${i})" title="Remove">&times;</button>` : '<span style="width:26px"></span>'}
+    </div>
+  `).join("");
+
+  let preHtml = _settingsPresets.map((p, i) => `
+    <div class="settings-row">
+      <input type="text" value="${_esc(p.label)}" style="width:120px;flex:none" onchange="_settingsPresets[${i}].label=this.value" placeholder="Label">
+      <input type="text" value="${_esc(p.query)}" style="flex:1" onchange="_settingsPresets[${i}].query=this.value" placeholder="Search query">
+      <button class="settings-del-btn" onclick="_delPreset(${i})" title="Remove">&times;</button>
+    </div>
+  `).join("");
+
+  overlay.innerHTML = `<div class="settings-panel">
+    <h2>Settings</h2>
+
+    <h3>Paper Sources</h3>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Toggle sources on/off, change colors, or add new journal feeds. Sources use the arXiv API filtered by journal reference.</p>
+    ${srcHtml}
+    <button class="settings-add-btn" onclick="_addSource()">+ Add journal source</button>
+
+    <h3>Preset Searches</h3>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Quick-search buttons shown in the scraper. Edit labels and queries, or add new ones.</p>
+    ${preHtml}
+    <button class="settings-add-btn" onclick="_addPreset()">+ Add preset</button>
+
+    <div class="settings-footer">
+      <button onclick="closeSettingsModal()">Cancel</button>
+      <button class="primary" onclick="_saveSettings()">Save</button>
+    </div>
+  </div>`;
+}
+
+function _toggleSource(i) {
+  _settingsSources[i].enabled = !_settingsSources[i].enabled;
+  _renderSettingsModal();
+}
+
+function _delSource(i) {
+  _settingsSources.splice(i, 1);
+  _renderSettingsModal();
+}
+
+function _addSource() {
+  const label = prompt("Journal label (e.g., 'PRB'):");
+  if (!label) return;
+  const journalRef = prompt("arXiv journal_ref filter (e.g., 'Phys.+Rev.+B'):");
+  if (!journalRef) return;
+  const key = label.toLowerCase().replace(/[^a-z0-9]/g, "");
+  _settingsSources.push({
+    key, label, color: "#58a6ff", enabled: true,
+    type: "arxiv-jr", journalRef, journalName: journalRef.replace(/\+/g, " ")
+  });
+  _renderSettingsModal();
+}
+
+function _delPreset(i) {
+  _settingsPresets.splice(i, 1);
+  _renderSettingsModal();
+}
+
+function _addPreset() {
+  _settingsPresets.push({ label: "", query: "" });
+  _renderSettingsModal();
+  // Focus the new label input
+  const rows = document.querySelectorAll(".settings-panel .settings-row");
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector("input").focus();
+}
+
+function _saveSettings() {
+  // Filter out empty presets
+  const presets = _settingsPresets.filter(p => p.label.trim() && p.query.trim());
+  SCQ.setSetting("sources", _settingsSources);
+  SCQ.setSetting("presets", presets);
+
+  // Apply to live config
+  _applySettingsToConfig();
+
+  closeSettingsModal();
+  render();
+}
+
+function _applySettingsToConfig() {
+  const savedSources = SCQ.getSetting("sources");
+  const savedPresets = SCQ.getSetting("presets");
+
+  if (savedSources) {
+    // Rebuild SCRAPER_CONFIG.sources from saved array
+    const newSources = {};
+    savedSources.forEach(s => {
+      newSources[s.key] = {
+        label: s.label, color: s.color, enabled: s.enabled,
+        type: s.type, journalRef: s.journalRef, journalName: s.journalName
+      };
+    });
+    SCRAPER_CONFIG.sources = newSources;
+  }
+  if (savedPresets) {
+    SCRAPER_CONFIG.presets = savedPresets;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const searchInput = document.getElementById("reading-search-input");
   if (searchInput) {
@@ -2509,7 +2686,7 @@ function citeUpdatePreview() {
   const countEl = document.getElementById("cite-sel-count");
   const copyBtn = document.getElementById("cite-copy-selected");
   const clearBtn = document.getElementById("cite-clear-btn");
-  
+
   if (count === 0) {
     countEl.innerHTML = "Click papers to select, then copy";
     copyBtn.style.display = "none";
@@ -2517,12 +2694,12 @@ function citeUpdatePreview() {
     panel.style.display = "none";
     return;
   }
-  
+
   countEl.innerHTML = `<strong>${count}</strong> paper${count > 1 ? 's' : ''} selected`;
   copyBtn.style.display = "";
   clearBtn.style.display = "";
   copyBtn.textContent = citeFormat === "bib" ? "Copy .bib" : "Copy for Word";
-  
+
   panel.style.display = "";
   document.getElementById("cite-preview-label").textContent = citeFormat === "bib" ? "BibTeX Preview" : "Word Preview";
   document.getElementById("cite-preview-box").textContent = citeBuildCitation();
@@ -2531,7 +2708,7 @@ function citeUpdatePreview() {
 function renderCiteTab() {
   const filtered = citeGetFiltered();
   const list = document.getElementById("cite-paper-list");
-  
+
   list.innerHTML = filtered.map(p => {
     const sel = citeSelected.has(p.id);
     return `<div class="cite-paper-row ${sel ? 'selected' : ''}" onclick="citeToggleSelect('${p.id}')">
@@ -2549,13 +2726,13 @@ function renderCiteTab() {
       </div>
     </div>`;
   }).join("");
-  
+
   citeUpdatePreview();
 }
 
 </script>
 
-<!-- === PDF Viewer Panel (from original) === -->
+<!-- === PDF Viewer Panel === -->
 <div class="pdf-viewer-panel hidden" id="pdf-viewer-panel">
   <div class="pdf-viewer-bar">
     <div class="title" id="pdf-title"></div>

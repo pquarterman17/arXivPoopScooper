@@ -152,6 +152,10 @@ const SCQ = (function () {
       CREATE VIRTUAL TABLE IF NOT EXISTS pdf_text USING fts5(
         paper_id, page_num, content, tokenize='porter unicode61'
       );
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL DEFAULT '{}'
+      );
     `);
   }
 
@@ -168,6 +172,12 @@ const SCQ = (function () {
       }
     } catch (e) {
       console.warn("[SCQ] Migration check failed:", e.message);
+    }
+    // v3: add settings table
+    try {
+      db.run("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '{}')");
+    } catch (e) {
+      // already exists — fine
     }
   }
 
@@ -946,6 +956,32 @@ const SCQ = (function () {
     return mergeFromDatabase(new Uint8Array(buf));
   }
 
+  // ─── Settings (key-value store) ───
+
+  function getSetting(key) {
+    try {
+      const row = queryOne("SELECT value FROM settings WHERE key = ?", [key]);
+      return row ? JSON.parse(row.value) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setSetting(key, value) {
+    run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [key, JSON.stringify(value)]);
+  }
+
+  function getAllSettings() {
+    try {
+      const rows = query("SELECT key, value FROM settings");
+      const out = {};
+      rows.forEach(r => { try { out[r.key] = JSON.parse(r.value); } catch {} });
+      return out;
+    } catch (e) {
+      return {};
+    }
+  }
+
   // ─── Public API ───
 
   return {
@@ -977,5 +1013,7 @@ const SCQ = (function () {
     getStats,
     // Merge / Collaboration
     mergeFromDatabase, exportCollectionDB, importDatabaseFile,
+    // Settings
+    getSetting, setSetting, getAllSettings,
   };
 })();

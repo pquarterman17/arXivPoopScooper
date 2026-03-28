@@ -66,6 +66,10 @@ _ensure_console()
 # Serve from the directory this script lives in
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+# File extensions that should never be cached (forces browser to always
+# fetch fresh copies — no more Ctrl+Shift+R needed after edits).
+NO_CACHE_EXTENSIONS = {".html", ".js", ".css", ".json"}
+
 
 def find_open_port(start=8080, end=8099):
     for port in range(start, end):
@@ -114,6 +118,17 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
         # Only log proxy requests, suppress static file noise
         if args and isinstance(args[0], str) and "/api/arxiv" in args[0]:
             print(f"  [proxy] {args[0]}")
+
+    def end_headers(self):
+        """Inject no-cache headers for HTML/JS/CSS/JSON files so the
+        browser always fetches fresh copies after edits."""
+        path = urllib.parse.urlparse(self.path).path
+        ext = os.path.splitext(path)[1].lower()
+        if ext in NO_CACHE_EXTENSIONS:
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+        super().end_headers()
 
     def do_GET(self):
         if self.path.startswith("/api/arxiv"):
