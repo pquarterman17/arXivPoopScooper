@@ -1,6 +1,6 @@
 # SCQ Paper Database — Claude Session Guide
 
-This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as static HTML files with a SQLite database (base64-encoded in `scq_data.js` for file:// protocol compatibility).
+This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (base64-encoded in `scq_data.js` for sql.js WASM).
 
 ## Adding a Paper from arXiv
 
@@ -33,7 +33,7 @@ bash tools/fetch.sh <arxiv_id>
 ### Step 2: Process (runs in the Cowork sandbox)
 
 ```bash
-cd "/sessions/jolly-awesome-faraday/mnt/References - Claude v0p1 Build"
+cd "<session_mount>/References - Claude v0p1 Build"
 python3 tools/process_paper.py <arxiv_id> --note "optional note"
 ```
 
@@ -72,11 +72,10 @@ import sqlite3, json, re, base64
 
 ```
 References - Claude v0p1 Build/
+├── START.bat                Double-click to launch (Windows)
+├── serve.py                 Local server + arXiv API proxy
 ├── paper_database.html      Main app: Library + Reading List + Cite tabs
 ├── paper_scraper.html       Paper scraper: Search + Inbox + Quick Search tabs
-├── [LEGACY] cite_helper.html    Absorbed into paper_database.html Cite tab
-├── [LEGACY] to_read.html        Absorbed into paper_database.html Reading List tab
-├── [LEGACY] arxiv_search.html   Absorbed into paper_scraper.html Quick Search tab
 ├── scq_data.js              SQLite DB as base64 (THE canonical data source)
 ├── db_utils.js              Shared sql.js utility layer for HTML pages
 ├── scraper_config.js        Domain-specific config (search presets, tags)
@@ -159,5 +158,4 @@ local proxy in `serve.py` that avoids CORS and sets a proper User-Agent header:
 **Add paper:** fetch.bat/sh → process_paper.py → (optional) enrich summary/results
 **Add note:** Update `notes` table in DB, re-export scq_data.js
 **Change tags:** Update `tags` JSON in `papers` table, re-export
-**Bulk import:** Use `tools/import_mendeley.py` for .bib files, or `tools/process_inbox.py` for PDFs
-**Search papers:** Use the FTS5 index: `SELECT * FROM papers_fts WHERE papers_fts MATCH 'tantalum'`
+**Bulk import:** Use `tools/import_mende

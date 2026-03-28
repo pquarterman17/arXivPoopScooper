@@ -6,28 +6,39 @@ A lightweight, browser-based literature management system for superconducting qu
 
 ## Architecture
 
-Everything runs as static HTML files opened directly in the browser — no server, no build tools, no frameworks. State lives in browser localStorage with JSON file backup for durability. Python scripts handle PDF processing and imports.
+Two HTML pages served via a lightweight local server (`serve.py`), backed by a SQLite database compiled to WebAssembly via sql.js. Launch with `START.bat` (Windows) or `python serve.py` (macOS/Linux). The server also provides an arXiv API proxy to avoid CORS issues. Python scripts handle PDF processing and imports.
 
 ### File Structure
 
 ```
-References/
-├── paper_database.html      Main database UI (cards, table, cite views)
-├── to_read.html             Reading list (unread papers, sorted by priority)
-├── paper_scraper.html       Paper scraper (arXiv + PRL/PR Applied with staging inbox)
-├── cite_helper.html         Citation picker (half-screen alongside Word)
-├── references.bib           BibTeX file (all papers)
-├── references.txt           Plain-text citations
-├── notes.json               Durable backup of user state
-├── pdfs/                    PDF storage (pdfs/<arXivId>.pdf)
-├── inbox/                   Drop PDFs here for batch processing
-├── figures/                 Extracted figure images by paper ID
+References - Claude v0p1 Build/
+├── START.bat                Double-click to launch (Windows)
+├── serve.py                 Local server + arXiv API proxy
+├── paper_database.html      Main app (Library + Reading List + Cite tabs)
+├── paper_scraper.html       Paper discovery (Search + Inbox + Quick Search tabs)
+├── scq_data.js              SQLite DB as base64 (canonical data source)
+├── db_utils.js              Shared sql.js utility layer
+├── scraper_config.js        Domain config (presets, tags, sources)
+├── references.bib           BibTeX citations
+├── references.txt           Plain-text citations (Physical Review style)
+├── notes.json               Legacy state backup
+├── papers/                  PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
+├── figures/                 Extracted figures by arXiv ID
+│   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
+├── inbox/                   Staging area for _meta.json files
 ├── tools/
-│   ├── extract_figures.py   PyMuPDF figure+caption extractor
-│   ├── import_mendeley.py   Mendeley/Zotero .bib importer
-│   └── process_inbox.py     Batch inbox processor
+│   ├── fetch_arxiv.js       arXiv API + PDF download (Node.js)
+│   ├── fetch.bat             Windows wrapper
+│   ├── fetch.sh              macOS/Linux wrapper
+│   ├── process_paper.py      Full ingestion pipeline (Python)
+│   ├── extract_figures.py    PyMuPDF figure + caption extractor
+│   ├── process_inbox.py      Batch PDF inbox processor
+│   ├── import_mendeley.py    .bib file importer
+│   ├── init_database.py      DB schema creator / migration tool
+│   └── merge_database.py     DB merge utility
+├── CLAUDE.md                Claude session guide
 ├── FEATURES.md              This file
-└── COWORK_MIGRATION_GUIDE.md  Technical migration reference
+└── README.md                Project overview
 ```
 
 ---
@@ -63,8 +74,8 @@ References/
 ### Read Tracking
 
 - Checkbox on every paper (card view and table view) to toggle read/unread
-- State persists in localStorage (`scq-read-status`) and syncs across pages via `storage` event
-- Unread count shown in reading list
+- State persists in SQLite database via `db_utils.js`
+- Unread count shown in reading list tab
 
 ### Priority Rating
 
@@ -84,7 +95,7 @@ References/
 ### Related Papers
 
 - **Automatic detection** based on shared authors (2+), shared tags (2+), and same research group
-- **Manual linking** — "Link" button on each card opens a picker modal to manually mark papers as related. Links are bidirectional and stored in localStorage (`scq-manual-links`)
+- **Manual linking** — "Link" button on each card opens a picker modal to manually mark papers as related. Links are bidirectional and stored in the `paper_links` table
 - Manual links appear as orange chips; auto-detected links appear as default blue chips
 - Click any related paper chip to jump to that paper
 
@@ -96,16 +107,18 @@ References/
 
 ### Notes
 
-- Per-paper textarea that auto-saves to localStorage after 500ms of inactivity
-- "Saved" confirmation indicator
+- Per-paper textarea that auto-saves to SQLite after 500ms of inactivity
+- "Saved" confirmation indicator with relative timestamp ("2m ago", "3h ago")
 - Notes are included in search results
 
 ### State Durability
 
-- **Export state** button in the header downloads a JSON file containing all notes, read status, priorities, collections, and manual links
-- **Import state** button restores from a previously exported file (merges, doesn't overwrite)
-- On page load, tries to fetch `notes.json` as a baseline; localStorage takes priority for newer data
-- Survives browser resets, works across machines
+- All state stored in SQLite database (`scq_data.js` as base64, `scq_papers.db` as raw file)
+- **Save database** button downloads the `.db` file
+- **Export JSON** button downloads full state as JSON backup
+- **Import** button restores from `.db` or `.json` file
+- **Merge .db** button combines another database with yours (new papers added, existing ones updated)
+- Sync indicator shows "synced" vs "unsaved changes"
 
 ### Citations
 
@@ -117,21 +130,19 @@ References/
 
 ---
 
-### Reading List (`to_read.html`)
+### Reading List (tab in `paper_database.html`)
 
 - Shows only unread papers, sorted by priority (highest first)
+- Grouped by date: "Added this week", "Added this month", "Older"
 - Card layout with summary, tags, badges
 - "Mark as read" button removes paper from list
 - Search bar for filtering
 - PDF and arXiv link buttons
-- Cross-page sync: marking a paper read here updates the main database (and vice versa)
 
 ---
 
-### Citation Helper (`cite_helper.html`)
+### Citation Helper (Cite tab in `paper_database.html`)
 
-- Designed to sit half-screen alongside Microsoft Word
-- Compact, full-height layout with no wasted space
 - Multi-select papers with checkboxes for batch citation copy
 - Live preview panel shows selected citations
 - Format toggle: Word/plain text vs. .bib
@@ -155,16 +166,15 @@ References/
 - Each highlight: page number (optional) + quoted text
 - Highlights appear between Notes and Related Papers in the card view
 - Add via inline form (page # + text + Add button), remove with × button
-- Stored in localStorage (`scq-highlights`) and included in state export/import
+- Stored in the `highlights` SQLite table and included in state export/import
 
-### arXiv Search (`arxiv_search.html`)
+### arXiv Search (Quick Search tab in `paper_scraper.html`)
 
 - Keyword search against the arXiv API (returns up to 25 results, sorted by date)
 - Preset query buttons for common SCQ topics (Ta resonators, TLS loss, JJ fabrication, etc.)
 - Results show title, authors, abstract (collapsible), arXiv categories
 - Checkbox selection with select all / clear
 - "Export selected for Claude" generates JSON that can be pasted or downloaded for batch import
-- Linked from the main database header
 
 ### Tag Management
 
@@ -329,17 +339,8 @@ Keyword dictionary (18+ domain terms) for auto-suggesting tags when papers are a
 
 - HTML/CSS/JavaScript (vanilla, no frameworks)
 - **sql.js 1.8.0** (SQLite compiled to WebAssembly) for in-browser database
+- `serve.py` — lightweight local server with arXiv API proxy
 - `db_utils.js` — shared database access layer used by all HTML pages
 - IBM Plex Sans font, dark theme (#0e1117 background, #58a6ff accent)
-- localStorage as fallback cache for the database
 - Python 3 + PyMuPDF + bibtexparser for tooling
-- Physical Review / REVTeX citation format
-
-## Dependencies
-
-**Browser:** Any modern browser (Chrome, Firefox, Edge). Files opened via `file://` protocol. sql.js WASM loaded from cdnjs CDN (requires internet on first load, then cached).
-
-**Python (for tools only):**
-```
-pip install PyMuPDF bibtexparser Pillow --break-system-packages
-```
+- Node.js for arXiv fetch script
