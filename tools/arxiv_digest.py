@@ -349,20 +349,42 @@ def generate_html_digest(papers, digest_date, output_path):
   .score-med {{ background: rgba(210,153,34,0.2); color: var(--orange); }}
   .score-low {{ background: rgba(139,148,158,0.2); color: var(--text3); }}
 
-  .triage-btns {{ display: flex; gap: 8px; }}
-  .triage-btns button {{
+  .triage-row {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+  .triage-btns {{ display: flex; gap: 6px; align-items: center; }}
+  .triage-btns button, .triage-btns a {{
     font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 4px;
     cursor: pointer; border: 1px solid var(--border); font-family: inherit;
-    transition: all 0.2s;
+    transition: all 0.2s; text-decoration: none; display: inline-block;
   }}
   .btn-add {{ background: rgba(63,185,80,0.15); color: var(--green); border-color: var(--green); }}
   .btn-add:hover {{ background: rgba(63,185,80,0.3); }}
+  .btn-add.active {{ background: rgba(63,185,80,0.4); box-shadow: 0 0 0 2px var(--green); }}
+  .btn-star {{ background: rgba(210,153,34,0.15); color: var(--orange); border-color: var(--orange); }}
+  .btn-star:hover {{ background: rgba(210,153,34,0.3); }}
+  .btn-star.active {{ background: rgba(210,153,34,0.4); box-shadow: 0 0 0 2px var(--orange); }}
+  .btn-ignore {{ background: var(--bg3); color: var(--text3); }}
+  .btn-ignore:hover {{ background: var(--border); color: var(--text2); }}
+  .btn-ignore.active {{ background: rgba(248,81,73,0.2); color: var(--red); border-color: var(--red); }}
   .btn-skip {{ background: var(--bg3); color: var(--text3); }}
   .btn-skip:hover {{ background: var(--border); color: var(--text2); }}
-  .btn-pdf {{ background: rgba(88,166,255,0.1); color: var(--accent); border-color: var(--accent); text-decoration: none; display: inline-block; }}
+  .btn-pdf {{ background: rgba(88,166,255,0.1); color: var(--accent); border-color: var(--accent); }}
   .btn-pdf:hover {{ background: rgba(88,166,255,0.25); }}
 
+  .tag-row {{ display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }}
+  .tag-btn {{ font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
+              border: 1px solid var(--border); background: var(--bg3); color: var(--text2);
+              transition: all 0.15s; font-family: inherit; }}
+  .tag-btn:hover {{ border-color: var(--accent); color: var(--accent); }}
+  .tag-btn.selected {{ background: rgba(88,166,255,0.2); color: var(--accent); border-color: var(--accent); }}
+  .custom-tag-input {{ font-size: 10px; padding: 2px 8px; border-radius: 10px;
+                       border: 1px solid var(--border); background: var(--bg); color: var(--text);
+                       width: 90px; font-family: inherit; }}
+  .custom-tag-input::placeholder {{ color: var(--text3); }}
+
   .triage-status {{ font-size: 11px; font-weight: 600; margin-left: 8px; }}
+
+  .paper-card.triaged-ignore {{ opacity: 0.25; }}
+  .paper-card.triaged-star {{ border-color: var(--orange); border-width: 2px; }}
 
   .footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border);
              font-size: 12px; color: var(--text3); text-align: center; }}
@@ -425,12 +447,16 @@ def generate_html_digest(papers, digest_date, output_path):
     <div class="paper-abstract" id="abs-{safe_id}">{abstract}</div>
     <button class="expand-btn" onclick="toggleAbstract('{safe_id}')">show more</button>
     <div class="keywords">{kw_html}</div>
-    <div class="triage-btns">
-      <button class="btn-add" onclick="triagePaper('{safe_id}', 'add', '{paper_json}')">+ Add to Read List</button>
-      <button class="btn-skip" onclick="triagePaper('{safe_id}', 'skip')">Skip</button>
-      <a class="btn-pdf" href="{p['pdf_url']}" target="_blank">PDF</a>
-      <span class="triage-status" id="status-{safe_id}"></span>
+    <div class="triage-row">
+      <div class="triage-btns">
+        <button class="btn-add" id="btn-add-{safe_id}" onclick="triagePaper('{safe_id}', 'add', '{paper_json}')">+ Read List</button>
+        <button class="btn-star" id="btn-star-{safe_id}" onclick="triagePaper('{safe_id}', 'star', '{paper_json}')">&#9733; Star</button>
+        <button class="btn-ignore" id="btn-ignore-{safe_id}" onclick="triagePaper('{safe_id}', 'ignore')">&#10005; Ignore</button>
+        <a class="btn-pdf" href="{p['pdf_url']}" target="_blank">PDF</a>
+        <span class="triage-status" id="status-{safe_id}"></span>
+      </div>
     </div>
+    <div class="tag-row" id="tags-{safe_id}"></div>
   </div>"""
         return cards
 
@@ -455,16 +481,27 @@ def generate_html_digest(papers, digest_date, output_path):
 </div>
 
 <script>
-const triaged = {{}};
-const pendingFile = {json.dumps(PENDING_FILE)};
+// ── State ──
+const triaged = {{}};           // id -> {{action, data, tags, priority}}
+const paperTags = {{}};         // id -> Set of tag strings
 const TRIAGE_PREFIX = 'scq-triage-';
-const TRIAGE_EXPIRY_DAYS = 10;
+const TRIAGE_EXPIRY_DAYS = 14;
+
+// Preset tags from scraper_config
+const PRESET_TAGS = [
+  "tantalum","aluminum","niobium","TLS","surface loss","Josephson junction",
+  "transmon","resonator","qubit","kinetic inductance","quasiparticle",
+  "oxide","sapphire","silicon","coherence","decoherence","microwave",
+  "cryogenic","fabrication","quality factor"
+];
 
 // ── localStorage helpers ──
-function persistTriage(id, action) {{
+function persistTriage(id) {{
   try {{
     localStorage.setItem(TRIAGE_PREFIX + id, JSON.stringify({{
-      action: action,
+      action: triaged[id]?.action || 'none',
+      tags: Array.from(paperTags[id] || []),
+      priority: triaged[id]?.priority || 0,
       ts: Date.now()
     }}));
   }} catch(e) {{}}
@@ -475,32 +512,73 @@ function getPersistedTriage(id) {{
     const raw = localStorage.getItem(TRIAGE_PREFIX + id);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    // Expire old entries so localStorage doesn't grow forever
     if (Date.now() - data.ts > TRIAGE_EXPIRY_DAYS * 86400000) {{
       localStorage.removeItem(TRIAGE_PREFIX + id);
       return null;
     }}
-    return data.action;
+    return data;
   }} catch(e) {{ return null; }}
 }}
 
-// ── On page load: restore triage state from localStorage ──
+// ── Render tag row for a paper ──
+function renderTagRow(id) {{
+  const row = document.getElementById('tags-' + id);
+  if (!row) return;
+  const selected = paperTags[id] || new Set();
+  let html = PRESET_TAGS.map(t =>
+    `<button class="tag-btn${{selected.has(t) ? ' selected' : ''}}" onclick="toggleTag('${{id}}','${{t}}')">${{t}}</button>`
+  ).join('');
+  html += `<input class="custom-tag-input" placeholder="+ custom" onkeydown="if(event.key==='Enter')addCustomTag('${{id}}',this)">`;
+  row.innerHTML = html;
+}}
+
+function toggleTag(id, tag) {{
+  if (!paperTags[id]) paperTags[id] = new Set();
+  if (paperTags[id].has(tag)) paperTags[id].delete(tag);
+  else paperTags[id].add(tag);
+  if (triaged[id]) triaged[id].tags = Array.from(paperTags[id]);
+  renderTagRow(id);
+  persistTriage(id);
+}}
+
+function addCustomTag(id, input) {{
+  const tag = input.value.trim();
+  if (!tag) return;
+  if (!paperTags[id]) paperTags[id] = new Set();
+  paperTags[id].add(tag);
+  if (triaged[id]) triaged[id].tags = Array.from(paperTags[id]);
+  input.value = '';
+  renderTagRow(id);
+  persistTriage(id);
+}}
+
+// ── On page load: restore triage state ──
 document.addEventListener('DOMContentLoaded', function() {{
   document.querySelectorAll('.paper-card').forEach(function(card) {{
     const id = card.id.replace('card-', '');
     const prev = getPersistedTriage(id);
-    if (!prev) return;
+    if (!prev) {{ renderTagRow(id); return; }}
+
+    // Restore tags
+    if (prev.tags && prev.tags.length) paperTags[id] = new Set(prev.tags);
+
     const status = document.getElementById('status-' + id);
-    if (prev === 'add') {{
-      card.className = 'paper-card triaged-add';
-      status.textContent = '✓ Previously added';
-      status.style.color = 'var(--green)';
-    }} else if (prev === 'skip') {{
-      card.className = 'paper-card triaged-skip';
-      status.textContent = 'previously skipped';
-      status.style.color = 'var(--text3)';
+    if (prev.action === 'add' || prev.action === 'star') {{
+      card.className = 'paper-card triaged-' + prev.action;
+      const btn = document.getElementById('btn-' + prev.action + '-' + id);
+      if (btn) btn.classList.add('active');
+      status.textContent = prev.action === 'star' ? '★ Starred' : '✓ Added';
+      status.style.color = prev.action === 'star' ? 'var(--orange)' : 'var(--green)';
+    }} else if (prev.action === 'ignore') {{
+      card.className = 'paper-card triaged-ignore';
+      const btn = document.getElementById('btn-ignore-' + id);
+      if (btn) btn.classList.add('active');
+      status.textContent = 'ignored';
+      status.style.color = 'var(--red)';
     }}
+    renderTagRow(id);
   }});
+  updateCount();
 }});
 
 function toggleAbstract(id) {{
@@ -514,41 +592,78 @@ function triagePaper(id, action, paperJson) {{
   const card = document.getElementById('card-' + id);
   const status = document.getElementById('status-' + id);
 
+  // Clear previous active states
+  ['add','star','ignore'].forEach(a => {{
+    const b = document.getElementById('btn-' + a + '-' + id);
+    if (b) b.classList.remove('active');
+  }});
+
+  // Toggle: clicking same action again deselects
+  if (triaged[id] && triaged[id].action === action) {{
+    delete triaged[id];
+    card.className = 'paper-card';
+    status.textContent = '';
+    persistTriage(id);
+    updateCount();
+    return;
+  }}
+
+  const tags = Array.from(paperTags[id] || []);
+
   if (action === 'add') {{
-    triaged[id] = JSON.parse(paperJson.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+    const data = JSON.parse(paperJson.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+    triaged[id] = {{ action: 'add', data: data, tags: tags, priority: 0 }};
     card.className = 'paper-card triaged-add';
+    document.getElementById('btn-add-' + id).classList.add('active');
     status.textContent = '✓ Added';
     status.style.color = 'var(--green)';
-  }} else {{
-    delete triaged[id];
-    card.className = 'paper-card triaged-skip';
-    status.textContent = 'skipped';
-    status.style.color = 'var(--text3)';
+  }} else if (action === 'star') {{
+    const data = JSON.parse(paperJson.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+    triaged[id] = {{ action: 'star', data: data, tags: tags, priority: 3 }};
+    card.className = 'paper-card triaged-star';
+    document.getElementById('btn-star-' + id).classList.add('active');
+    status.textContent = '★ Starred (high priority)';
+    status.style.color = 'var(--orange)';
+  }} else if (action === 'ignore') {{
+    triaged[id] = {{ action: 'ignore', tags: tags, priority: -1 }};
+    card.className = 'paper-card triaged-ignore';
+    document.getElementById('btn-ignore-' + id).classList.add('active');
+    status.textContent = 'ignored';
+    status.style.color = 'var(--red)';
   }}
-  persistTriage(id, action);
+  persistTriage(id);
   updateCount();
 }}
 
 function updateCount() {{
-  const n = Object.keys(triaged).length;
-  document.getElementById('triage-count').textContent = n + ' paper' + (n !== 1 ? 's' : '') + ' selected';
+  const adds = Object.values(triaged).filter(t => t.action === 'add' || t.action === 'star').length;
+  const ignored = Object.values(triaged).filter(t => t.action === 'ignore').length;
+  let txt = adds + ' to add';
+  if (ignored) txt += ', ' + ignored + ' ignored';
+  document.getElementById('triage-count').textContent = txt;
 }}
 
 function savePending() {{
-  const papers = Object.values(triaged);
-  if (papers.length === 0) {{
-    alert('No papers selected. Click "+ Add to Read List" on papers you want to save.');
+  const toAdd = Object.entries(triaged)
+    .filter(([_, t]) => t.action === 'add' || t.action === 'star')
+    .map(([id, t]) => ({{ ...t.data, tags: t.tags, priority: t.priority }}));
+
+  const toIgnore = Object.entries(triaged)
+    .filter(([_, t]) => t.action === 'ignore')
+    .map(([id, _]) => id.replace(/_/g, '.'));
+
+  if (toAdd.length === 0 && toIgnore.length === 0) {{
+    alert('No papers triaged yet. Use the buttons on each paper card.');
     return;
   }}
 
-  // Build the pending papers data
   const pending = {{
     digestDate: {json.dumps(digest_date)},
     savedAt: new Date().toISOString(),
-    papers: papers
+    papers: toAdd,
+    ignored: toIgnore
   }};
 
-  // Download as JSON file (since we can't write to disk from browser)
   const blob = new Blob([JSON.stringify(pending, null, 2)], {{ type: 'application/json' }});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -556,10 +671,8 @@ function savePending() {{
   a.click();
   URL.revokeObjectURL(a.href);
 
-  alert('Saved ' + papers.length + ' paper(s) to pending_papers.json.\\n\\n' +
-        'To import into your database:\\n' +
-        '1. Place pending_papers.json in your project folder\\n' +
-        '2. Open paper_database.html and click Import');
+  alert('Saved ' + toAdd.length + ' paper(s) to add, ' + toIgnore.length + ' to ignore.\\n\\n' +
+        'To import: open paper_database.html and click Import.');
 }}
 </script>
 </body>
@@ -575,74 +688,118 @@ function savePending() {{
 
 # ─── Email Digest ───
 
-def send_email_digest(papers, digest_date):
-    """Send a summary email with top papers."""
+def _load_email_recipients():
+    """Load recipient list from email_recipients.json, falling back to env vars."""
+    recipients_file = os.path.join(BASE_DIR, "email_recipients.json")
+    recipients = []
+    try:
+        with open(recipients_file, "r") as f:
+            data = json.load(f)
+        for r in data.get("recipients", []):
+            if r.get("enabled", True):
+                recipients.append({
+                    "email": r["email"],
+                    "name": r.get("name", ""),
+                    "frequency": r.get("frequency", "daily"),
+                })
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        pass
+    # Fallback: use env var if no recipients file or no entries
+    if not recipients and EMAIL_TO:
+        recipients = [{"email": EMAIL_TO, "name": "", "frequency": "daily"}]
+    return recipients
+
+
+def send_email_digest(papers, digest_date, frequency="daily"):
+    """Send a summary email with top papers and quick-action links."""
     if not EMAIL_FROM or not EMAIL_APP_PASSWORD:
         print("  Email skipped: set SCQ_EMAIL_FROM and SCQ_EMAIL_APP_PASSWORD env vars")
         print("  (Use a Gmail App Password: https://myaccount.google.com/apppasswords)")
         return False
 
-    top_papers = [p for p in papers if p["relevance_score"] >= 5][:15]
+    recipients = _load_email_recipients()
+    # Filter by frequency (daily recipients get daily, weekly get weekly, "both" gets both)
+    recipients = [r for r in recipients
+                  if r["frequency"] == frequency or r["frequency"] == "both"]
+    if not recipients:
+        print(f"  No {frequency} email recipients configured")
+        return False
 
-    # Build email body
+    top_papers = [p for p in papers if p["relevance_score"] >= 5][:15]
+    starred = [p for p in top_papers if p["relevance_score"] >= 20]
+
+    # Build email body with quick-action links
     body_html = f"""
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
   <h2 style="color: #1a73e8;">SCQ arXiv Digest — {digest_date}</h2>
-  <p style="color: #666;">{len(papers)} new papers found, {len(top_papers)} relevant to your interests.</p>
+  <p style="color: #666;">{len(papers)} new papers, {len(starred)} high relevance, {len(top_papers)} total relevant.</p>
   <hr style="border: none; border-top: 1px solid #ddd;">
 """
 
     for p in top_papers:
         score = p["relevance_score"]
         color = "#2e7d32" if score >= 20 else ("#f57f17" if score >= 10 else "#757575")
+        star_icon = "&#9733; " if score >= 20 else ""
         keywords = ", ".join(p["matched_keywords"][:4])
         body_html += f"""
   <div style="margin: 16px 0; padding: 12px; border-left: 3px solid {color}; background: #f8f9fa;">
     <div style="font-weight: 600; margin-bottom: 4px;">
-      <a href="{p['abs_url']}" style="color: #1a73e8; text-decoration: none;">{p['title']}</a>
+      {star_icon}<a href="{p['abs_url']}" style="color: #1a73e8; text-decoration: none;">{p['title']}</a>
       <span style="color: {color}; font-size: 12px; font-weight: 700;">[{score}]</span>
     </div>
     <div style="font-size: 13px; color: #666; margin-bottom: 4px;">
-      {p['short_authors']} &middot; {p['published'][:10]} &middot;
-      <a href="{p['pdf_url']}" style="color: #1a73e8;">PDF</a>
+      {p['short_authors']} &middot; {p['published'][:10]}
     </div>
-    <div style="font-size: 12px; color: #888;">Keywords: {keywords}</div>
+    <div style="font-size: 12px; color: #888; margin-bottom: 6px;">Keywords: {keywords}</div>
+    <div style="font-size: 12px;">
+      <a href="{p['abs_url']}" style="color: #1a73e8; margin-right: 12px;">Abstract</a>
+      <a href="{p['pdf_url']}" style="color: #1a73e8; margin-right: 12px;">PDF</a>
+    </div>
   </div>
 """
 
     body_html += f"""
   <hr style="border: none; border-top: 1px solid #ddd;">
-  <p style="font-size: 12px; color: #999; text-align: center;">
-    Open the full HTML digest for abstracts and triage buttons.<br>
-    Categories: {', '.join(ARXIV_CATEGORIES)}
+  <p style="font-size: 13px; color: #555; text-align: center;">
+    <b>Open the full digest HTML to triage papers</b> — add to reading list, star, ignore, and tag.<br>
+    <span style="font-size: 11px; color: #999;">File: digests/digest_{digest_date}.html</span>
+  </p>
+  <p style="font-size: 11px; color: #999; text-align: center;">
+    Categories: {', '.join(ARXIV_CATEGORIES)}<br>
+    Manage recipients in paper_database.html Settings or email_recipients.json
   </p>
 </div>
 """
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"SCQ Digest: {len(top_papers)} relevant papers — {digest_date}"
-    msg["From"] = EMAIL_FROM
-    msg["To"] = EMAIL_TO
 
     # Plain text fallback
     plain = f"SCQ arXiv Digest — {digest_date}\n"
     plain += f"{len(papers)} papers, {len(top_papers)} relevant\n\n"
     for p in top_papers:
-        plain += f"[{p['relevance_score']}] {p['title']}\n"
+        star = "★ " if p["relevance_score"] >= 20 else ""
+        plain += f"{star}[{p['relevance_score']}] {p['title']}\n"
         plain += f"    {p['short_authors']} — {p['abs_url']}\n\n"
+    plain += f"\nOpen digests/digest_{digest_date}.html to triage papers.\n"
 
-    msg.attach(MIMEText(plain, "plain"))
-    msg.attach(MIMEText(body_html, "html"))
+    sent_count = 0
+    for recipient in recipients:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"SCQ Digest: {len(top_papers)} relevant papers — {digest_date}"
+        msg["From"] = EMAIL_FROM
+        msg["To"] = recipient["email"]
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_FROM, EMAIL_APP_PASSWORD)
-            server.send_message(msg)
-        print(f"  Email sent to {EMAIL_TO}")
-        return True
-    except Exception as e:
-        print(f"  Email failed: {e}")
-        return False
+        msg.attach(MIMEText(plain, "plain"))
+        msg.attach(MIMEText(body_html, "html"))
+
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(EMAIL_FROM, EMAIL_APP_PASSWORD)
+                server.send_message(msg)
+            print(f"  Email sent to {recipient['email']}")
+            sent_count += 1
+        except Exception as e:
+            print(f"  Email to {recipient['email']} failed: {e}")
+
+    return sent_count > 0
 
 
 # ─── Mock Data for Testing ───
