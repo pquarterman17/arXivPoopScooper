@@ -24,6 +24,8 @@ import os
 import re
 import sys
 import smtplib
+import time
+import urllib.error
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta, timezone
@@ -143,14 +145,29 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
         }
         url = ARXIV_API + "?" + urllib.parse.urlencode(params)
 
-        try:
-            req = urllib.request.Request(url, headers={
-                "User-Agent": "SCQDigest/1.0 (paige.e.quarterman@gmail.com)"
-            })
-            resp = urllib.request.urlopen(req, timeout=30)
-            xml_data = resp.read()
-        except Exception as e:
-            print(f"  Warning: Failed to fetch {cat}: {e}")
+        # Retry with exponential backoff for rate limits (429)
+        xml_data = None
+        max_retries = 4
+        for attempt in range(max_retries):
+            try:
+                req = urllib.request.Request(url, headers={
+                    "User-Agent": "SCQDigest/1.0 (paige.e.quarterman@gmail.com)"
+                })
+                resp = urllib.request.urlopen(req, timeout=30)
+                xml_data = resp.read()
+                break  # Success
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < max_retries - 1:
+                    wait = [10, 30, 60, 120][attempt]
+                    print(f"  Rate limited on {cat}, retrying in {wait}s (attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(wait)
+                else:
+                    print(f"  Warning: Failed to fetch {cat}: {e}")
+                    break
+            except Exception as e:
+                print(f"  Warning: Failed to fetch {cat}: {e}")
+                break
+        if xml_data is None:
             continue
 
         root = ET.fromstring(xml_data)
@@ -215,7 +232,6 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
 
         print(f"  {cat}: found {sum(1 for p in papers if cat in p.get('categories', []))} papers")
         # Be polite to arXiv API
-        import time
         time.sleep(3)
 
     return papers
