@@ -2446,6 +2446,7 @@ function readingMarkRead(paperId) {
 
 let _settingsSources = [];
 let _settingsPresets = [];
+let _settingsRecipients = [];
 
 function showSettingsModal() {
   // Load current config, overlaid with any saved DB settings
@@ -2459,6 +2460,9 @@ function showSettingsModal() {
   _settingsPresets = saved.presets
     ? JSON.parse(JSON.stringify(saved.presets))
     : SCRAPER_CONFIG.presets.map(p => ({ label: p.label, query: p.query }));
+  _settingsRecipients = saved.emailRecipients
+    ? JSON.parse(JSON.stringify(saved.emailRecipients))
+    : [{ email: "paige.e.quarterman@gmail.com", name: "Paige", frequency: "daily", enabled: true }];
 
   _renderSettingsModal();
   document.getElementById("settings-overlay").style.display = "flex";
@@ -2489,6 +2493,20 @@ function _renderSettingsModal() {
     </div>
   `).join("");
 
+  let recipHtml = _settingsRecipients.map((r, i) => `
+    <div class="settings-row">
+      <button class="sr-toggle ${r.enabled ? 'on' : 'off'}" onclick="_toggleRecipient(${i})" title="${r.enabled ? 'Enabled' : 'Disabled'}"></button>
+      <input type="text" value="${_esc(r.name || '')}" style="width:80px;flex:none" onchange="_settingsRecipients[${i}].name=this.value" placeholder="Name">
+      <input type="text" value="${_esc(r.email)}" style="flex:1" onchange="_settingsRecipients[${i}].email=this.value" placeholder="email@example.com">
+      <select style="font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:80px" onchange="_settingsRecipients[${i}].frequency=this.value">
+        <option value="daily" ${r.frequency === 'daily' ? 'selected' : ''}>Daily</option>
+        <option value="weekly" ${r.frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+        <option value="both" ${r.frequency === 'both' ? 'selected' : ''}>Both</option>
+      </select>
+      <button class="settings-del-btn" onclick="_delRecipient(${i})" title="Remove">&times;</button>
+    </div>
+  `).join("");
+
   overlay.innerHTML = `<div class="settings-panel">
     <h2>Settings</h2>
 
@@ -2501,6 +2519,12 @@ function _renderSettingsModal() {
     <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Quick-search buttons shown in the scraper. Edit labels and queries, or add new ones.</p>
     ${preHtml}
     <button class="settings-add-btn" onclick="_addPreset()">+ Add preset</button>
+
+    <h3>Digest Email Recipients</h3>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Who receives the arXiv digest emails. Frequency: daily, weekly, or both.</p>
+    ${recipHtml}
+    <button class="settings-add-btn" onclick="_addRecipient()">+ Add recipient</button>
+    <button class="settings-add-btn" style="margin-left:8px" onclick="_exportRecipients()">&#8681; Export email_recipients.json</button>
 
     <div class="settings-footer">
       <button onclick="closeSettingsModal()">Cancel</button>
@@ -2546,11 +2570,45 @@ function _addPreset() {
   if (last) last.querySelector("input").focus();
 }
 
+function _toggleRecipient(i) {
+  _settingsRecipients[i].enabled = !_settingsRecipients[i].enabled;
+  _renderSettingsModal();
+}
+
+function _delRecipient(i) {
+  _settingsRecipients.splice(i, 1);
+  _renderSettingsModal();
+}
+
+function _addRecipient() {
+  _settingsRecipients.push({ email: "", name: "", frequency: "daily", enabled: true });
+  _renderSettingsModal();
+  const rows = document.querySelectorAll(".settings-panel .settings-row");
+  const last = rows[rows.length - 1];
+  if (last) { const inp = last.querySelectorAll("input"); if (inp[1]) inp[1].focus(); }
+}
+
+function _exportRecipients() {
+  const data = {
+    recipients: _settingsRecipients.filter(r => r.email.trim()),
+    defaults: { frequency: "daily", enabled: true },
+    _note: "Managed by paper_database.html Settings tab or edit directly. Frequency: daily | weekly | both"
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "email_recipients.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function _saveSettings() {
   // Filter out empty presets
   const presets = _settingsPresets.filter(p => p.label.trim() && p.query.trim());
+  const recipients = _settingsRecipients.filter(r => r.email.trim());
   SCQ.setSetting("sources", _settingsSources);
   SCQ.setSetting("presets", presets);
+  SCQ.setSetting("emailRecipients", recipients);
 
   // Apply to live config
   _applySettingsToConfig();
