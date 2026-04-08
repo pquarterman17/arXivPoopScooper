@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookmarklet Setup — SCQ Database</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0e1117;
+    --bg2: #161b22;
+    --bg3: #1c2333;
+    --border: #2d3548;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --accent: #58a6ff;
+    --accent2: #1f6feb;
+    --green: #3fb950;
+    --red: #f85149;
+    --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 32px 24px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  .section {
+    margin-bottom: 32px;
+    padding: 20px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .section h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--accent);
+  }
+
+  .section p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .section p:last-child {
+    margin-bottom: 0;
+  }
+
+  .bookmarklet-link {
+    display: inline-block;
+    background: var(--accent2);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: grab;
+    border: 2px solid var(--accent);
+    user-select: none;
+    transition: all 0.2s;
+    margin: 16px 0;
+  }
+
+  .bookmarklet-link:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+  }
+
+  .bookmarklet-link:active {
+    cursor: grabbing;
+  }
+
+  .instructions {
+    background: rgba(88, 166, 255, 0.08);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .test-section {
+    background: var(--bg3);
+    padding: 16px;
+    border-radius: 6px;
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .test-button {
+    background: var(--green);
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    margin-top: 12px;
+  }
+
+  .test-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .test-result {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(63, 185, 80, 0.1);
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .feature-list {
+    list-style: none;
+    margin-left: 0;
+  }
+
+  .feature-list li {
+    padding: 6px 0;
+    padding-left: 24px;
+    position: relative;
+    font-size: 13px;
+  }
+
+  .feature-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .warning {
+    background: rgba(248, 81, 73, 0.1);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text);
+    margin-top: 12px;
+  }
+
+  code {
+    background: var(--bg3);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<a href="paper_database.html" class="back-link">← Back to Database</a>
+
+<div class="header">
+  <h1>📎 Bookmarklet Setup</h1>
+  <p class="subtitle">Add papers to your SCQ database with one click</p>
+</div>
+
+<div class="section">
+  <h2>Installation</h2>
+  <div class="instructions">
+    <strong>Step 1:</strong> Drag the button below to your browser's bookmarks bar.
+  </div>
+  <a href="javascript:(function(){function e(t){let a=document.querySelector(`meta[name=&quot;${t}&quot;]`)||document.querySelector(`meta[property=&quot;${t}&quot;]`);return a?a.getAttribute('content'):''}let t=e('citation_doi')||e('DC.identifier'),a=e('citation_title')||document.title,i=e('citation_author')||e('author'),n=e('citation_abstract')||e('description')||'',r=window.location.href,o={url:r,title:a,authors:i?[i]:[],abstract:n,doi:t,source:'webpage'},c=/arxiv\.org\/abs\/(\d{4}\.\d{4,5})/i.exec(r);if(c&&(o.arxivId=c[1]),!o.doi&&!o.arxivId)return alert('No arXiv ID or DOI found on this page.');fetch('http://localhost:8080/api/bookmarklet',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}).then(()=>{let e=document.createElement('div');e.textContent='✓ Sent to SCQ Database',e.style.cssText='position:fixed;top:16px;right:16px;background:#3fb950;color:white;padding:12px 16px;border-radius:6px;font-family:system-ui;font-size:14px;z-index:999999;box-shadow:0 2px 8px rgba(0,0,0,0.3)',document.body.appendChild(e),setTimeout(()=>e.remove(),2500)}).catch(t=>{console.error('Bookmarklet error:',t);let a=document.createElement('div');a.textContent='✗ Error sending to database',a.style.cssText='position:fixed;top:16px;right:16px;background:#f85149;color:white;padding:12px 16px;border-radius:6px;font-family:system-ui;font-size:14px;z-index:999999;box-shadow:0 2px 8px rgba(0,0,0,0.3)',document.body.appendChild(a),setTimeout(()=>a.remove(),2500)})})();" class="bookmarklet-link">
+    📎 Add to SCQ
+  </a>
+  <div class="instructions" style="margin-top: 16px;">
+    <strong>Step 2:</strong> When you're on an arXiv abstract page or a webpage with citation metadata, click the bookmark to send it to your database.
+  </div>
+</div>
+
+<div class="section">
+  <h2>What It Does</h2>
+  <ul class="feature-list">
+    <li>Detects arXiv page URLs (arxiv.org/abs/...)</li>
+    <li>Extracts DOI from <code>&lt;meta&gt;</code> tags</li>
+    <li>Captures page title, authors, and abstract</li>
+    <li>Sends metadata to the SCQ database</li>
+    <li>Shows success/error notification</li>
+  </ul>
+  <div class="warning">
+    <strong>Note:</strong> The bookmarklet requires the SCQ database server to be running at
+    <code>http://localhost:8080</code>. Make sure you've launched it with <code>START.bat</code> or
+    <code>python serve.py</code>.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Test on This Page</h2>
+  <p>Click the button below to see what metadata the bookmarklet would capture from this page.</p>
+  <button class="test-button" onclick="testBookmarklet()">Test Capture</button>
+  <div id="test-result"></div>
+</div>
+
+<div class="section">
+  <h2>Workflow</h2>
+  <p>
+    <strong>For arXiv papers:</strong> Click the bookmark on the abstract page to queue it for full processing.
+    The system will fetch the PDF and extract metadata automatically.
+  </p>
+  <p>
+    <strong>For journal articles:</strong> If the page has a DOI in its metadata, the bookmark will capture it.
+    You can then use the database's search or import tools to fetch the full paper details.
+  </p>
+  <p>
+    <strong>Processing:</strong> After clicking the bookmark, the paper is queued in the <code>inbox/</code>
+    folder. Use the "Import" button in the database's More menu to process queued papers.
+  </p>
+</div>
+
+<script>
+function testBookmarklet() {
+  const resultDiv = document.getElementById('test-result');
+
+  function getMetaTag(name) {
+    let elem = document.querySelector(`meta[name="${name}"]`) ||
+               document.querySelector(`meta[property="${name}"]`);
+    return elem ? elem.getAttribute("content") : "";
+  }
+
+  const doi = getMetaTag("citation_doi") ||
+              getMetaTag("DC.identifier") ||
+              getMetaTag("doi");
+  const title = getMetaTag("citation_title") ||
+                getMetaTag("og:title") ||
+                document.title;
+  const author = getMetaTag("citation_author") ||
+                 getMetaTag("author");
+  const abstract = getMetaTag("citation_abstract") ||
+                   getMetaTag("description") ||
+                   "(none)";
+  const url = window.location.href;
+
+  const payload = {
+    url: url,
+    title: title,
+    authors: author ? [author] : [],
+    abstract: abstract,
+    doi: doi || null,
+    source: "webpage"
+  };
+
+  const arxivMatch = /arxiv\.org\/abs\/(\d{4}\.\d{4,5})/i.exec(url);
+  if (arxivMatch) {
+    payload.arxivId = arxivMatch[1];
+  }
+
+  resultDiv.className = 'test-result';
+  resultDiv.textContent = JSON.stringify(payload, null, 2);
+}
+</script>
+
+</body>
+</html>
