@@ -21,7 +21,9 @@ Usage:
 import argparse
 import json
 import os
+import random
 import re
+import socket
 import sys
 import smtplib
 import time
@@ -129,51 +131,104 @@ ARXIV_API = "http://arxiv.org/api/query"
 ARXIV_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
 
 
+def _arxiv_get(url, label, max_retries=5):
+    """Fetch a URL from arXiv with polite retries.
+
+    Retries on HTTP 429, 5xx, socket timeouts, and transient URL errors. Honors
+    the server's Retry-After header when present; otherwise uses exponential
+    backoff with jitter.
+    """
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": "SCQDigest/1.0 (paige.e.quarterman@gmail.com)"
+            })
+            resp = urllib.request.urlopen(req, timeout=60)
+            return resp.read()
+        except urllib.error.HTTPError as e:
+            retryable = e.code == 429 or 500 <= e.code < 600
+            if not retryable or attempt == max_retries - 1:
+                print(f"  Warning: Failed to fetch {label}: {e}")
+                return None
+            retry_after = e.headers.get("Retry-After") if e.headers else None
+            try:
+                wait = float(retry_after) if retry_after else 0
+            except ValueError:
+                wait = 0
+            if wait <= 0:
+                wait = min(120, 5 * (2 ** attempt))
+            wait += random.uniform(0, wait * 0.25)  # jitter
+            print(f"  HTTP {e.code} on {label}, retrying in {wait:.0f}s "
+                  f"(attempt {attempt + 1}/{max_retries})...")
+            time.sleep(wait)
+        except (urllib.error.URLError, socket.timeout) as e:
+            if attempt == max_retries - 1:
+                print(f"  Warning: Failed to fetch {label}: {e}")
+                return None
+            wait = min(120, 5 * (2 ** attempt))
+            wait += random.uniform(0, wait * 0.25)
+            print(f"  Network error on {label} ({e}), retrying in {wait:.0f}s "
+                  f"(attempt {attempt + 1}/{max_retries})...")
+            time.sleep(wait)
+        except Exception as e:
+            print(f"  Warning: Failed to fetch {label}: {e}")
+            return None
+    return None
+
+
 def fetch_arxiv_papers(categories, days_back=1, max_results=200):
-    """Fetch recent papers from arXiv API for given categories."""
+    """Fetch recent papers from arXiv API for the given categories.
+
+    Uses a single OR'd query across all categories so we burn one rate-limit
+    budget rather than five. Falls back to per-category requests (with a polite
+    inter-request delay) if the combined query fails.
+    """
     papers = []
     seen_ids = set()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-    for cat in categories:
-        # Build query: category + date range
-        query = f"cat:{cat}"
-        params = {
-            "search_query": query,
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-            "max_results": str(max_results),
-        }
-        url = ARXIV_API + "?" + urllib.parse.urlencode(params)
+    # Combined OR query — one request for all categories
+    combined_query = " OR ".join(f"cat:{c}" for c in categories)
+    combined_max = max(max_results, max_results * len(categories) // 2, 500)
+    params = {
+        "search_query": combined_query,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+        "max_results": str(combined_max),
+    }
+    url = ARXIV_API + "?" + urllib.parse.urlencode(params)
+    xml_data = _arxiv_get(url, "combined query")
 
-        # Retry with exponential backoff for rate limits (429)
-        xml_data = None
-        max_retries = 4
-        for attempt in range(max_retries):
+    roots = []
+    if xml_data is not None:
+        try:
+            roots.append(ET.fromstring(xml_data))
+        except ET.ParseError as e:
+            print(f"  Warning: Failed to parse combined response: {e}")
+            xml_data = None
+
+    if xml_data is None:
+        # Fallback: per-category with polite 3s delay between requests
+        print("  Falling back to per-category fetches...")
+        for i, cat in enumerate(categories):
+            if i > 0:
+                time.sleep(3)  # arXiv API guideline: ~3s between requests
+            params = {
+                "search_query": f"cat:{cat}",
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+                "max_results": str(max_results),
+            }
+            cat_url = ARXIV_API + "?" + urllib.parse.urlencode(params)
+            cat_xml = _arxiv_get(cat_url, cat)
+            if cat_xml is None:
+                continue
             try:
-                req = urllib.request.Request(url, headers={
-                    "User-Agent": "SCQDigest/1.0 (paige.e.quarterman@gmail.com)"
-                })
-                resp = urllib.request.urlopen(req, timeout=30)
-                xml_data = resp.read()
-                break  # Success
-            except urllib.error.HTTPError as e:
-                if e.code == 429 and attempt < max_retries - 1:
-                    wait = [10, 30, 60, 120][attempt]
-                    print(f"  Rate limited on {cat}, retrying in {wait}s (attempt {attempt + 1}/{max_retries})...")
-                    time.sleep(wait)
-                else:
-                    print(f"  Warning: Failed to fetch {cat}: {e}")
-                    break
-            except Exception as e:
-                print(f"  Warning: Failed to fetch {cat}: {e}")
-                break
-        if xml_data is None:
-            continue
+                roots.append(ET.fromstring(cat_xml))
+            except ET.ParseError as e:
+                print(f"  Warning: Failed to parse {cat}: {e}")
 
-        root = ET.fromstring(xml_data)
-
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
-
+    for root in roots:
         for entry in root.findall("atom:entry", ARXIV_NS):
             # Parse published date
             published_str = entry.findtext("atom:published", "", ARXIV_NS)
@@ -230,9 +285,9 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
                 "abs_url": f"https://arxiv.org/abs/{arxiv_id}",
             })
 
-        print(f"  {cat}: found {sum(1 for p in papers if cat in p.get('categories', []))} papers")
-        # Be polite to arXiv API
-        time.sleep(3)
+    for cat in categories:
+        n = sum(1 for p in papers if cat in p.get("categories", []))
+        print(f"  {cat}: {n} papers")
 
     return papers
 
@@ -950,12 +1005,12 @@ def main():
         papers = fetch_arxiv_papers(ARXIV_CATEGORIES, days_back=days_back, max_results=args.max_results)
 
     if not papers:
-        print("\nNo new papers found.")
-        return
-
-    # Rank by relevance
-    print(f"\nRanking {len(papers)} papers...")
-    papers = rank_papers(papers)
+        print("\nNo new papers found — sending empty digest so the run is visible.")
+        papers = []
+    else:
+        # Rank by relevance
+        print(f"\nRanking {len(papers)} papers...")
+        papers = rank_papers(papers)
 
     relevant = sum(1 for p in papers if p["relevance_score"] >= 5)
     print(f"  {relevant} papers match SCQ keywords")
