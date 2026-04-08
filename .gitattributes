@@ -1,0 +1,18 @@
+# Normalize line endings across the repo.
+# Files are stored as LF in the index; Windows checkouts keep LF too,
+# which stops CRLF/LF churn when the same file is edited on both platforms.
+* text=auto eol=lf
+
+# Binary files should never be line-ending normalized.
+*.pdf    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.db     binary
+*.sqlite binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary

@@ -22,7 +22,23 @@ node_modules/
 # Auto-memory (Cowork session state)
 .auto-memory/
 
+# Overleaf sync (Git cloned repo — don't track)
+.overleaf/
+
 # Editor
 *.swp
 *.swo
 *~
+
+# Claude local settings
+.claude/settings.local.json
+
+# Personal launcher with hardcoded Windows paths
+tools/run_digest.bat
+
+# Scratch files from ad-hoc GitHub API updates
+tools/update_digest.json
+tools/update_workflow.json
+
+# Inbox runtime state
+inbox/processed/
