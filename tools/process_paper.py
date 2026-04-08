@@ -106,6 +106,113 @@ def short_author(authors):
     return f"{last} et al." if len(authors) > 1 else last
 
 
+# ─── CrossRef DOI lookup ──────────────────────────────────────────
+
+def lookup_doi(doi):
+    """Fetch metadata from CrossRef API for a given DOI.
+    Returns dict with: title, authors, short_authors, year, journal,
+    volume, pages, doi, cite_bib, cite_txt
+    Returns None on network error or invalid DOI."""
+    try:
+        import urllib.request
+        import urllib.error
+        import json
+
+        url = f"https://api.crossref.org/works/{doi}"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "Accept": "application/json",
+        })
+
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+
+        if not data.get('message'):
+            return None
+
+        msg = data['message']
+        title = msg.get('title', [''])[0] if isinstance(msg.get('title'), list) else msg.get('title', '')
+        authors = [f"{a.get('given', '')} {a.get('family', '')}".strip()
+                   for a in msg.get('author', [])]
+        year = msg.get('published', {}).get('date-parts', [[None]])[0][0] or date.today().year
+        journal = msg.get('container-title', [''])[0] if isinstance(msg.get('container-title'), list) else msg.get('container-title', '')
+        volume = msg.get('volume', '')
+        pages = msg.get('page', '')
+
+        # Generate citations
+        cite_bib_key, cite_bib = _make_doi_bibtex(doi, title, authors, year, journal, volume, pages)
+        cite_txt = _make_doi_plain_cite(authors, title, journal, volume, pages, year, doi)
+
+        return {
+            'title': title,
+            'authors': authors,
+            'short_authors': short_author(authors),
+            'year': year,
+            'journal': journal,
+            'volume': volume,
+            'pages': pages,
+            'doi': doi,
+            'cite_bib': cite_bib,
+            'cite_txt': cite_txt
+        }
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as e:
+        print(f"  [warn] DOI lookup failed for {doi}: {e}")
+        return None
+    except Exception as e:
+        print(f"  [warn] Unexpected error in DOI lookup: {e}")
+        return None
+
+
+def _make_doi_bibtex(doi, title, authors, year, journal, volume, pages):
+    """Generate BibTeX entry from CrossRef metadata."""
+    first_last = authors[0].split()[-1].lower() if authors else "unknown"
+    title_word = re.sub(r"[^a-z]", "", title.split()[0].lower() if title else "article")
+    key = f"{first_last}{year}{title_word}"
+
+    # Format author list: "Last, First and Last, First"
+    bib_authors = []
+    for a in authors:
+        parts = a.strip().split()
+        if len(parts) >= 2:
+            bib_authors.append(f"{parts[-1]}, {' '.join(parts[:-1])}")
+        else:
+            bib_authors.append(a)
+
+    bib = f"""@article{{{key},
+  title     = {{{title}}},
+  author    = {{{' and '.join(bib_authors)}}},
+  journal   = {{{journal}}},
+  volume    = {{{volume}}},
+  pages     = {{{pages}}},
+  year      = {{{year}}},
+  doi       = {{{doi}}}
+}}"""
+    return key, bib
+
+
+def _make_doi_plain_cite(authors, title, journal, volume, pages, year, doi):
+    """Generate plain-text citation in Physical Review style from CrossRef data."""
+    # Format: F. M. Last
+    formatted = []
+    for a in authors:
+        parts = a.strip().split()
+        if len(parts) >= 2:
+            initials = " ".join(p[0] + "." for p in parts[:-1])
+            formatted.append(f"{initials} {parts[-1]}")
+        else:
+            formatted.append(a)
+
+    if len(formatted) > 2:
+        author_str = ", ".join(formatted[:-1]) + ", and " + formatted[-1]
+    elif len(formatted) == 2:
+        author_str = " and ".join(formatted)
+    else:
+        author_str = formatted[0] if formatted else "Unknown"
+
+    pages_str = f", {pages}" if pages else ""
+    return f'{author_str}, "{title}," {journal} {volume}{pages_str} ({year}). https://doi.org/{doi}'
+
+
 # ─── Figure extraction ────────────────────────────────────────────
 
 def extract_figures(pdf_path, arxiv_id, prefix):
@@ -259,20 +366,126 @@ def append_txt(plain_cite, arxiv_id):
     print(f"  references.txt: appended as [{next_num}]")
 
 
+# ─── DOI processing ───────────────────────────────────────────────
+
+def _process_doi(doi, note):
+    """Process a paper using CrossRef metadata from a DOI."""
+    print(f"\n{'='*60}")
+    print(f"Fetching from CrossRef: {doi}")
+    print(f"{'='*60}")
+
+    # Fetch metadata
+    print("\n[1/4] Looking up DOI metadata...")
+    meta = lookup_doi(doi)
+    if not meta:
+        print("ERROR: Could not fetch DOI metadata")
+        sys.exit(1)
+
+    print(f"  Title: {meta['title']}")
+    print(f"  Authors: {meta['short_authors']}")
+    print(f"  Year: {meta['year']}")
+
+    # Load or create database
+    conn, tmp_db = load_db()
+
+    # Generate entry ID from DOI
+    entry_id = doi.replace("/", "-").replace(".", "_")[:50]
+
+    # Build tags from title/journal
+    tags = []
+    text_to_scan = f"{meta['title']} {meta['journal']}"
+    kw_tags = {
+        r"josephson": "Josephson junctions",
+        r"transmon": "transmon",
+        r"qubit": "qubits",
+        r"resonator": "resonators",
+        r"tantalum|\\bTa\\b": "tantalum",
+        r"niobium|\\bNb\\b": "niobium",
+        r"loss|quality factor|Q\s*factor": "loss/coherence",
+        r"diode": "Josephson diode",
+        r"review": "review",
+        r"kinetic inductance": "kinetic inductance",
+        r"two.level system|TLS": "TLS",
+        r"surface": "surface losses",
+    }
+    for pattern, tag in kw_tags.items():
+        if re.search(pattern, text_to_scan, re.IGNORECASE) and tag not in tags:
+            tags.append(tag)
+
+    # Insert into database
+    print("\n[2/4] Inserting into database...")
+    pdf_rel = ""  # No PDF for published papers (unless downloaded separately)
+    insert_paper(conn, {
+        'title': meta['title'],
+        'authors': meta['authors'],
+        'published': f"{meta['year']}-01-01",
+        'arxiv_id': '',
+        'categories': [],
+        'abstract': meta['journal']
+    }, meta['title'], [], tags, '', meta['cite_bib'], meta['cite_txt'], pdf_rel, note)
+
+    # Update the paper entry with published metadata
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE papers
+        SET journal = ?, volume = ?, pages = ?, doi = ?, entry_type = 'published'
+        WHERE id = ?
+    """, (meta['journal'], meta['volume'], meta['pages'], meta['doi'], entry_id))
+    conn.commit()
+    conn.close()
+
+    print(f"  Paper inserted with entry_type='published'")
+
+    # 3. Update citation files
+    print("\n[3/4] Updating citation files...")
+    append_bib(meta['cite_bib'], entry_id)
+    append_txt(meta['cite_txt'], entry_id)
+
+    # 4. Re-export DB
+    print("\n[4/4] Re-exporting database...")
+    export_db(tmp_db)
+
+    # Clean up temp DB
+    if tmp_db.name == ".scq_tmp.db":
+        tmp_db.unlink(missing_ok=True)
+
+    # Print summary
+    print(f"\n{'='*60}")
+    print(f"DONE — {doi} added to database")
+    print(f"  Title:   {meta['title']}")
+    print(f"  Authors: {meta['short_authors']}")
+    print(f"  Journal: {meta['journal']}")
+    print(f"  Tags:    {tags}")
+    if note:
+        print(f"  Note:    {note}")
+    print(f"{'='*60}")
+
+
 # ─── Main ─────────────────────────────────────────────────────────
 
 def main():
     if len(sys.argv) < 2:
         print("Usage: python3 tools/process_paper.py <arxiv_id> [--note \"...\"]")
-        print("       Reads inbox/<arxiv_id>_meta.json (from fetch_arxiv.js)")
+        print("       python3 tools/process_paper.py --doi <doi> [--note \"...\"]")
+        print("       Reads inbox/<arxiv_id>_meta.json (from fetch_arxiv.js) or fetches from CrossRef")
         sys.exit(1)
 
-    arxiv_id = sys.argv[1]
     note = ""
     if "--note" in sys.argv:
         idx = sys.argv.index("--note")
         if idx + 1 < len(sys.argv):
             note = sys.argv[idx + 1]
+
+    # Check if processing a DOI instead of arXiv ID
+    if sys.argv[1] == "--doi":
+        if len(sys.argv) < 3:
+            print("ERROR: --doi requires a DOI argument")
+            sys.exit(1)
+        doi = sys.argv[2]
+        _process_doi(doi, note)
+        return
+
+    arxiv_id = sys.argv[1]
 
     # Load metadata
     meta_path = INBOX_DIR / f"{arxiv_id}_meta.json"
@@ -378,6 +591,28 @@ def main():
     # Clean up temp DB
     if tmp_db.name == ".scq_tmp.db":
         tmp_db.unlink(missing_ok=True)
+
+    # 7. Auto-sync to Overleaf if configured
+    overleaf_config_path = PROJECT_DIR / ".overleaf" / "config.json"
+    if overleaf_config_path.exists():
+        try:
+            with open(overleaf_config_path) as f:
+                overleaf_config = json.load(f)
+            if overleaf_config.get("auto_sync", False):
+                print("\n[6/5] Auto-syncing to Overleaf...")
+                sync_script = SCRIPT_DIR / "overleaf_sync.py"
+                result = subprocess.run(
+                    [sys.executable, str(sync_script)],
+                    capture_output=True, text=True, timeout=60
+                )
+                if result.returncode == 0:
+                    print("  Overleaf sync successful")
+                else:
+                    print(f"  Warning: Overleaf sync failed (run manually: python tools/overleaf_sync.py)")
+                    if result.stderr:
+                        print(f"  Error: {result.stderr[:200]}")
+        except Exception as e:
+            print(f"  Warning: Could not auto-sync to Overleaf: {e}")
 
     # Print summary
     print(f"\n{'='*60}")

@@ -25,6 +25,8 @@ import time
 import urllib.request
 import urllib.parse
 import urllib.error
+import json
+from datetime import datetime
 
 PORT = 8080
 
@@ -133,8 +135,25 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/arxiv"):
             self._proxy_arxiv()
+        elif self.path.startswith("/api/crossref/"):
+            self._proxy_crossref()
         else:
             super().do_GET()
+
+    def do_POST(self):
+        if self.path == "/api/bookmarklet":
+            self._handle_bookmarklet()
+        elif self.path == "/api/upload-pdf":
+            self._handle_pdf_upload()
+        else:
+            self.send_error(404)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
     def _proxy_arxiv(self):
         """Forward request to arXiv API with proper headers."""
@@ -178,6 +197,253 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(f"Proxy error: {e}".encode())
+
+    def _proxy_crossref(self):
+        """Forward request to CrossRef API with proper headers.
+        Path format: /api/crossref/10.1103/PhysRevLett.130.267001
+        """
+        # Extract DOI from path: /api/crossref/<doi>
+        parts = urllib.parse.urlparse(self.path)
+        # Remove /api/crossref/ prefix to get the DOI
+        doi = parts.path.replace("/api/crossref/", "", 1)
+
+        if not doi:
+            self.send_error(400, "Missing DOI")
+            return
+
+        target = f"https://api.crossref.org/works/{urllib.parse.quote(doi)}"
+        req = urllib.request.Request(target, headers={
+            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "Accept": "application/json",
+        })
+
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                ct = resp.headers.get("Content-Type", "application/json")
+                self.send_header("Content-Type", ct)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            body = e.read() if hasattr(e, "read") else b""
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error_msg = f'{{"error": "CrossRef API returned {e.code}: {e.reason}"}}'
+            self.wfile.write(error_msg.encode())
+        except Exception as e:
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error_msg = f'{{"error": "Proxy error: {e}"}}'
+            self.wfile.write(error_msg.encode())
+
+    def _handle_bookmarklet(self):
+        """Handle bookmarklet POST requests.
+
+        Receives JSON payload with paper metadata:
+          {url, title, arxivId, doi, authors, abstract, source}
+
+        Saves to inbox/bookmarklet_<timestamp>.json for later import.
+        """
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length > 1048576:  # 1 MB limit
+                self.send_response(413)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error": "Payload too large"}')
+                return
+
+            body = self.rfile.read(content_length)
+            payload = json.loads(body.decode('utf-8'))
+
+            # Create inbox directory if needed
+            inbox_dir = os.path.join(os.path.dirname(__file__), "inbox")
+            os.makedirs(inbox_dir, exist_ok=True)
+
+            # Save to timestamped JSON file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"bookmarklet_{timestamp}.json"
+            filepath = os.path.join(inbox_dir, filename)
+
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+
+            # Success response
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response = {
+                "status": "ok",
+                "message": "Paper queued for import",
+                "file": filename
+            }
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"error": "Invalid JSON"}')
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error = {"error": f"Server error: {str(e)}"}
+            self.wfile.write(json.dumps(error).encode('utf-8'))
+
+    def _handle_pdf_upload(self):
+        """Handle PDF file uploads via drag-and-drop or file picker.
+
+        Expects multipart/form-data with a single file field named 'pdf'.
+        Saves the PDF to papers/ directory and returns metadata.
+        """
+        import re
+        try:
+            content_type = self.headers.get("Content-Type", "")
+            content_length = int(self.headers.get("Content-Length", 0))
+
+            # Sanity check: reject oversized files (>100 MB)
+            if content_length > 104857600:
+                self.send_response(413)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error": "File too large (max 100 MB)"}')
+                return
+
+            # Parse multipart/form-data
+            if "multipart/form-data" not in content_type:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error": "Expected multipart/form-data"}')
+                return
+
+            # Extract boundary from Content-Type header
+            boundary_match = re.search(r'boundary=([^;\s]+)', content_type)
+            if not boundary_match:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error": "Missing boundary in Content-Type"}')
+                return
+
+            boundary = boundary_match.group(1).strip('"')
+            body = self.rfile.read(content_length)
+
+            # Parse the multipart body
+            parts = body.split(f'--{boundary}'.encode())
+            pdf_data = None
+            original_filename = "document"
+
+            for part in parts:
+                if b'Content-Disposition' not in part:
+                    continue
+
+                # Extract filename if present
+                filename_match = re.search(rb'filename="([^"]+)"', part)
+                if filename_match:
+                    original_filename = filename_match.group(1).decode('utf-8', errors='replace')
+                    # Extract just the filename without path
+                    original_filename = os.path.basename(original_filename)
+
+                # Content after the headers (separated by blank line)
+                if b'\r\n\r\n' in part:
+                    content_start = part.index(b'\r\n\r\n') + 4
+                    content_end = part.rfind(b'\r\n')
+                    pdf_data = part[content_start:content_end] if content_end > content_start else part[content_start:]
+                elif b'\n\n' in part:
+                    content_start = part.index(b'\n\n') + 2
+                    content_end = part.rfind(b'\n')
+                    pdf_data = part[content_start:content_end] if content_end > content_start else part[content_start:]
+
+                if pdf_data:
+                    break
+
+            if not pdf_data:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(b'{"error": "No file data found"}')
+                return
+
+            # Sanitize filename
+            safe_name = re.sub(r'[^a-zA-Z0-9._\- ]', '_', original_filename)
+            if not safe_name.lower().endswith('.pdf'):
+                safe_name += '.pdf'
+
+            # Ensure papers directory exists
+            papers_dir = os.path.join(os.path.dirname(__file__), "papers")
+            os.makedirs(papers_dir, exist_ok=True)
+
+            # Check for duplicate filename
+            filepath = os.path.join(papers_dir, safe_name)
+            counter = 1
+            base_name, ext = os.path.splitext(safe_name)
+            while os.path.exists(filepath):
+                safe_name = f"{base_name}_{counter}{ext}"
+                filepath = os.path.join(papers_dir, safe_name)
+                counter += 1
+
+            # Save the PDF
+            with open(filepath, 'wb') as f:
+                f.write(pdf_data)
+
+            # Create metadata entry in inbox
+            inbox_dir = os.path.join(os.path.dirname(__file__), "inbox")
+            os.makedirs(inbox_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")[:-3]
+            meta_filename = f"upload_{timestamp}.json"
+            meta_filepath = os.path.join(inbox_dir, meta_filename)
+
+            metadata = {
+                "original_filename": original_filename,
+                "saved_filename": safe_name,
+                "pdf_path": os.path.join("papers", safe_name),
+                "upload_time": datetime.now().isoformat(),
+                "file_size": len(pdf_data),
+                "status": "awaiting_processing"
+            }
+
+            with open(meta_filepath, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+            # Success response
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            response = {
+                "status": "ok",
+                "filename": safe_name,
+                "path": os.path.join("papers", safe_name),
+                "size": len(pdf_data),
+                "metadata_file": meta_filename
+            }
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error = {"error": f"Upload failed: {str(e)}"}
+            self.wfile.write(json.dumps(error).encode('utf-8'))
 
 server = http.server.HTTPServer(("127.0.0.1", port), SCQHandler)
 
