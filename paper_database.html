@@ -458,6 +458,32 @@
     border: none; border-radius: 0; background: transparent; color: var(--text2); cursor: pointer;
   }
   .toolbar-more-menu button:hover { background: var(--bg3); color: var(--text); }
+  .toolbar-more-divider {
+    height: 1px; background: var(--border); margin: 4px 0;
+  }
+
+  /* Analytics dashboard */
+  .analytics-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:250;display:flex;align-items:center;justify-content:center; }
+  .analytics-panel { background:var(--bg1);border-radius:12px;width:90vw;max-width:1000px;max-height:85vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+  .analytics-header { display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border); }
+  .analytics-header h2 { margin:0;font-size:18px;font-weight:600; }
+  .analytics-header .close-btn { background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center; }
+  .analytics-header .close-btn:hover { color:var(--text); }
+  .analytics-body { padding:20px; }
+  .analytics-summary { display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:24px; }
+  .analytics-card { background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center; }
+  .analytics-card .big-number { font-size:32px;font-weight:700;color:var(--accent); }
+  .analytics-card .card-label { font-size:11px;color:var(--text3);margin-top:4px; }
+  .analytics-card .progress-bar { height:4px;background:var(--border);border-radius:2px;margin-top:8px; }
+  .analytics-card .progress-fill { height:100%;background:var(--green);border-radius:2px; }
+  .analytics-charts { display:grid;grid-template-columns:1fr 1fr;gap:20px; }
+  .analytics-chart { background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px; }
+  .analytics-chart h4 { margin:0 0 12px;font-size:13px;color:var(--text2); }
+  .chart-bars { display:flex;flex-direction:column;gap:6px; }
+  .chart-bar-row { display:flex;align-items:center;gap:8px; }
+  .chart-label { font-size:11px;color:var(--text2);min-width:100px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .chart-bar { height:16px;border-radius:3px;min-width:2px;transition:width 0.3s; }
+  .chart-value { font-size:11px;color:var(--text3);min-width:24px; }
 
   /* Export collection .bib button */
   .sidebar-export-btn {
@@ -797,8 +823,398 @@
   display: flex; gap: 6px; flex-wrap: wrap;
 }
 
+/* === INBOX STYLES === */
+.inbox-container {
+  padding: 24px;
+}
+
+.inbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.inbox-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inbox-title-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.inbox-count {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.inbox-bulk-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inbox-content {
+  display: grid;
+  gap: 16px;
+}
+
+.inbox-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+  background: var(--bg2);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+
+.inbox-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  transition: all 0.15s;
+}
+
+.inbox-card:hover {
+  border-color: var(--accent2);
+  background: var(--bg3);
+}
+
+.inbox-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.inbox-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.inbox-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.inbox-action-badge.add {
+  background: rgba(63, 185, 80, 0.2);
+  color: var(--green);
+}
+
+.inbox-action-badge.star {
+  background: rgba(210, 153, 34, 0.2);
+  color: var(--orange);
+}
+
+.inbox-card-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.inbox-arxiv-id {
+  color: var(--accent);
+  text-decoration: none;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.inbox-arxiv-id:hover {
+  text-decoration: underline;
+}
+
+.inbox-authors {
+  color: var(--text2);
+}
+
+.inbox-abstract {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.inbox-abstract.collapsed {
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.inbox-abstract-expand {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.inbox-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.inbox-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--accent);
+}
+
+.inbox-tag-remove {
+  cursor: pointer;
+  font-weight: 700;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.inbox-tag-remove:hover {
+  opacity: 1;
+}
+
+.inbox-priority {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inbox-priority-label {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.inbox-priority-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.inbox-star {
+  cursor: pointer;
+  font-size: 16px;
+  transition: opacity 0.15s;
+  opacity: 0.4;
+}
+
+.inbox-star.active,
+.inbox-star:hover {
+  opacity: 1;
+}
+
+.inbox-note-field {
+  margin-bottom: 12px;
+}
+
+.inbox-note-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.inbox-note-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.inbox-note-input:focus {
+  border-color: var(--accent);
+}
+
+.inbox-card-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inbox-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.inbox-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent2);
+}
+
+.inbox-btn.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.inbox-btn.danger:hover {
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.inbox-success {
+  padding: 8px 12px;
+  background: rgba(63, 185, 80, 0.1);
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* ── Tablet & Mobile Responsive ── */
+@media (max-width: 1024px) {
+  /* Hide sidebar on tablet, make it toggleable */
+  .sidebar { display: none; position: fixed; left: 0; top: 0; bottom: 0; width: 260px; z-index: 100; background: var(--bg1); border-right: 1px solid var(--border); }
+  .sidebar.mobile-open { display: block; }
+  .main-content { margin-left: 0; }
+  .app-layout { grid-template-columns: 1fr; }
+
+  /* Stack controls */
+  .controls { flex-wrap: wrap; gap: 8px; }
+  .search-wrap { width: 100%; }
+  .filter-bar { overflow-x: auto; flex-wrap: nowrap; }
+
+  /* Cards take full width */
+  .paper-card { margin: 6px 0; }
+
+  /* Table scrolls horizontally */
+  .table-container { overflow-x: auto; }
+
+  /* Toolbar wraps */
+  .notes-toolbar { flex-wrap: wrap; gap: 6px; }
+
+  /* Tags bar scrolls */
+  .tag-bar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+}
+
+@media (max-width: 768px) {
+  /* Tab bar scrolls */
+  .main-tabs { overflow-x: auto; white-space: nowrap; }
+  .main-tab { padding: 8px 12px; font-size: 13px; }
+
+  /* Header compact */
+  h1 { font-size: 20px; }
+  .notes-toolbar { padding: 8px 12px; }
+  .notes-toolbar button { font-size: 11px; padding: 4px 8px; }
+
+  /* Reading list cards compact */
+  .reading-card { padding: 10px; }
+
+  /* Cite tab: stack preview */
+  .cite-layout { flex-direction: column; }
+  .cite-preview { width: 100%; max-height: 300px; }
+
+  /* Settings modal full-screen on mobile */
+  .settings-panel { width: 95vw; max-height: 90vh; margin: 5vh auto; }
+
+  /* Analytics responsive */
+  .analytics-summary { grid-template-columns: repeat(2, 1fr); }
+  .analytics-charts { grid-template-columns: 1fr; }
+  .analytics-panel { width: 95vw; }
+
+  /* Type bar wraps */
+  .type-bar { flex-wrap: wrap; gap: 4px; }
+}
+
+@media (max-width: 480px) {
+  body { padding: 0; }
+  .main-tabs { gap: 0; }
+  .main-tab { padding: 8px 8px; font-size: 12px; }
+  .paper-card h3 { font-size: 14px; }
+  .paper-meta { font-size: 11px; }
+  .controls { padding: 8px; }
+
+  /* Priority stars larger for touch */
+  .star-btn { font-size: 20px; padding: 4px; }
+
+  /* More menu full width */
+  .toolbar-more-menu { width: 100vw; left: 0; right: 0; }
+}
+
+/* ── Graph tab ── */
+.graph-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); gap:16px; flex-wrap:wrap; }
+.graph-controls { display:flex; gap:16px; align-items:center; font-size:12px; flex-wrap:wrap; }
+.graph-controls label { display:flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
+.graph-controls input[type="checkbox"] { cursor:pointer; width:16px; height:16px; }
+#graph-svg { background: var(--bg); border:1px solid var(--border); border-radius:var(--radius); margin:16px; display:block; }
+.graph-tooltip { position:absolute; padding:8px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; font-size:12px; max-width:300px; pointer-events:none; z-index:100; color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+.graph-node { cursor:pointer; }
+.graph-node:hover { filter: brightness(1.3); }
+.graph-node-label { font-size:10px; fill:var(--text2); pointer-events:none; text-anchor:middle; }
+.graph-edge { stroke-opacity:0.3; }
+.graph-legend { font-size:11px; padding:12px 16px; color:var(--text2); }
+.graph-legend-item { display:flex; align-items:center; gap:8px; margin:4px 0; }
+.graph-legend-color { width:12px; height:12px; border-radius:2px; }
+
+/* ── Drag and drop PDF import ── */
+.drop-overlay { position:fixed; inset:0; background:rgba(88,166,255,0.15); z-index:300; display:none; align-items:center; justify-content:center; pointer-events:none; }
+.drop-overlay.active { display:flex; }
+.drop-zone { background:var(--bg2); border:3px dashed var(--accent); border-radius:16px; padding:48px; text-align:center; color:var(--text); pointer-events:none; }
+.drop-zone svg { margin-bottom:16px; }
+.drop-zone h3 { margin:12px 0 4px; font-size:18px; font-weight:600; }
+.drop-zone p { color:var(--text3); font-size:13px; }
+
+.import-progress { position:fixed; bottom:24px; right:24px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:16px; max-width:400px; z-index:250; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+.import-progress h4 { margin:0 0 12px; font-size:13px; font-weight:600; color:var(--text); }
+.import-list { display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; }
+.import-item { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg); border-radius:6px; border:1px solid var(--border); font-size:12px; }
+.import-item-icon { flex-shrink:0; width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+.import-item-icon.loading { animation:spin 1s linear infinite; }
+.import-item-icon.success { color:var(--green); }
+.import-item-icon.error { color:var(--red); }
+.import-item-details { flex:1; min-width:0; }
+.import-item-name { font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.import-item-status { font-size:11px; color:var(--text3); }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 </head>
 <body>
 
@@ -822,10 +1238,18 @@
         <button onclick="exportJSON();closeMoreMenu()" title="Export state as JSON">Export JSON</button>
         <button onclick="document.getElementById('import-db-file').click();closeMoreMenu()" title="Restore from .db or .json">Import</button>
         <button onclick="document.getElementById('merge-db-file').click();closeMoreMenu()" title="Merge another .db" style="color:var(--accent)">Merge .db</button>
+        <div class="toolbar-more-divider"></div>
+        <button onclick="showAnalytics();closeMoreMenu()" title="View reading analytics">Reading analytics</button>
+        <button onclick="exportCollectionPackage(activeCollection || 'all');closeMoreMenu()" title="Export current collection as package" id="export-pkg-btn" style="display:none">Export collection package</button>
+        <button onclick="document.getElementById('import-package-file').click();closeMoreMenu()" title="Import a collection package">Import package</button>
+        <button onclick="openBatchImport();closeMoreMenu()" title="Batch import: pick folder or single PDF">Batch import PDFs</button>
+        <div class="toolbar-more-divider"></div>
+        <a href="bookmarklet.html" target="_blank" onclick="closeMoreMenu()" style="display:block;padding:8px 16px;color:var(--text);text-decoration:none;font-size:12px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">Bookmarklet setup</a>
       </div>
     </div>
     <input type="file" id="import-db-file" accept=".db,.json" style="display:none" onchange="importFile(event)">
     <input type="file" id="merge-db-file" accept=".db" style="display:none" onchange="mergeFile(event)">
+    <input type="file" id="import-package-file" accept=".json" style="display:none" onchange="importFile(event)">
   </div>
 </div>
 
@@ -853,7 +1277,9 @@
 <div class="main-tabs">
   <button class="main-tab active" onclick="switchMainTab('library')" id="mtab-library">Library</button>
   <button class="main-tab" onclick="switchMainTab('reading')" id="mtab-reading">Reading List <span class="tab-badge" id="reading-badge" style="display:none">0</span></button>
+  <button class="main-tab" onclick="switchMainTab('inbox')" id="mtab-inbox">Inbox <span class="tab-badge" id="inbox-badge" style="display:none">0</span></button>
   <button class="main-tab" onclick="switchMainTab('cite')" id="mtab-cite">Cite</button>
+  <button class="main-tab" onclick="switchMainTab('graph')" id="mtab-graph">Graph</button>
 </div>
 
 <!-- === TAB 1: Library (original content) === -->
@@ -936,8 +1362,55 @@
   </div>
 </div>
 
+<!-- === TAB 4: Graph === -->
+<div id="tab-graph" style="display:none">
+  <div class="graph-toolbar">
+    <span style="font-weight:600">Paper Connection Graph</span>
+    <div class="graph-controls">
+      <label><input type="checkbox" id="graph-show-authors" checked> Shared authors</label>
+      <label><input type="checkbox" id="graph-show-tags" checked> Shared tags (2+)</label>
+      <label><input type="checkbox" id="graph-show-groups" checked> Same group</label>
+      <label><input type="checkbox" id="graph-show-links" checked> Manual links</label>
+      <button onclick="renderGraph()" style="padding:6px 14px; border-radius:5px; border:1px solid var(--border); background:var(--accent2); color:#fff; font-weight:600; cursor:pointer;">Refresh</button>
+    </div>
+  </div>
+  <svg id="graph-svg" width="100%" height="600"></svg>
+  <div id="graph-tooltip" class="graph-tooltip" style="display:none"></div>
+</div>
+
+<!-- === TAB 5: Inbox === -->
+<div id="tab-inbox" style="display:none">
+  <div class="inbox-container">
+    <div class="inbox-header">
+      <div class="inbox-title-section">
+        <h2>Digest Inbox</h2>
+        <span class="inbox-count" id="inbox-count-display">0 papers pending</span>
+      </div>
+      <div class="inbox-bulk-actions">
+        <button class="action-btn" onclick="inboxImportFile()" title="Import pending_papers.json">Import from digest...</button>
+        <button class="action-btn" onclick="inboxImportAll()" id="inbox-import-all-btn" style="display:none">Import All</button>
+        <button class="action-btn" onclick="inboxImportStarred()" id="inbox-import-starred-btn" style="display:none">Import Starred Only</button>
+        <button class="action-btn" onclick="inboxClear()" id="inbox-clear-btn" style="display:none" style="color:var(--red)">Clear Inbox</button>
+      </div>
+    </div>
+    <input type="file" id="inbox-import-file" accept=".json" style="display:none" onchange="inboxFileSelected(event)">
+    <div id="inbox-content" class="inbox-content">
+      <div class="inbox-empty">No papers in inbox. Import a digest to get started.</div>
+    </div>
+  </div>
+</div>
+
 <div id="modal-root"></div>
 <div id="settings-overlay" class="settings-overlay" style="display:none" onclick="if(event.target===this)closeSettingsModal()"></div>
+<div class="analytics-overlay" id="analytics-overlay" style="display:none" onclick="if(event.target===this)closeAnalytics()">
+  <div class="analytics-panel">
+    <div class="analytics-header">
+      <h2>Reading Analytics</h2>
+      <button onclick="closeAnalytics()" class="close-btn">&times;</button>
+    </div>
+    <div class="analytics-body" id="analytics-body"></div>
+  </div>
+</div>
 <div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
   <img id="lb-img" src="">
   <div class="lightbox-caption" id="lb-caption"></div>
@@ -983,6 +1456,200 @@ document.addEventListener('click', e => {
   if (menu && !e.target.closest('.toolbar-more')) menu.classList.remove('open');
 });
 
+// ─── Analytics Dashboard ───
+function showAnalytics() {
+  const overlay = document.getElementById('analytics-overlay');
+  overlay.style.display = 'flex';
+  renderAnalyticsDashboard();
+}
+
+function closeAnalytics() {
+  document.getElementById('analytics-overlay').style.display = 'none';
+}
+
+function renderAnalyticsDashboard() {
+  try {
+    // Query database stats
+    const totalResult = SCQ.query("SELECT COUNT(*) as c FROM papers");
+    const totalPapers = totalResult?.[0]?.c || 0;
+
+    const readResult = SCQ.query("SELECT COUNT(*) as c FROM read_status WHERE is_read = 1");
+    const readPapers = readResult?.[0]?.c || 0;
+    const unreadPapers = totalPapers - readPapers;
+
+    const starResult = SCQ.query("SELECT COUNT(*) as c FROM read_status WHERE priority >= 1");
+    const starredPapers = starResult?.[0]?.c || 0;
+
+    const noteResult = SCQ.query("SELECT COUNT(DISTINCT paper_id) as c FROM notes WHERE content != '' AND content IS NOT NULL");
+    const notedPapers = noteResult?.[0]?.c || 0;
+
+    // Papers added over time (by month)
+    const addedByMonth = SCQ.query("SELECT substr(date_added, 1, 7) as month, COUNT(*) as c FROM papers WHERE date_added IS NOT NULL AND date_added != '' GROUP BY month ORDER BY month") || [];
+
+    // Tags distribution
+    const allPapers = SCQ.query("SELECT tags FROM papers WHERE tags IS NOT NULL AND tags != ''") || [];
+    const tagMap = {};
+    allPapers.forEach(p => {
+      try {
+        const tags = JSON.parse(p.tags);
+        if (Array.isArray(tags)) {
+          tags.forEach(tag => {
+            if (tag) tagMap[tag] = (tagMap[tag] || 0) + 1;
+          });
+        }
+      } catch (e) {}
+    });
+    const topTags = Object.entries(tagMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15);
+
+    // Papers by research group
+    const byGroup = SCQ.query("SELECT group_name, COUNT(*) as c FROM papers WHERE group_name IS NOT NULL AND group_name != '' GROUP BY group_name ORDER BY c DESC LIMIT 10") || [];
+
+    // Papers by year
+    const byYear = SCQ.query("SELECT year, COUNT(*) as c FROM papers WHERE year IS NOT NULL GROUP BY year ORDER BY year DESC LIMIT 15") || [];
+
+    // Priority distribution
+    const byPriority = SCQ.query("SELECT priority, is_read, COUNT(*) as c FROM read_status GROUP BY priority, is_read ORDER BY priority") || [];
+
+    // Render HTML
+    const body = document.getElementById('analytics-body');
+    let html = '';
+
+    // Summary cards
+    const readPercent = totalPapers > 0 ? Math.round((readPapers / totalPapers) * 100) : 0;
+    html += `
+      <div class="analytics-summary">
+        <div class="analytics-card">
+          <div class="big-number">${totalPapers}</div>
+          <div class="card-label">Total Papers</div>
+        </div>
+        <div class="analytics-card">
+          <div class="big-number">${readPapers}</div>
+          <div class="card-label">Read</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${readPercent}%"></div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="big-number">${starredPapers}</div>
+          <div class="card-label">Starred</div>
+        </div>
+        <div class="analytics-card">
+          <div class="big-number">${notedPapers}</div>
+          <div class="card-label">With Notes</div>
+        </div>
+      </div>
+    `;
+
+    // Charts in 2-column grid
+    html += '<div class="analytics-charts">';
+
+    // Papers Added Over Time
+    if (addedByMonth.length > 0) {
+      const maxCount = Math.max(...addedByMonth.map(d => d.c));
+      html += '<div class="analytics-chart"><h4>Papers Added Over Time</h4><div class="chart-bars">';
+      addedByMonth.forEach(d => {
+        const width = maxCount > 0 ? (d.c / maxCount) * 100 : 0;
+        html += `
+          <div class="chart-bar-row">
+            <span class="chart-label">${d.month}</span>
+            <div class="chart-bar" style="width:${width}%;background:var(--accent)"></div>
+            <span class="chart-value">${d.c}</span>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+    }
+
+    // Top Tags
+    if (topTags.length > 0) {
+      const maxTagCount = Math.max(...topTags.map(t => t[1]));
+      html += '<div class="analytics-chart"><h4>Top Tags</h4><div class="chart-bars">';
+      topTags.forEach(([tag, count]) => {
+        const width = maxTagCount > 0 ? (count / maxTagCount) * 100 : 0;
+        const truncated = tag.length > 20 ? tag.substring(0, 17) + '...' : tag;
+        html += `
+          <div class="chart-bar-row">
+            <span class="chart-label" title="${tag}">${truncated}</span>
+            <div class="chart-bar" style="width:${width}%;background:var(--green)"></div>
+            <span class="chart-value">${count}</span>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+    }
+
+    // Papers by Research Group
+    if (byGroup.length > 0) {
+      const maxGroupCount = Math.max(...byGroup.map(g => g.c));
+      html += '<div class="analytics-chart"><h4>Papers by Research Group</h4><div class="chart-bars">';
+      byGroup.forEach(g => {
+        const width = maxGroupCount > 0 ? (g.c / maxGroupCount) * 100 : 0;
+        const truncated = (g.group_name || 'Unknown').length > 20 ? (g.group_name || 'Unknown').substring(0, 17) + '...' : (g.group_name || 'Unknown');
+        html += `
+          <div class="chart-bar-row">
+            <span class="chart-label" title="${g.group_name || 'Unknown'}">${truncated}</span>
+            <div class="chart-bar" style="width:${width}%;background:var(--orange)"></div>
+            <span class="chart-value">${g.c}</span>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+    }
+
+    // Papers by Year
+    if (byYear.length > 0) {
+      const maxYearCount = Math.max(...byYear.map(y => y.c));
+      html += '<div class="analytics-chart"><h4>Papers by Year</h4><div class="chart-bars">';
+      byYear.forEach(y => {
+        const width = maxYearCount > 0 ? (y.c / maxYearCount) * 100 : 0;
+        html += `
+          <div class="chart-bar-row">
+            <span class="chart-label">${y.year || 'N/A'}</span>
+            <div class="chart-bar" style="width:${width}%;background:var(--blue)"></div>
+            <span class="chart-value">${y.c}</span>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+    }
+
+    // Reading Progress by Priority
+    if (byPriority.length > 0) {
+      html += '<div class="analytics-chart"><h4>Reading Progress by Priority</h4><div class="chart-bars">';
+      const priorityLabels = {0: 'Not Starred', 1: '1 Star', 2: '2 Stars', 3: '3 Stars'};
+      for (let p = 0; p <= 3; p++) {
+        const read = byPriority.find(d => d.priority === p && d.is_read === 1)?.c || 0;
+        const unread = byPriority.find(d => d.priority === p && d.is_read === 0)?.c || 0;
+        const total = read + unread;
+        if (total > 0) {
+          const readPercent = Math.round((read / total) * 100);
+          html += `
+            <div class="chart-bar-row">
+              <span class="chart-label">${priorityLabels[p]}</span>
+              <div class="chart-bar" style="width:${readPercent}%;background:var(--green)"></div>
+              <span class="chart-value">${read}/${total}</span>
+            </div>
+          `;
+        }
+      }
+      html += '</div></div>';
+    }
+
+    html += '</div>'; // Close analytics-charts
+
+    if (totalPapers === 0) {
+      html = '<div style="text-align:center;padding:40px;color:var(--text3)"><p>No papers yet. Add papers to see analytics.</p></div>';
+    }
+
+    body.innerHTML = html;
+  } catch (err) {
+    console.error('Analytics error:', err);
+    document.getElementById('analytics-body').innerHTML = '<p style="color:red">Error rendering analytics: ' + err.message + '</p>';
+  }
+}
+
 // ─── App state (populated from SQLite on init) ───
 let PAPERS = [];     // compatibility array — loaded from db
 let FIGS = {};       // figure key → file path — loaded from db
@@ -1002,6 +1669,226 @@ let pdfSearchHits = {};
 let activeCollection = null;
 let openDropdownId = null;
 let currentPdfSrc = "";
+
+// ─── Drag-and-drop PDF import ───
+let dragCounter = 0;
+
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  const overlay = document.getElementById('drop-overlay');
+  if (overlay) overlay.classList.add('active');
+});
+
+document.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter === 0) {
+    const overlay = document.getElementById('drop-overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+});
+
+document.addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  const overlay = document.getElementById('drop-overlay');
+  if (overlay) overlay.classList.remove('active');
+
+  if (e.dataTransfer && e.dataTransfer.files) {
+    handleDroppedFiles(e.dataTransfer.files);
+  }
+});
+
+async function handleDroppedFiles(files) {
+  const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'));
+
+  if (pdfFiles.length === 0) {
+    alert('No PDF files found. Please drag PDF files only.');
+    return;
+  }
+
+  // Show import progress panel
+  const progressPanel = document.getElementById('import-progress');
+  if (progressPanel) progressPanel.style.display = 'block';
+
+  const importList = document.getElementById('import-list');
+  if (importList) importList.innerHTML = '';
+
+  // Process each PDF
+  for (const file of pdfFiles) {
+    const itemId = `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (importList) {
+      const item = document.createElement('div');
+      item.id = itemId;
+      item.className = 'import-item';
+      item.innerHTML = `
+        <div class="import-item-icon loading">⟳</div>
+        <div class="import-item-details">
+          <div class="import-item-name">${escapeHtml(file.name)}</div>
+          <div class="import-item-status">Uploading...</div>
+        </div>
+      `;
+      importList.appendChild(item);
+    }
+
+    try {
+      // Extract text from first 2 pages to find arXiv ID or DOI
+      const firstPageText = await extractTextFromPDF(file, 2);
+      const arxivId = findArxivId(firstPageText);
+      const doi = findDOI(firstPageText);
+
+      // Upload the PDF
+      const uploadResponse = await uploadPDF(file);
+
+      if (!uploadResponse.ok) {
+        updateImportItem(itemId, 'error', `Upload failed: ${uploadResponse.statusText}`);
+        continue;
+      }
+
+      const result = await uploadResponse.json();
+
+      // Update status based on what was found
+      if (arxivId) {
+        updateImportItem(itemId, 'success', `Processing arXiv:${arxivId}`);
+        // Queue for async processing via process_paper.py
+        queuePaperForProcessing(arxivId, result.path);
+      } else if (doi) {
+        updateImportItem(itemId, 'success', `Lookup DOI: ${doi}`);
+        // TODO: Queue for DOI lookup via CrossRef
+      } else {
+        updateImportItem(itemId, 'success', `Uploaded: ${file.name}`);
+        // TODO: Queue for manual entry
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      updateImportItem(itemId, 'error', `Error: ${error.message}`);
+    }
+  }
+
+  // Auto-hide after 5 seconds if all succeeded
+  setTimeout(() => {
+    const items = document.querySelectorAll('.import-item-icon.error');
+    if (items.length === 0) {
+      setTimeout(() => {
+        if (progressPanel) progressPanel.style.display = 'none';
+      }, 3000);
+    }
+  }, 1000);
+}
+
+async function extractTextFromPDF(file, maxPages = 2) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let text = '';
+
+    for (let i = 1; i <= Math.min(maxPages, pdf.numPages); i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      text += textContent.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    return text;
+  } catch (error) {
+    console.error('PDF text extraction error:', error);
+    return '';
+  }
+}
+
+function findArxivId(text) {
+  // Match arXiv:YYMM.NNNNN (v1, v2, etc.) or arxiv.org/abs/YYMM.NNNNN
+  const patterns = [
+    /arXiv:(\d{4}\.\d{4,5})/i,
+    /arxiv\.org\/abs\/(\d{4}\.\d{4,5})/i,
+    /(\d{4}\.\d{4,5})/  // General YYMM.NNNNN pattern
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const id = match[1];
+      // Validate format: should be YYMM.NNNNN where YY is 00-99 and MM is 01-12
+      if (/^\d{4}\.\d{4,5}$/.test(id)) {
+        return id;
+      }
+    }
+  }
+
+  return null;
+}
+
+function findDOI(text) {
+  // Match DOI: 10.XXXX/YYYY or doi.org/10.XXXX/YYYY or just 10.XXXX/
+  const patterns = [
+    /doi:\s*(10\.\S+)/i,
+    /doi\.org\/(10\.\S+)/i,
+    /(10\.\d+\/[^\s]+)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let doi = match[1];
+      // Clean up common punctuation at the end
+      doi = doi.replace(/[.,;:)\]]*$/, '');
+      if (doi.startsWith('10.')) {
+        return doi;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function uploadPDF(file) {
+  const formData = new FormData();
+  formData.append('pdf', file);
+
+  return fetch('/api/upload-pdf', {
+    method: 'POST',
+    body: formData
+  });
+}
+
+function updateImportItem(itemId, status, statusText) {
+  const item = document.getElementById(itemId);
+  if (!item) return;
+
+  const icon = item.querySelector('.import-item-icon');
+  const statusEl = item.querySelector('.import-item-status');
+
+  if (status === 'success') {
+    icon.className = 'import-item-icon success';
+    icon.textContent = '✓';
+  } else if (status === 'error') {
+    icon.className = 'import-item-icon error';
+    icon.textContent = '✕';
+  }
+
+  if (statusEl) {
+    statusEl.textContent = statusText;
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function queuePaperForProcessing(arxivId, pdfPath) {
+  // This would normally queue the paper for the backend process_paper.py script
+  // For now, we just log it. In a full implementation, this would:
+  // 1. Create an inbox/<arxivId>_meta.json with the PDF path
+  // 2. Trigger process_paper.py to run on the backend
+  console.log(`Paper queued for processing: ${arxivId} (${pdfPath})`);
+}
 
 // ─── Init: load database then render ───
 SCQ.init().then(() => {
@@ -1101,42 +1988,124 @@ function importFile(event) {
     };
     reader.readAsArrayBuffer(file);
   } else {
-    // JSON import (supports both state export and pending_papers.json from digest)
+    // JSON import (supports collection packages, state export, and pending_papers.json from digest)
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
         const data = JSON.parse(e.target.result);
 
-        // Check if this is a pending_papers.json from arXiv digest
-        if (data.digestDate && Array.isArray(data.papers)) {
-          let added = 0;
-          for (const p of data.papers) {
-            // Check if paper already exists
-            const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
-            if (existing) continue;
+        // Check if this is a scq-collection-package
+        if (data.format === "scq-collection-package") {
+          let newCount = 0, updatedCount = 0, skippedCount = 0;
 
-            SCQ.addPaper({
-              id: p.id,
-              title: p.title,
-              authors: p.authors,
-              short_authors: p.short_authors || "",
-              year: p.year || new Date().getFullYear(),
-              arxiv_id: p.id,
-              url: p.abs_url || "https://arxiv.org/abs/" + p.id,
-              summary: p.abstract || "",
-              tags: JSON.stringify(p.categories || []),
-              date_added: new Date().toISOString().slice(0, 10),
-            });
-            // Mark as unread with no priority (to-read)
-            SCQ.setReadStatus(p.id, false);
-            added++;
+          // Create the collection if it doesn't exist
+          const collName = data.collection;
+          const existingColls = SCQ.getCollections().map(c => c.name);
+          if (!existingColls.includes(collName)) {
+            SCQ.run("INSERT INTO collections (name, paper_id) VALUES (?, ?)", [collName, "dummy"]);
+            SCQ.run("DELETE FROM collections WHERE paper_id = ?", ["dummy"]);
           }
+
+          // Process each paper
+          for (const paperData of data.papers) {
+            const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [paperData.id]);
+
+            if (!existing) {
+              // Add new paper
+              SCQ.addPaper(paperData.id, {
+                title: paperData.title,
+                authors: paperData.authors,
+                short_authors: paperData.short_authors,
+                year: paperData.year,
+                tags: paperData.tags || [],
+                summary: paperData.summary || "",
+                key_results: paperData.key_results || [],
+                cite_bib: paperData.cite_bib || "",
+                cite_txt: paperData.cite_txt || "",
+                group_name: paperData.group_name || "",
+                entry_type: paperData.entry_type || "preprint",
+                doi: paperData.doi
+              });
+              newCount++;
+            } else {
+              // Update existing paper with missing info
+              const current = SCQ.getPaper(paperData.id);
+              let hasChanges = false;
+              const updates = {};
+
+              if (!current.summary && paperData.summary) { updates.summary = paperData.summary; hasChanges = true; }
+              if (!current.group_name && paperData.group_name) { updates.group_name = paperData.group_name; hasChanges = true; }
+              if (!current.cite_bib && paperData.cite_bib) { updates.cite_bib = paperData.cite_bib; hasChanges = true; }
+              if (!current.cite_txt && paperData.cite_txt) { updates.cite_txt = paperData.cite_txt; hasChanges = true; }
+
+              // Merge tags
+              const currentTags = current.tags ? JSON.parse(current.tags) : [];
+              const newTags = Array.from(new Set([...currentTags, ...(paperData.tags || [])])).sort();
+              if (JSON.stringify(newTags) !== JSON.stringify(currentTags)) {
+                updates.tags = JSON.stringify(newTags);
+                hasChanges = true;
+              }
+
+              if (hasChanges) {
+                for (const [key, val] of Object.entries(updates)) {
+                  SCQ.run(`UPDATE papers SET ${key} = ? WHERE id = ?`, [typeof val === 'string' ? val : JSON.stringify(val), paperData.id]);
+                }
+                updatedCount++;
+              } else {
+                skippedCount++;
+              }
+            }
+
+            // Import notes
+            if (paperData.notes) {
+              SCQ.setNote(paperData.id, paperData.notes);
+            }
+
+            // Import read status and priority
+            if (paperData.is_read || paperData.priority) {
+              SCQ.setReadStatus(paperData.id, paperData.is_read);
+              if (paperData.priority) SCQ.setPriority(paperData.id, paperData.priority);
+            }
+
+            // Import highlights
+            if (paperData.highlights && Array.isArray(paperData.highlights)) {
+              for (const h of paperData.highlights) {
+                SCQ.addHighlight(paperData.id, h.text, h.page, h.color);
+              }
+            }
+
+            // Add to collection
+            SCQ.addToCollection(collName, paperData.id);
+          }
+
           loadPapersFromDB();
           render();
-          renderSidebar();
-          alert(`Imported ${added} paper(s) from digest (${data.digestDate}).\n` +
-                `${data.papers.length - added} already in database.\n\n` +
-                `Remember to click "Save database" to persist.`);
+          const msg = `Package imported successfully!\n\n` +
+            `• ${newCount} new paper${newCount !== 1 ? 's' : ''} added\n` +
+            `• ${updatedCount} paper${updatedCount !== 1 ? 's' : ''} updated\n` +
+            `• ${skippedCount} paper${skippedCount !== 1 ? 's' : ''} unchanged\n` +
+            `• ${newCount + updatedCount + skippedCount} total in collection "${collName}"`;
+          alert(msg);
+        } else if (data.digestDate && Array.isArray(data.papers)) {
+          // Check if this is a pending_papers.json from arXiv digest
+          let papers = getInboxPapers();
+          let added = 0;
+
+          for (const p of data.papers) {
+            // Check if paper already exists in database
+            const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
+            if (!existing) {
+              // Check if already in inbox
+              if (!papers.find(ip => ip.id === p.id)) {
+                papers.push(p);
+                added++;
+              }
+            }
+          }
+
+          setInboxPapers(papers);
+          switchMainTab('inbox');
+          alert(`Added ${added} paper(s) to inbox for review.\n${data.papers.length - added} already in database.`);
         } else if (data.papers) {
           // Legacy state JSON format
           for (const [id, ps] of Object.entries(data.papers)) {
@@ -1208,6 +2177,66 @@ function exportCollectionBib(collName) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = collName.replace(/[^a-zA-Z0-9_-]/g, "_") + ".bib";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── Collection .json package export ───
+function exportCollectionPackage(collName) {
+  if (!collName) {
+    alert("No collection selected. Please select a collection from the sidebar first.");
+    return;
+  }
+  const collPapers = SCQ.getCollectionPapers(collName);
+  if (collPapers.length === 0) { alert("No papers in this collection."); return; }
+
+  // Gather all paper data
+  const papers = collPapers.map(p => {
+    const notes = SCQ.getNote(p.id);
+    const highlights = SCQ.getHighlights(p.id);
+    const figures = SCQ.getFigures(p.id);
+    const rs = SCQ.queryOne("SELECT is_read, priority FROM read_status WHERE paper_id = ?", [p.id]) || { is_read: 0, priority: 0 };
+
+    return {
+      id: p.id,
+      title: p.title,
+      authors: p.authors,
+      short_authors: p.short_authors,
+      year: p.year,
+      tags: p.tags ? JSON.parse(p.tags) : [],
+      summary: p.summary || "",
+      key_results: p.key_results ? JSON.parse(p.key_results) : [],
+      cite_bib: p.cite_bib || "",
+      cite_txt: p.cite_txt || "",
+      group_name: p.group_name || "",
+      entry_type: p.entry_type || "preprint",
+      doi: p.doi || null,
+      notes: notes ? notes.content : "",
+      highlights: highlights.map(h => ({ page: h.page, text: h.text, color: h.color })),
+      priority: rs.priority || 0,
+      is_read: Boolean(rs.is_read),
+      figures: figures.map(f => ({ figure_key: f.figure_key, label: f.label, caption: f.caption }))
+    };
+  });
+
+  // Build manifest
+  const manifest = {
+    format: "scq-collection-package",
+    version: 1,
+    collection: collName,
+    exportDate: new Date().toISOString().split('T')[0],
+    exportedBy: "Claude",
+    paperCount: papers.length,
+    papers: papers,
+    references_bib: collPapers.map(p => p.cite_bib).filter(Boolean).join("\n\n"),
+    references_txt: collPapers.map(p => p.cite_txt).filter(Boolean).join("\n\n")
+  };
+
+  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.download = "scq-package-" + collName.replace(/[^a-zA-Z0-9_-]/g, "_") + "-" + dateStr + ".json";
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -1497,6 +2526,36 @@ function fetchWebsiteMeta() {
   const status = document.getElementById("awm-status");
   status.textContent = "Fetching page metadata...";
 
+  // Try to detect DOI
+  const doiMatch = url.match(/(?:doi\.org\/|^)(10\.\S+\/\S+)/) || url.match(/^(10\.\S+\/\S+)$/);
+  if (doiMatch) {
+    const doi = doiMatch[1];
+    status.textContent = "Detected DOI, fetching from CrossRef...";
+    lookupDOI(doi)
+      .then(metadata => {
+        if (metadata) {
+          document.getElementById("awm-title").value = metadata.title;
+          document.getElementById("awm-authors").value = metadata.authors;
+          document.getElementById("awm-summary").value = (metadata.journal || "") + (metadata.volume ? ` Vol. ${metadata.volume}` : "") + (metadata.pages ? `, pp. ${metadata.pages}` : "");
+          document.getElementById("awm-type").value = 'published';
+          // Auto-tag
+          if (typeof SCRAPER_CONFIG !== 'undefined' && SCRAPER_CONFIG.tags) {
+            const text = (metadata.title).toLowerCase();
+            const matched = [];
+            for (const [tag, keywords] of Object.entries(SCRAPER_CONFIG.tags)) {
+              if (keywords.some(kw => text.includes(kw.toLowerCase()))) matched.push(tag);
+            }
+            if (matched.length > 0) document.getElementById("awm-tags").value = matched.join(', ');
+          }
+          status.textContent = "Populated from CrossRef API.";
+        } else {
+          status.textContent = "Could not fetch DOI metadata.";
+        }
+      })
+      .catch(e => { status.textContent = "DOI fetch failed: " + e.message; });
+    return;
+  }
+
   // Try to detect arXiv IDs
   const arxivMatch = url.match(/arxiv\.org\/(?:abs|pdf)\/(\d{4}\.\d{4,5})/);
   if (arxivMatch) {
@@ -1544,6 +2603,109 @@ function fetchWebsiteMeta() {
       document.getElementById("awm-authors").value = domain;
     }
   } catch(e) {}
+}
+
+async function lookupDOI(doi) {
+  // Fetch metadata from CrossRef API and return structured object.
+  // Returns: {title, authors, shortAuthors, year, journal, volume, pages, doi, citeBib, citeTxt}
+  try {
+    // Use local proxy if available, fall back to CrossRef directly
+    const proxyUrl = `${window.location.origin}/api/crossref/${encodeURIComponent(doi)}`;
+    const directUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
+
+    let response;
+    try {
+      response = await fetch(proxyUrl);
+      if (!response.ok && response.status !== 404) throw new Error('Proxy failed');
+    } catch {
+      response = await fetch(directUrl);
+    }
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (!data.message) throw new Error('Invalid CrossRef response');
+
+    const msg = data.message;
+    const title = msg.title ? msg.title[0] : '';
+    const authors = (msg.author || []).map(a => `${a.given || ''} ${a.family || ''}`.trim()).join(', ');
+    const shortAuthors = authors.split(',')[0].trim() || 'Unknown';
+    const year = msg.published?.['date-parts']?.[0]?.[0] || new Date().getFullYear();
+    const journal = msg['container-title']?.[0] || '';
+    const volume = msg.volume || '';
+    const pages = msg.page || '';
+
+    // Generate BibTeX and plain text citations
+    const citeBib = generateDOIBibTeX(doi, title, authors, year, journal, volume, pages);
+    const citeTxt = generateDOIPlainText(authors, title, journal, volume, pages, year, doi);
+
+    return {
+      title: title,
+      authors: authors,
+      shortAuthors: shortAuthors,
+      year: year,
+      journal: journal,
+      volume: volume,
+      pages: pages,
+      doi: doi,
+      citeBib: citeBib,
+      citeTxt: citeTxt
+    };
+  } catch (e) {
+    console.error('DOI lookup error:', e);
+    return null;
+  }
+}
+
+function generateDOIBibTeX(doi, title, authors, year, journal, volume, pages) {
+  // Generate BibTeX entry from CrossRef metadata
+  const authList = authors.split(',').filter(a => a.trim());
+  const firstLast = authList[0]?.split()?.pop()?.toLowerCase() || 'unknown';
+  const titleWord = title.split()[0]?.replace(/[^a-z]/gi, '')?.toLowerCase() || 'article';
+  const key = `${firstLast}${year}${titleWord}`;
+
+  // Format authors: "Last, First and Last, First"
+  const bibAuthors = authList.map(a => {
+    const parts = a.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`;
+    }
+    return a.trim();
+  }).join(' and ');
+
+  return `@article{${key},
+  title     = {${title}},
+  author    = {${bibAuthors}},
+  journal   = {${journal}},
+  volume    = {${volume}},
+  pages     = {${pages}},
+  year      = {${year}},
+  doi       = {${doi}}
+}`;
+}
+
+function generateDOIPlainText(authors, title, journal, volume, pages, year, doi) {
+  // Generate plain-text citation in Physical Review style
+  const authList = authors.split(',').filter(a => a.trim());
+  const formatted = authList.map(a => {
+    const parts = a.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      const initials = parts.slice(0, -1).map(p => p[0] + '.').join(' ');
+      return `${initials} ${parts[parts.length - 1]}`;
+    }
+    return a.trim();
+  });
+
+  let authorStr;
+  if (formatted.length > 2) {
+    authorStr = formatted.slice(0, -1).join(', ') + ', and ' + formatted[formatted.length - 1];
+  } else if (formatted.length === 2) {
+    authorStr = formatted.join(' and ');
+  } else {
+    authorStr = formatted[0] || 'Unknown';
+  }
+
+  return `${authorStr}, "${title}," ${journal}${volume ? ` ${volume}` : ''}${pages ? `, ${pages}` : ''} (${year}). https://doi.org/${doi}`;
 }
 
 function submitAddWebsite() {
@@ -1638,6 +2800,9 @@ function renderSidebar() {
     html += `<button class="sidebar-export-btn" onclick="exportCollectionAsDB('${safeCollName}')" style="border-color:var(--accent);color:var(--accent)">
       &#128230; Share "${activeCollection}" as .db
     </button>`;
+    html += `<button class="sidebar-export-btn" onclick="exportCollectionPackage('${safeCollName}')" style="border-color:var(--green);color:var(--green)">
+      &#128230; Share "${activeCollection}" as package
+    </button>`;
   }
 
   document.getElementById("sidebar").innerHTML = html;
@@ -1692,6 +2857,11 @@ function copyAllForWord(btnId) {
 // ─── Render ───
 function render() {
   renderSidebar();
+  // Show export package button only when a collection is active
+  const exportPkgBtn = document.getElementById('export-pkg-btn');
+  if (exportPkgBtn) {
+    exportPkgBtn.style.display = activeCollection ? 'block' : 'none';
+  }
   pdfSearchHits = {};
   const filtered = getFiltered();
   document.getElementById("paper-count").textContent = PAPERS.length;
@@ -2343,18 +3513,33 @@ async function autoFetchOnLoad() {
 
 
 /* ═══════════════════════════════════════════════════════════ */
+/* Utility Functions */
+/* ═══════════════════════════════════════════════════════════ */
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/* ═══════════════════════════════════════════════════════════ */
 /* NEW: Tab Switching */
 /* ═══════════════════════════════════════════════════════════ */
 
 function switchMainTab(tab) {
   document.getElementById('tab-library').style.display = tab === 'library' ? '' : 'none';
   document.getElementById('tab-reading').style.display = tab === 'reading' ? '' : 'none';
+  document.getElementById('tab-inbox').style.display = tab === 'inbox' ? '' : 'none';
   document.getElementById('tab-cite').style.display = tab === 'cite' ? '' : 'none';
+  document.getElementById('tab-graph').style.display = tab === 'graph' ? '' : 'none';
   document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('mtab-' + tab).classList.add('active');
-  
+
   if (tab === 'reading') renderReadingList();
+  if (tab === 'inbox') renderInbox();
   if (tab === 'cite') renderCiteTab();
+  if (tab === 'graph') renderGraph();
   if (tab === 'library') render();
 }
 
@@ -2507,6 +3692,13 @@ function _renderSettingsModal() {
     </div>
   `).join("");
 
+  // Load collaboration settings
+  const collabSettings = SCQ.getSetting('collaboration') || { sharedFolderPath: '', lastSyncAt: null };
+  const lastSync = collabSettings.lastSyncAt ? new Date(collabSettings.lastSyncAt).toLocaleString() : 'Never';
+
+  // Load Overleaf settings
+  const overleafCfg = SCQ.getSetting('overleafConfig') || { git_url: '', bib_filename: 'references.bib', auto_sync: true };
+
   overlay.innerHTML = `<div class="settings-panel">
     <h2>Settings</h2>
 
@@ -2525,6 +3717,43 @@ function _renderSettingsModal() {
     ${recipHtml}
     <button class="settings-add-btn" onclick="_addRecipient()">+ Add recipient</button>
     <button class="settings-add-btn" style="margin-left:8px" onclick="_exportRecipients()">&#8681; Export email_recipients.json</button>
+
+    <h3>Collaboration</h3>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Share collections with collaborators via OneDrive or export packages for external sharing.</p>
+    <div class="settings-row" style="flex-direction:column;gap:12px">
+      <div>
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">OneDrive Shared Folder Path</label>
+        <input type="text" id="shared-folder-path" value="${_esc(collabSettings.sharedFolderPath || '')}" placeholder="e.g., /Users/paige/OneDrive/Shared Folders/Lab Research" style="width:100%;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:11px">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="settings-add-btn" onclick="_syncToSharedFolder()">&#128190; Download for Shared Folder</button>
+        <button class="settings-add-btn" onclick="document.getElementById('merge-shared-file').click()">&#128516; Merge from Shared</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3)">Last sync: ${lastSync}</div>
+    </div>
+    <input type="file" id="merge-shared-file" accept=".db" style="display:none" onchange="mergeSharedFile(event)">
+
+    <h3 style="color:var(--green)">Overleaf Integration</h3>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Auto-sync references.bib to your Overleaf project via Git.</p>
+    <div class="settings-row" style="flex-direction:column;gap:10px">
+      <div>
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">Overleaf Git URL</label>
+        <input type="text" id="overleaf-git-url" value="${_esc((overleafCfg && overleafCfg.git_url) || '')}" placeholder="https://git.overleaf.com/abc123def456" style="width:100%;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:11px">
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">Bib filename in Overleaf</label>
+          <input type="text" id="overleaf-bib-name" value="${_esc((overleafCfg && overleafCfg.bib_filename) || 'references.bib')}" style="width:160px;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:11px">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);margin-top:16px">
+          <input type="checkbox" id="overleaf-auto-sync" ${overleafCfg && overleafCfg.auto_sync ? 'checked' : ''}> Auto-sync on paper add
+        </label>
+      </div>
+      <div style="font-size:10px;color:var(--text3)">
+        Setup: <code style="background:var(--bg);padding:2px 6px;border-radius:3px;font-size:10px">python tools/overleaf_sync.py --setup &lt;git-url&gt;</code>
+        &nbsp;|&nbsp; Sync: <code style="background:var(--bg);padding:2px 6px;border-radius:3px;font-size:10px">python tools/overleaf_sync.py</code>
+      </div>
+    </div>
 
     <div class="settings-footer">
       <button onclick="closeSettingsModal()">Cancel</button>
@@ -2610,6 +3839,27 @@ function _saveSettings() {
   SCQ.setSetting("presets", presets);
   SCQ.setSetting("emailRecipients", recipients);
 
+  // Save collaboration settings
+  const pathInput = document.getElementById("shared-folder-path");
+  if (pathInput) {
+    const folderPath = pathInput.value.trim();
+    const collabSettings = SCQ.getSetting('collaboration') || {};
+    collabSettings.sharedFolderPath = folderPath;
+    SCQ.setSetting('collaboration', collabSettings);
+  }
+
+  // Save Overleaf settings
+  const olUrl = document.getElementById("overleaf-git-url");
+  const olBib = document.getElementById("overleaf-bib-name");
+  const olAuto = document.getElementById("overleaf-auto-sync");
+  if (olUrl) {
+    SCQ.setSetting('overleafConfig', {
+      git_url: olUrl.value.trim(),
+      bib_filename: (olBib && olBib.value.trim()) || 'references.bib',
+      auto_sync: olAuto ? olAuto.checked : true
+    });
+  }
+
   // Apply to live config
   _applySettingsToConfig();
 
@@ -2635,6 +3885,64 @@ function _applySettingsToConfig() {
   if (savedPresets) {
     SCRAPER_CONFIG.presets = savedPresets;
   }
+}
+
+// ─── Collaboration helpers ───
+function _syncToSharedFolder() {
+  const pathInput = document.getElementById("shared-folder-path");
+  const folderPath = pathInput ? pathInput.value.trim() : "";
+
+  if (!folderPath) {
+    alert("Please enter a shared folder path first.");
+    return;
+  }
+
+  // Save the path to settings
+  const collabSettings = SCQ.getSetting('collaboration') || {};
+  collabSettings.sharedFolderPath = folderPath;
+  collabSettings.lastSyncAt = new Date().toISOString();
+  SCQ.setSetting('collaboration', collabSettings);
+
+  // Download the database file
+  SCQ.saveToFile();
+  alert(`Database download started. Save it to:\n${folderPath}`);
+}
+
+function mergeSharedFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.name.endsWith(".db")) {
+    alert("Please select a .db file to merge.");
+    event.target.value = "";
+    return;
+  }
+
+  try {
+    // Call the existing merge logic
+    SCQ.importDatabaseFile(file).then(stats => {
+      loadPapersFromDB();
+      render();
+      renderSidebar();
+
+      // Update sync timestamp
+      const collabSettings = SCQ.getSetting('collaboration') || {};
+      collabSettings.lastSyncAt = new Date().toISOString();
+      SCQ.setSetting('collaboration', collabSettings);
+
+      const msg = `Merge complete!\n\n` +
+        `• ${stats.added} new paper${stats.added !== 1 ? 's' : ''} added\n` +
+        `• ${stats.updated} paper${stats.updated !== 1 ? 's' : ''} updated\n` +
+        `• ${stats.skipped} paper${stats.skipped !== 1 ? 's' : ''} unchanged\n\n` +
+        `Remember to click "Save database" to save the merged data.`;
+      alert(msg);
+      _renderSettingsModal();
+    }).catch(err => {
+      alert("Merge failed: " + err.message);
+    });
+  } catch(err) {
+    alert("Merge failed: " + err.message);
+  }
+  event.target.value = "";
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -2787,6 +4095,500 @@ function renderCiteTab() {
 
   citeUpdatePreview();
 }
+/* ═══════════════════════════════════════════════════════════ */
+/* NEW: Graph Tab (Citation/Connection Visualization) */
+/* ═══════════════════════════════════════════════════════════ */
+
+function renderGraph() {
+  const svg = document.getElementById('graph-svg');
+  const tooltip = document.getElementById('graph-tooltip');
+  svg.innerHTML = '';
+  const papers = PAPERS;
+  if (!papers || papers.length === 0) {
+    svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text2)" dy=".3em">No papers in database</text>';
+    return;
+  }
+  const nodes = papers.map(p => ({
+    id: p.id, title: p.title, authors: p.authors || p.shortAuthors || "", shortAuthors: p.shortAuthors || "",
+    tags: p.tags || [], group: p.group || "", year: p.year || 2025,
+  }));
+  const edges = [];
+  const edgeSet = new Set();
+  const showAuthors = document.getElementById('graph-show-authors').checked;
+  const showTags = document.getElementById('graph-show-tags').checked;
+  const showGroups = document.getElementById('graph-show-groups').checked;
+  const showLinks = document.getElementById('graph-show-links').checked;
+  function addEdge(a, b, type, weight = 1) {
+    if (a === b) return;
+    const [id1, id2] = a < b ? [a, b] : [b, a];
+    const key = `${id1}-${id2}`;
+    if (!edgeSet.has(key)) { edgeSet.add(key); edges.push({ source: id1, target: id2, type, weight }); }
+  }
+  function getAuthorSurnames(authorsStr) {
+    if (!authorsStr) return [];
+    return authorsStr.split(',').map(a => a.trim().split(' ')[0].toLowerCase()).filter(a => a);
+  }
+  if (showAuthors) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const authors1 = getAuthorSurnames(nodes[i].authors);
+        const authors2 = getAuthorSurnames(nodes[j].authors);
+        const overlap = authors1.filter(a => authors2.includes(a)).length;
+        if (overlap >= 2) addEdge(nodes[i].id, nodes[j].id, 'author', overlap);
+      }
+    }
+  }
+  if (showTags) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const tags1 = nodes[i].tags || [];
+        const tags2 = nodes[j].tags || [];
+        const overlap = tags1.filter(t => tags2.includes(t)).length;
+        if (overlap >= 2) addEdge(nodes[i].id, nodes[j].id, 'tags', overlap);
+      }
+    }
+  }
+  if (showGroups) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        if (nodes[i].group && nodes[i].group === nodes[j].group) {
+          addEdge(nodes[i].id, nodes[j].id, 'group', 1);
+        }
+      }
+    }
+  }
+  if (showLinks) {
+    const links = SCQ.query("SELECT paper_a, paper_b FROM paper_links");
+    for (const link of links) addEdge(link.paper_a, link.paper_b, 'manual', 1);
+  }
+  const connectionCount = {};
+  nodes.forEach(n => { connectionCount[n.id] = 0; });
+  edges.forEach(e => { connectionCount[e.source]++; connectionCount[e.target]++; });
+  const width = svg.clientWidth || 960;
+  const height = svg.clientHeight || 600;
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(edges).id(d => d.id).distance(100).strength(0.5))
+    .force("charge", d3.forceManyBody().strength(-300))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(d => Math.max(20, (connectionCount[d.id] || 1) * 3 + 15)));
+  const g = d3.select(svg).attr('width', width).attr('height', height).append('g');
+  const zoom = d3.zoom().on('zoom', (e) => { g.attr('transform', e.transform); });
+  d3.select(svg).call(zoom);
+  const edgeColors = { 'author': '#3b82f6', 'tags': '#10b981', 'group': '#f59e0b', 'manual': '#ef4444' };
+  const groupColors = {}; const colorPalette = ['#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#d946ef', '#a855f7'];
+  let colorIdx = 0;
+  const linkGroup = g.append('g').selectAll('line').data(edges).enter().append('line')
+    .attr('class', 'graph-edge').attr('stroke', d => edgeColors[d.type] || '#999')
+    .attr('stroke-width', d => Math.sqrt(d.weight) * 1.5).attr('opacity', 0.3);
+  const nodeGroup = g.append('g').selectAll('circle').data(nodes).enter().append('circle')
+    .attr('class', 'graph-node').attr('r', d => Math.max(15, (connectionCount[d.id] || 1) * 2 + 12))
+    .attr('fill', d => {
+      if (!d.group) return '#4b5563';
+      if (!groupColors[d.group]) groupColors[d.group] = colorPalette[colorIdx++ % colorPalette.length];
+      return groupColors[d.group];
+    })
+    .attr('stroke', '#2d3548').attr('stroke-width', 2)
+    .call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended))
+    .on('mouseover', (e, d) => {
+      const connCount = connectionCount[d.id] || 0;
+      tooltip.innerHTML = `<div style="font-weight:600">${d.shortAuthors} (${d.year})</div>
+        <div style="margin-top:4px; color:var(--text2); font-size:11px">${d.title}</div>
+        <div style="margin-top:6px; font-size:11px; color:var(--text3)">${connCount} connection${connCount !== 1 ? 's' : ''}${d.tags.length > 0 ? ' · Tags: ' + d.tags.join(', ') : ''}</div>`;
+      tooltip.style.display = 'block'; tooltip.style.left = (e.pageX + 10) + 'px'; tooltip.style.top = (e.pageY + 10) + 'px';
+    })
+    .on('mousemove', (e) => { tooltip.style.left = (e.pageX + 10) + 'px'; tooltip.style.top = (e.pageY + 10) + 'px'; })
+    .on('mouseout', () => { tooltip.style.display = 'none'; })
+    .on('click', (e, d) => { expandedId = d.id; switchMainTab('library'); render(); });
+  const labelGroup = g.append('g').selectAll('text').data(nodes).enter().append('text')
+    .attr('class', 'graph-node-label').attr('text-anchor', 'middle').attr('dy', '.3em')
+    .text(d => { const parts = d.shortAuthors.split(' '); return parts[0] + ' ' + d.year; });
+  simulation.on('tick', () => {
+    linkGroup.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    nodeGroup.attr('cx', d => Math.max(20, Math.min(width - 20, d.x))).attr('cy', d => Math.max(20, Math.min(height - 20, d.y)));
+    labelGroup.attr('x', d => d.x).attr('y', d => d.y);
+  });
+  function dragstarted(e) { if (!e.active) simulation.alphaTarget(0.3).restart(); e.subject.fx = e.subject.x; e.subject.fy = e.subject.y; }
+  function dragged(e) { e.subject.fx = e.x; e.subject.fy = e.y; }
+  function dragended(e) { if (!e.active) simulation.alphaTarget(0); e.subject.fx = null; e.subject.fy = null; }
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/* NEW: Inbox Tab (Digest staging) */
+/* ═══════════════════════════════════════════════════════════ */
+
+const INBOX_STORAGE_KEY = "scq-inbox-papers";
+const INBOX_IMPORT_KEY = "scq-inbox-import";
+
+function getInboxPapers() {
+  const stored = localStorage.getItem(INBOX_STORAGE_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+function setInboxPapers(papers) {
+  localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(papers));
+  updateInboxBadge();
+}
+
+function updateInboxBadge() {
+  const papers = getInboxPapers();
+  const badge = document.getElementById('inbox-badge');
+  if (papers.length > 0) {
+    badge.textContent = papers.length;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function inboxImportFile() {
+  document.getElementById('inbox-import-file').click();
+}
+
+function inboxFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      // Validate pending_papers.json format
+      if (!data.digestDate || !Array.isArray(data.papers)) {
+        alert('Invalid file format. Expected pending_papers.json from digest.');
+        return;
+      }
+
+      let papers = getInboxPapers();
+      let added = 0;
+
+      for (const p of data.papers) {
+        // Check if paper already exists in database
+        const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
+        if (!existing) {
+          // Check if already in inbox
+          if (!papers.find(ip => ip.id === p.id)) {
+            papers.push(p);
+            added++;
+          }
+        }
+      }
+
+      setInboxPapers(papers);
+      switchMainTab('inbox');
+      alert(`Added ${added} new paper(s) to inbox.`);
+    } catch(err) {
+      alert('Failed to parse file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function renderInbox() {
+  const papers = getInboxPapers();
+  const container = document.getElementById('inbox-content');
+
+  // Update header
+  document.getElementById('inbox-count-display').textContent =
+    papers.length + ' paper' + (papers.length !== 1 ? 's' : '') + ' pending';
+
+  // Show/hide bulk buttons
+  document.getElementById('inbox-import-all-btn').style.display = papers.length > 0 ? '' : 'none';
+  document.getElementById('inbox-import-starred-btn').style.display = papers.length > 0 ? '' : 'none';
+  document.getElementById('inbox-clear-btn').style.display = papers.length > 0 ? '' : 'none';
+
+  if (papers.length === 0) {
+    container.innerHTML = '<div class="inbox-empty">No papers in inbox. Import a digest to get started.</div>';
+    return;
+  }
+
+  container.innerHTML = papers.map((p, idx) => {
+    const action = p.action || 'add';
+    const actionBadgeText = action === 'star' ? '★ Starred' : '+ Added';
+    const actionBadgeClass = action === 'star' ? 'star' : 'add';
+    const priority = p.priority || 0;
+    const tags = p.tags || [];
+    const note = p.note || '';
+
+    return `
+      <div class="inbox-card" id="inbox-card-${idx}">
+        <div class="inbox-success" id="inbox-success-${idx}" style="display:none">✓ Imported</div>
+
+        <div class="inbox-card-header">
+          <div class="inbox-card-title">${escapeHtml(p.title)}</div>
+          <span class="inbox-action-badge ${actionBadgeClass}">${actionBadgeText}</span>
+        </div>
+
+        <div class="inbox-card-meta">
+          <a href="https://arxiv.org/abs/${p.id}" target="_blank" class="inbox-arxiv-id">${p.id}</a>
+          <span class="inbox-authors">${escapeHtml(p.authors || 'Unknown')}</span>
+        </div>
+
+        <div class="inbox-abstract ${note || tags.length > 0 ? '' : 'collapsed'}" id="inbox-abs-${idx}">
+          ${escapeHtml((p.abstract || '').substring(0, 500))}${(p.abstract || '').length > 500 ? '...' : ''}
+        </div>
+        ${(p.abstract || '').length > 500 ? `<span class="inbox-abstract-expand" onclick="toggleAbstract(${idx})">Show more</span>` : ''}
+
+        <div class="inbox-tags">
+          ${tags.map((tag, tidx) =>
+            `<span class="inbox-tag" title="Click x to remove">
+              ${escapeHtml(tag)}
+              <span class="inbox-tag-remove" onclick="inboxRemoveTag(${idx}, ${tidx})">×</span>
+            </span>`
+          ).join('')}
+          <input type="text" id="inbox-tag-input-${idx}" placeholder="Add tag..."
+                 style="width:80px;padding:3px 6px;border:1px solid var(--border);border-radius:12px;
+                 background:var(--bg);color:var(--text);font-size:11px;font-family:inherit;outline:none"
+                 onkeypress="inboxTagKeypress(event, ${idx})">
+        </div>
+
+        <div class="inbox-priority">
+          <span class="inbox-priority-label">Priority:</span>
+          <div class="inbox-priority-stars">
+            ${[0, 1, 2, 3].map(i =>
+              `<span class="inbox-star ${i < priority ? 'active' : ''}"
+                     onclick="inboxSetPriority(${idx}, ${i + 1})">★</span>`
+            ).join('')}
+          </div>
+        </div>
+
+        <div class="inbox-note-field">
+          <label class="inbox-note-label">Note (optional)</label>
+          <input type="text" class="inbox-note-input" id="inbox-note-${idx}" placeholder="Quick annotation..." value="${escapeHtml(note)}">
+        </div>
+
+        <div class="inbox-card-buttons">
+          <button class="inbox-btn" onclick="inboxImportOne(${idx})">Import</button>
+          <button class="inbox-btn danger" onclick="inboxSkipOne(${idx})">Skip</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateInboxBadge();
+}
+
+function toggleAbstract(idx) {
+  const abs = document.getElementById(`inbox-abs-${idx}`);
+  abs.classList.toggle('collapsed');
+}
+
+function inboxSetPriority(idx, priority) {
+  let papers = getInboxPapers();
+  if (papers[idx]) {
+    papers[idx].priority = priority;
+    setInboxPapers(papers);
+    renderInbox();
+  }
+}
+
+function inboxRemoveTag(idx, tidx) {
+  let papers = getInboxPapers();
+  if (papers[idx] && papers[idx].tags) {
+    papers[idx].tags.splice(tidx, 1);
+    setInboxPapers(papers);
+    renderInbox();
+  }
+}
+
+function inboxTagKeypress(event, idx) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+
+  const input = document.getElementById(`inbox-tag-input-${idx}`);
+  const tag = input.value.trim();
+  if (!tag) return;
+
+  let papers = getInboxPapers();
+  if (papers[idx]) {
+    if (!papers[idx].tags) papers[idx].tags = [];
+    if (!papers[idx].tags.includes(tag)) {
+      papers[idx].tags.push(tag);
+    }
+    setInboxPapers(papers);
+    renderInbox();
+  }
+}
+
+function inboxImportOne(idx) {
+  let papers = getInboxPapers();
+  const p = papers[idx];
+  if (!p) return;
+
+  try {
+    // Check if already in DB
+    const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
+    if (existing) {
+      alert('Paper already in database.');
+      return;
+    }
+
+    // Add to database
+    const note = document.getElementById(`inbox-note-${idx}`).value.trim();
+    const tags = p.tags || [];
+
+    SCQ.addPaper({
+      id: p.id,
+      title: p.title,
+      authors: p.authors || '',
+      short_authors: p.short_authors || '',
+      year: p.year || new Date().getFullYear(),
+      arxiv_id: p.id,
+      url: p.abs_url || "https://arxiv.org/abs/" + p.id,
+      summary: p.abstract || '',
+      tags: JSON.stringify(tags),
+      date_added: new Date().toISOString().slice(0, 10),
+    });
+
+    SCQ.setReadStatus(p.id, false);
+    SCQ.setPriority(p.id, p.priority || 0);
+
+    if (note) {
+      SCQ.queryRun("INSERT OR REPLACE INTO notes (paper_id, content, last_edited) VALUES (?, ?, ?)",
+        [p.id, note, new Date().toISOString()]);
+    }
+
+    // Show success state
+    document.getElementById(`inbox-success-${idx}`).style.display = '';
+    document.getElementById(`inbox-card-${idx}`).style.opacity = '0.6';
+
+    // Remove from inbox after 1 second
+    setTimeout(() => {
+      papers = getInboxPapers();
+      papers.splice(idx, 1);
+      setInboxPapers(papers);
+      loadPapersFromDB();
+      render();
+      renderSidebar();
+      renderInbox();
+    }, 800);
+
+  } catch(err) {
+    alert('Import failed: ' + err.message);
+  }
+}
+
+function inboxSkipOne(idx) {
+  let papers = getInboxPapers();
+  papers.splice(idx, 1);
+  setInboxPapers(papers);
+  renderInbox();
+}
+
+function inboxImportAll() {
+  let papers = getInboxPapers();
+  if (papers.length === 0) return;
+
+  let added = 0;
+  for (let i = 0; i < papers.length; i++) {
+    const p = papers[i];
+    const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
+    if (!existing) {
+      const tags = p.tags || [];
+      SCQ.addPaper({
+        id: p.id,
+        title: p.title,
+        authors: p.authors || '',
+        short_authors: p.short_authors || '',
+        year: p.year || new Date().getFullYear(),
+        arxiv_id: p.id,
+        url: p.abs_url || "https://arxiv.org/abs/" + p.id,
+        summary: p.abstract || '',
+        tags: JSON.stringify(tags),
+        date_added: new Date().toISOString().slice(0, 10),
+      });
+      SCQ.setReadStatus(p.id, false);
+      SCQ.setPriority(p.id, p.priority || 0);
+      added++;
+    }
+  }
+
+  setInboxPapers([]);
+  loadPapersFromDB();
+  render();
+  renderSidebar();
+  switchMainTab('library');
+  alert(`Imported ${added} paper(s). Inbox cleared.`);
+}
+
+function inboxImportStarred() {
+  let papers = getInboxPapers();
+  if (papers.length === 0) return;
+
+  const starred = papers.filter(p => (p.action === 'star' || p.priority >= 3));
+  if (starred.length === 0) {
+    alert('No starred papers in inbox.');
+    return;
+  }
+
+  let added = 0;
+  for (const p of starred) {
+    const existing = SCQ.queryOne("SELECT id FROM papers WHERE id = ?", [p.id]);
+    if (!existing) {
+      const tags = p.tags || [];
+      SCQ.addPaper({
+        id: p.id,
+        title: p.title,
+        authors: p.authors || '',
+        short_authors: p.short_authors || '',
+        year: p.year || new Date().getFullYear(),
+        arxiv_id: p.id,
+        url: p.abs_url || "https://arxiv.org/abs/" + p.id,
+        summary: p.abstract || '',
+        tags: JSON.stringify(tags),
+        date_added: new Date().toISOString().slice(0, 10),
+      });
+      SCQ.setReadStatus(p.id, false);
+      SCQ.setPriority(p.id, p.priority || 3);
+      added++;
+    }
+  }
+
+  // Remove imported papers from inbox
+  papers = papers.filter(p => !starred.includes(p));
+  setInboxPapers(papers);
+  loadPapersFromDB();
+  render();
+  renderSidebar();
+  switchMainTab('library');
+  alert(`Imported ${added} starred paper(s).`);
+}
+
+function inboxClear() {
+  if (!confirm('Clear all papers from inbox? This cannot be undone.')) return;
+  setInboxPapers([]);
+  renderInbox();
+}
+
+// Check on page load if there's a digest import in localStorage
+window.addEventListener('DOMContentLoaded', function() {
+  const inboxImport = localStorage.getItem(INBOX_IMPORT_KEY);
+  if (inboxImport) {
+    try {
+      const data = JSON.parse(inboxImport);
+      if (data.papers && Array.isArray(data.papers)) {
+        let papers = getInboxPapers();
+        let added = 0;
+        for (const p of data.papers) {
+          if (!papers.find(ip => ip.id === p.id)) {
+            papers.push(p);
+            added++;
+          }
+        }
+        if (added > 0) {
+          setInboxPapers(papers);
+          console.log(`Loaded ${added} papers from digest localStorage`);
+        }
+      }
+    } catch(e) {
+      console.error('Failed to load inbox import:', e);
+    }
+    localStorage.removeItem(INBOX_IMPORT_KEY);
+  }
+
+  updateInboxBadge();
+});
 
 </script>
 
@@ -2798,6 +4600,98 @@ function renderCiteTab() {
   </div>
   <iframe class="pdf-viewer-iframe" id="pdf-iframe"></iframe>
 </div>
+
+<!-- === Drag-and-Drop PDF Import === -->
+<div class="drop-overlay" id="drop-overlay">
+  <div class="drop-zone">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 15V3m0 0L8 7m4-4 4 4"/>
+      <path d="M2 17l.621 2.485A2 2 0 003.561 21h16.878a2 2 0 001.94-1.515L23 17"/>
+    </svg>
+    <h3>Drop PDFs to import</h3>
+    <p>arXiv IDs and DOIs will be auto-detected</p>
+  </div>
+</div>
+
+<div class="import-progress" id="import-progress" style="display:none">
+  <h4>Importing Papers</h4>
+  <div class="import-list" id="import-list"></div>
+</div>
+
+<!-- Hidden file inputs for PDF bulk upload -->
+<input type="file" id="pdf-upload-input" accept=".pdf" multiple style="display:none" onchange="handleBatchFiles(this.files)">
+<input type="file" id="pdf-folder-input" webkitdirectory directory multiple style="display:none" onchange="handleBatchFiles(this.files)">
+
+<!-- Batch import modal -->
+<div id="batch-import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:460px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;color:var(--text);">Batch import PDFs</h3>
+      <button onclick="closeBatchImport()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin:0 0 16px 0;">
+      Pick a single PDF or a whole folder. Each file will be scanned for an arXiv ID or DOI;
+      files without identifiers become stub entries you can enrich later.
+    </p>
+    <label style="display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px;margin-bottom:18px;cursor:pointer;">
+      <input type="checkbox" id="batch-recursive" checked>
+      Include subfolders (folder import only)
+    </label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="pickBatchFiles()" style="flex:1;min-width:140px;padding:12px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+        Select PDF file(s)
+      </button>
+      <button onclick="pickBatchFolder()" style="flex:1;min-width:140px;padding:12px 16px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-weight:600;">
+        Select folder
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openBatchImport() {
+  document.getElementById('batch-import-modal').style.display = 'flex';
+}
+function closeBatchImport() {
+  document.getElementById('batch-import-modal').style.display = 'none';
+}
+function pickBatchFiles() {
+  document.getElementById('pdf-upload-input').click();
+}
+function pickBatchFolder() {
+  document.getElementById('pdf-folder-input').click();
+}
+async function handleBatchFiles(fileList) {
+  closeBatchImport();
+  let files = Array.from(fileList || []);
+  // Filter PDFs
+  files = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  // Subfolder filter (only for folder picks — webkitRelativePath is populated)
+  const recursive = document.getElementById('batch-recursive').checked;
+  if (!recursive) {
+    files = files.filter(f => {
+      const rel = f.webkitRelativePath || '';
+      if (!rel) return true; // single-file picker entries
+      // top-level within the picked folder: exactly one '/' separator
+      return rel.split('/').length <= 2;
+    });
+  }
+  if (files.length === 0) {
+    alert('No PDF files found in the selection.');
+    return;
+  }
+  if (files.length > 5) {
+    if (!confirm(`Import ${files.length} PDFs? This may take a few minutes.`)) return;
+  }
+  await handleDroppedFiles(files);
+}
+</script>
+
+<!-- PDF.js library for text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 
 </body>
 </html>
