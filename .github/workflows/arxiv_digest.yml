@@ -2,9 +2,11 @@ name: SCQ arXiv Daily Digest
 
 on:
   schedule:
-    # Runs at 7:00 AM EST (12:00 UTC) every day
-    # Adjust the hour if you're in a different timezone
-    - cron: '0 12 * * *'
+    # Target: ready in inbox by ~7 AM US Eastern.
+    # 10:45 UTC = 6:45 AM EDT / 5:45 AM EST. GitHub Actions scheduled
+    # workflows typically lag 15-60 min, so EDT arrival lands near 7 AM.
+    # In EST (winter) it'll arrive closer to 6 AM — still before work.
+    - cron: '45 10 * * *'
   workflow_dispatch:
     inputs:
       days_back:
