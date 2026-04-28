@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/email",
+  "title": "SMTP transport",
+  "description": "Non-secret SMTP settings. The password lives in the OS keyring or SCQ_EMAIL_APP_PASSWORD env var.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "smtpHost": { "type": "string", "minLength": 1 },
+    "smtpPort": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "useTls": { "type": "boolean" },
+    "fromAddress": {
+      "type": "string",
+      "anyOf": [
+        { "format": "email" },
+        { "const": "" }
+      ]
+    }
+  },
+  "required": ["smtpHost", "smtpPort"]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/digest",
+  "title": "Digest configuration",
+  "description": "Controls the cadence, scope, and recipients of the arXiv digest. Schedule timing comes from the GitHub Actions cron line; this file controls the digest's content and delivery.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "cadence": {
+      "type": "string",
+      "enum": ["daily", "weekly", "manual"],
+      "description": "Hint for which cron schedule to use. The actual schedule lives in .github/workflows/arxiv_digest.yml."
+    },
+    "dayOfWeek": {
+      "type": "string",
+      "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      "description": "Used when cadence is 'weekly'."
+    },
+    "timeOfDay": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "HH:MM in 24-hour UTC."
+    },
+    "maxPapers": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Cap on how many papers appear in one digest, after relevance ranking."
+    },
+    "lookbackDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "minRelevanceScore": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Drop papers whose summed keyword weight falls below this floor."
+    },
+    "includeSources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Source IDs (from search-sources.json) to include. Empty array = use all enabled sources."
+    },
+    "recipients": {
+      "type": "array",
+      "items": { "type": "string", "format": "email" },
+      "uniqueItems": true,
+      "description": "Email addresses to send the digest to. Production overrides this from the SCQ_EMAIL_TO secret."
+    },
+    "subjectPrefix": {
+      "type": "string",
+      "maxLength": 40
+    }
+  },
+  "required": ["cadence", "maxPapers", "lookbackDays"]
+}

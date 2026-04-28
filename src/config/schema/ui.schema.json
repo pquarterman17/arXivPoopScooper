@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/ui",
+  "title": "UI preferences",
+  "description": "Display-layer settings. These are session-ish but kept in user_config so they survive a fresh DB.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "theme": {
+      "type": "string",
+      "enum": ["light", "dark", "system"]
+    },
+    "defaultTab": {
+      "type": "string",
+      "enum": ["library", "reading-list", "cite", "settings"]
+    },
+    "defaultSort": {
+      "type": "string",
+      "enum": [
+        "date_added_desc",
+        "date_added_asc",
+        "year_desc",
+        "year_asc",
+        "title_asc",
+        "title_desc",
+        "priority_desc"
+      ]
+    },
+    "tableDensity": {
+      "type": "string",
+      "enum": ["compact", "comfortable", "spacious"]
+    },
+    "pdfPaneWidthPct": {
+      "type": "integer",
+      "minimum": 20,
+      "maximum": 80
+    },
+    "showReadColumn": { "type": "boolean" },
+    "showPriorityColumn": { "type": "boolean" },
+    "showTagsColumn": { "type": "boolean" }
+  },
+  "required": ["theme", "defaultTab"]
+}

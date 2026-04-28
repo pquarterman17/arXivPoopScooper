@@ -1,0 +1,6 @@
+{
+  "$schema": "../schema/privacy.schema.json",
+  "includeNotesInExports": false,
+  "includeUnreadOnlyInDigest": false,
+  "redactRecipientsInLogs": true
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "../schema/ingest.schema.json",
+  "defaultCollection": "",
+  "defaultTags": [],
+  "fetchFigures": true,
+  "autoTagOnImport": true,
+  "extractFiguresMaxPerPaper": 12
+}

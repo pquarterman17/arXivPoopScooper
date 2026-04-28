@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/ingest",
+  "title": "Ingestion defaults",
+  "description": "Applied when adding a paper from the inbox or via 'add-paper' skill.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "defaultCollection": {
+      "type": "string",
+      "description": "Name of a collection to add new papers to. Empty = none."
+    },
+    "defaultTags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "fetchFigures": { "type": "boolean" },
+    "autoTagOnImport": { "type": "boolean" },
+    "extractFiguresMaxPerPaper": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

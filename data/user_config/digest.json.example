@@ -1,0 +1,10 @@
+{
+  "$schema": "../../src/config/schema/digest.schema.json",
+  "cadence": "daily",
+  "timeOfDay": "07:00",
+  "maxPapers": 25,
+  "lookbackDays": 1,
+  "minRelevanceScore": 5,
+  "recipients": ["you@example.com"],
+  "subjectPrefix": "[SCQ digest]"
+}

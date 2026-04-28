@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/privacy",
+  "title": "Privacy / export controls",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "includeNotesInExports": {
+      "type": "boolean",
+      "description": "When false, collection .bib/.json/.db exports omit user notes."
+    },
+    "includeUnreadOnlyInDigest": {
+      "type": "boolean"
+    },
+    "redactRecipientsInLogs": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "../../src/config/schema/email.schema.json",
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 587,
+  "useTls": true,
+  "fromAddress": "you@gmail.com"
+}

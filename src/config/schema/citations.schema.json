@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/citations",
+  "title": "Citation formatting",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "defaultStyle": {
+      "type": "string",
+      "enum": ["prl", "aps", "apa", "ieee", "custom"],
+      "description": "Format used for plain-text citations. 'prl' matches references.txt today."
+    },
+    "includeDoi": { "type": "boolean" },
+    "includeArxivId": { "type": "boolean" },
+    "includeUrl": { "type": "boolean" },
+    "abbreviateJournals": {
+      "type": "boolean",
+      "description": "Use 'Phys. Rev. Lett.' instead of 'Physical Review Letters'."
+    }
+  },
+  "required": ["defaultStyle"]
+}

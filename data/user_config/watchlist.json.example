@@ -1,0 +1,6 @@
+{
+  "$schema": "../../src/config/schema/watchlist.schema.json",
+  "authors": ["de Leon", "Manucharyan", "Oliver"],
+  "groups": ["Princeton", "Yale", "MIT-LL"],
+  "keywords": ["surface oxide", "tantalum", "fluxonium"]
+}

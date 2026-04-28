@@ -1,0 +1,11 @@
+{
+  "$schema": "../schema/ui.schema.json",
+  "theme": "system",
+  "defaultTab": "library",
+  "defaultSort": "date_added_desc",
+  "tableDensity": "comfortable",
+  "pdfPaneWidthPct": 50,
+  "showReadColumn": true,
+  "showPriorityColumn": true,
+  "showTagsColumn": true
+}

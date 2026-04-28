@@ -1,0 +1,12 @@
+{
+  "$schema": "../schema/digest.schema.json",
+  "cadence": "daily",
+  "dayOfWeek": "mon",
+  "timeOfDay": "07:00",
+  "maxPapers": 25,
+  "lookbackDays": 1,
+  "minRelevanceScore": 5,
+  "includeSources": ["arxiv"],
+  "recipients": [],
+  "subjectPrefix": "[SCQ digest]"
+}

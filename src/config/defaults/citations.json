@@ -1,0 +1,8 @@
+{
+  "$schema": "../schema/citations.schema.json",
+  "defaultStyle": "prl",
+  "includeDoi": true,
+  "includeArxivId": true,
+  "includeUrl": true,
+  "abbreviateJournals": true
+}

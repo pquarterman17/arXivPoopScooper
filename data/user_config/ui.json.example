@@ -1,0 +1,8 @@
+{
+  "$schema": "../../src/config/schema/ui.schema.json",
+  "theme": "dark",
+  "defaultTab": "library",
+  "defaultSort": "date_added_desc",
+  "tableDensity": "comfortable",
+  "pdfPaneWidthPct": 50
+}

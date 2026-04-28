@@ -1,0 +1,30 @@
+# SCQ bootstrap config — where the database and paper files live.
+#
+# This file is read by Python tools BEFORE the database opens, so it
+# can't live in the database. Copy this file to `paths.toml` (no
+# `.example` suffix) and edit, or just leave the defaults.
+#
+# Environment variables override anything set here:
+#   SCQ_DB_PATH, SCQ_PAPERS_DIR, SCQ_FIGURES_DIR, SCQ_INBOX_DIR
+#
+# All paths are resolved relative to the repo root unless absolute.
+
+# Canonical SQLite database file.
+db_path = "data/scq_papers.db"
+
+# Where downloaded paper PDFs live. On Windows this is a directory
+# junction → "OneDrive\Work and School Research\SCQ Paper Library\papers".
+papers_dir = "papers"
+
+# Where extracted figure JPEGs live (one subdir per arXiv ID).
+figures_dir = "figures"
+
+# Staging area for fetch_arxiv.js metadata before processing.
+inbox_dir = "inbox"
+
+# Where collection .bib / .db / .json exports get written.
+exports_dir = "exports"
+
+# Plain-text + BibTeX citations file. References-style for paper writeups.
+references_bib_path = "references.bib"
+references_txt_path = "references.txt"
