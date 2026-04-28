@@ -39,6 +39,7 @@ Per the plan, in roughly increasing complexity:
 | More menu                     | ✅ migrated       | `more-menu.js`                        |
 | Sync indicator                | ✅ migrated       | `sync-indicator.js`                   |
 | PDF path helper               | ✅ migrated       | `pdf-path.js`                         |
+| **NEW** Save-to-disk          | ✅ added          | `save-to-disk.js` + `services/database-sync.js` |
 | PDF Viewer Panel              | open (small)      |                                       |
 | Annotation Highlights         | open (small)      |                                       |
 | Sort                          | open (small)      |                                       |

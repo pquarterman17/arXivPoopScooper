@@ -1234,7 +1234,8 @@
     <div class="toolbar-more">
       <button onclick="this.nextElementSibling.classList.toggle('open')" title="More actions">More &#9662;</button>
       <div class="toolbar-more-menu" id="more-menu">
-        <button onclick="SCQ.saveToFile();closeMoreMenu()" title="Download scq_papers.db">Save database</button>
+        <button onclick="saveToDisk().catch(e=>alert('Save failed: '+e.message));closeMoreMenu()" title="POST the in-memory DB to data/scq_papers.db via serve.py" style="color:var(--green)">Save to disk</button>
+        <button onclick="SCQ.saveToFile();closeMoreMenu()" title="Download scq_papers.db (local backup)">Download .db</button>
         <button onclick="exportJSON();closeMoreMenu()" title="Export state as JSON">Export JSON</button>
         <button onclick="document.getElementById('import-db-file').click();closeMoreMenu()" title="Restore from .db or .json">Import</button>
         <button onclick="document.getElementById('merge-db-file').click();closeMoreMenu()" title="Merge another .db" style="color:var(--accent)">Merge .db</button>

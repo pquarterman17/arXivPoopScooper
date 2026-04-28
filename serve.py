@@ -19,6 +19,7 @@ import http.server
 import webbrowser
 import os
 import sys
+import tempfile
 import threading
 import socket
 import time
@@ -26,9 +27,24 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+from pathlib import Path
 
 PORT = 8080
+
+# Resolve the canonical DB path. If scq is on sys.path, honor any
+# user_config/paths.toml override; otherwise fall back to the default.
+try:
+    from scq.config.paths import paths as _scq_paths
+    DB_PATH = _scq_paths().db_path
+except Exception:  # noqa: BLE001
+    DB_PATH = (Path(__file__).resolve().parent / "data" / "scq_papers.db").resolve()
+
+# Cap on save-db payload size — defends against a runaway upload. SCQ paper
+# databases are typically <50 MB even for very large libraries; 200 MB is
+# generous but caps the worst case.
+MAX_DB_UPLOAD_BYTES = 200 * 1024 * 1024
+SQLITE_MAGIC = b"SQLite format 3\x00"
 
 PAGES = {
     "database": "paper_database.html",
@@ -61,12 +77,11 @@ def _ensure_console():
     subprocess.Popen(cmd, shell=True)
     sys.exit(0)
 
-_ensure_console()
-
 # ── Server logic ────────────────────────────────────────────────────
-
-# Serve from the directory this script lives in
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+# Note: the bootstrap (chdir, sys.argv parsing, port binding, serve_forever)
+# all lives in main() at the bottom. That makes serve.py importable for
+# tests and for plan #12 when this becomes scq/server.py — no terminal
+# auto-relaunch fires on import.
 
 # File extensions that should never be cached (forces browser to always
 # fetch fresh copies — no more Ctrl+Shift+R needed after edits).
@@ -92,19 +107,6 @@ def open_tabs(port, which):
             time.sleep(0.3)  # small gap so browser registers separate tabs
             webbrowser.open_new_tab(url)
 
-
-# Determine which pages to open
-arg = sys.argv[1].lower() if len(sys.argv) > 1 else "all"
-if arg in PAGES:
-    to_open = [arg]
-elif arg == "all":
-    to_open = list(PAGES.keys())
-else:
-    print(f"Unknown page '{arg}'. Options: {', '.join(PAGES.keys())}, all")
-    input("Press Enter to exit.")
-    sys.exit(1)
-
-port = find_open_port(PORT)
 
 # ── arXiv Proxy Handler ────────────────────────────────────────────
 # Proxies /api/arxiv?<query_string> → https://arxiv.org/api/query?<query_string>
@@ -147,6 +149,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_bookmarklet()
         elif self.path == "/api/upload-pdf":
             self._handle_pdf_upload()
+        elif self.path == "/api/save-db":
+            self._handle_save_db()
         else:
             self.send_error(404)
 
@@ -286,6 +290,84 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             error_msg = f'{{"error": "Proxy error: {e}"}}'
             self.wfile.write(error_msg.encode())
+
+    def _handle_save_db(self):
+        """Persist the in-memory sql.js DB back to data/scq_papers.db.
+
+        The browser POSTs the raw bytes of `db.export()`. We:
+          1. Cap the size (defends against runaway uploads)
+          2. Verify the SQLite magic header (defends against wrong-type
+             bytes being POSTed by accident)
+          3. Write to a temp file in the same directory as the target
+          4. os.replace() onto the canonical path (atomic on POSIX,
+             best-effort on Windows — but still better than open+write
+             which can leave a half-written file on crash)
+
+        Returns JSON: {ok, bytes, path, savedAt} or {error}.
+        """
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length <= 0:
+                self._save_db_error(400, "Empty body")
+                return
+            if content_length > MAX_DB_UPLOAD_BYTES:
+                self._save_db_error(
+                    413,
+                    f"DB too large ({content_length} bytes; max "
+                    f"{MAX_DB_UPLOAD_BYTES})",
+                )
+                return
+
+            data = self.rfile.read(content_length)
+            if len(data) < len(SQLITE_MAGIC) or not data.startswith(SQLITE_MAGIC):
+                self._save_db_error(
+                    400,
+                    "Body is not a SQLite database (magic header mismatch)",
+                )
+                return
+
+            # Atomic write: temp file in the same dir, then os.replace.
+            target = Path(DB_PATH)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(
+                prefix=".scq_save_",
+                suffix=".db",
+                dir=str(target.parent),
+            )
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(data)
+                os.replace(tmp_path, target)
+            except Exception:
+                # On any failure mid-write, clean up the temp file
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
+
+            payload = {
+                "ok": True,
+                "bytes": len(data),
+                "path": str(target),
+                "savedAt": datetime.now(timezone.utc).strftime(
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ),
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(payload).encode())
+        except Exception as e:  # noqa: BLE001 — keep response well-formed
+            self._save_db_error(500, f"Save failed: {e}")
+
+    def _save_db_error(self, status, message):
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(json.dumps({"error": message}).encode())
 
     def _handle_bookmarklet(self):
         """Handle bookmarklet POST requests.
@@ -489,24 +571,46 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             error = {"error": f"Upload failed: {str(e)}"}
             self.wfile.write(json.dumps(error).encode('utf-8'))
 
-server = http.server.HTTPServer(("127.0.0.1", port), SCQHandler)
+def main():
+    """CLI entry point. Pulls argv, finds a port, binds + serves until Ctrl+C."""
+    _ensure_console()
+    # Serve from the directory this script lives in
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-base = f"http://localhost:{port}"
-print(f"SCQ Paper Database — serving at {base}")
-print()
-for key in PAGES:
-    marker = " *" if key in to_open else ""
-    print(f"  {PAGES[key]:30s} {base}/{PAGES[key]}{marker}")
-print()
-print("  * = opening in browser")
-print("  Close this window or Ctrl+C to stop.\n")
+    # Determine which pages to open
+    arg = sys.argv[1].lower() if len(sys.argv) > 1 else "all"
+    if arg in PAGES:
+        to_open = [arg]
+    elif arg == "all":
+        to_open = list(PAGES.keys())
+    else:
+        print(f"Unknown page '{arg}'. Options: {', '.join(PAGES.keys())}, all")
+        input("Press Enter to exit.")
+        sys.exit(1)
 
-threading.Thread(target=open_tabs, args=(port, to_open), daemon=True).start()
+    port = find_open_port(PORT)
+    server = http.server.HTTPServer(("127.0.0.1", port), SCQHandler)
 
-try:
-    server.serve_forever()
-except KeyboardInterrupt:
-    pass
-finally:
-    server.shutdown()
-    print("Stopped.")
+    base = f"http://localhost:{port}"
+    print(f"SCQ Paper Database — serving at {base}")
+    print()
+    for key in PAGES:
+        marker = " *" if key in to_open else ""
+        print(f"  {PAGES[key]:30s} {base}/{PAGES[key]}{marker}")
+    print()
+    print("  * = opening in browser")
+    print("  Close this window or Ctrl+C to stop.\n")
+
+    threading.Thread(target=open_tabs, args=(port, to_open), daemon=True).start()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.shutdown()
+        print("Stopped.")
+
+
+if __name__ == "__main__":
+    main()

@@ -29,6 +29,7 @@
 import { updateSyncIndicator } from './sync-indicator.js';
 import { getPdfPath } from './pdf-path.js';
 import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';
+import { saveToDisk, installClickToSave } from './save-to-disk.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -37,7 +38,9 @@ import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';
 window.updateSyncIndicator = updateSyncIndicator;
 window.getPdfPath = getPdfPath;
 window.closeMoreMenu = closeMoreMenu;
+window.saveToDisk = saveToDisk;  // for the More menu button + bare callers
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
 installMoreMenuOutsideClick();
+installClickToSave();
