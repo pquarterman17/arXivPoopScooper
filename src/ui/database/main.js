@@ -27,9 +27,17 @@
  */
 
 import { updateSyncIndicator } from './sync-indicator.js';
+import { getPdfPath } from './pdf-path.js';
+import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
 // can be migrated piecemeal. When a caller is ported to a module, it should
 // import the named export directly instead of going through window.
 window.updateSyncIndicator = updateSyncIndicator;
+window.getPdfPath = getPdfPath;
+window.closeMoreMenu = closeMoreMenu;
+
+// ─── One-time DOM wiring ───
+// Features that need a global listener at boot install it here, idempotently.
+installMoreMenuOutsideClick();

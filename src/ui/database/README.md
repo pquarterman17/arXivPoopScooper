@@ -34,31 +34,30 @@ don't rewrite it in one go. Instead:
 
 Per the plan, in roughly increasing complexity:
 
-| Section in legacy HTML        | Lines       | Status            |
-|-------------------------------|-------------|-------------------|
-| Sync indicator                | 1943–1957   | ✅ migrated       |
-| PDF Viewer Panel              | 3100–3119   | open (small)      |
-| Annotation Highlights         | 3120–3154   | open (small)      |
-| Sort                          | 2810–2843   | open (small)      |
-| Word citation copy            | 2844–2855   | open (small)      |
-| Helpers                       | 2348–2416   | open              |
-| PDF path helper               | 2165–2169   | open (tiny)       |
-| Collection .bib export        | 2170–2182   | open              |
-| Collection .json export       | 2183–2242   | open              |
-| Manual paper linking          | 2243–2320   | open              |
-| Related papers detection     | 2321–2347   | open              |
-| Init                          | 1892–1942   | open (load order) |
-| Sync indicator                | 1943–1957   | ✅                |
-| Export/Import                 | 1958–2164   | open              |
-| Collections                   | 2417–2483   | open              |
-| Add Website / Link modal     | 2484–2809   | open (medium)     |
-| Render                        | 2856–3058   | open (medium)     |
-| Event handlers                | 3059–3099   | open              |
-| Drag-and-drop PDF import     | 1672–1891   | open (medium)     |
-| Analytics Dashboard           | 1458–1651   | open (medium)     |
-| More menu                     | 1448–1457   | open (tiny)       |
-| Tag management                | 3155–3888   | open (large)      |
-| Collaboration                 | 3889–4649   | open (largest)    |
+| Section in legacy HTML        | Status            | Module                                |
+|-------------------------------|-------------------|---------------------------------------|
+| More menu                     | ✅ migrated       | `more-menu.js`                        |
+| Sync indicator                | ✅ migrated       | `sync-indicator.js`                   |
+| PDF path helper               | ✅ migrated       | `pdf-path.js`                         |
+| PDF Viewer Panel              | open (small)      |                                       |
+| Annotation Highlights         | open (small)      |                                       |
+| Sort                          | open (small)      |                                       |
+| Word citation copy            | open (small)      |                                       |
+| Helpers                       | open              |                                       |
+| Collection .bib export        | open              |                                       |
+| Collection .json export       | open              |                                       |
+| Manual paper linking          | open              |                                       |
+| Related papers detection      | open              |                                       |
+| Init                          | open (load order) |                                       |
+| Export/Import                 | open              |                                       |
+| Collections                   | open              |                                       |
+| Add Website / Link modal      | open (medium)     |                                       |
+| Render                        | open (medium)     |                                       |
+| Event handlers                | open              |                                       |
+| Drag-and-drop PDF import      | open (medium)     |                                       |
+| Analytics Dashboard           | open (medium)     |                                       |
+| Tag management                | open (large)      |                                       |
+| Collaboration                 | open (largest)    |                                       |
 
 (Line numbers were valid as of plan creation; they drift as features
 migrate. Use grep for current locations.)

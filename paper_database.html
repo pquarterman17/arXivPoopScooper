@@ -1452,14 +1452,10 @@ async function arxivFetch(url) {
 }
 
 // ─── More menu ───
-function closeMoreMenu() {
-  document.getElementById('more-menu').classList.remove('open');
-}
-// Close more menu when clicking outside
-document.addEventListener('click', e => {
-  const menu = document.getElementById('more-menu');
-  if (menu && !e.target.closest('.toolbar-more')) menu.classList.remove('open');
-});
+// Migrated to src/ui/database/more-menu.js (plan #8). closeMoreMenu is
+// shimmed onto window from main.js for the inline onclick= callers in
+// the toolbar; the global click-outside listener is installed once by
+// installMoreMenuOutsideClick() in main.js.
 
 // ─── Analytics Dashboard ───
 function showAnalytics() {
@@ -2159,9 +2155,9 @@ function exportCollectionAsDB(collName) {
 }
 
 // ─── PDF path helper ───
-function getPdfPath(paperId) {
-  return "pdfs/" + paperId.replace(/[^a-zA-Z0-9._-]/g, "_") + ".pdf";
-}
+// Migrated to src/ui/database/pdf-path.js (plan #8). Shimmed onto window
+// by main.js for the inline render-template callers and the legacy
+// openPdfViewer.
 
 // ─── Collection .bib export ───
 function exportCollectionBib(collName) {
