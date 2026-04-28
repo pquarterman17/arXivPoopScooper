@@ -55,3 +55,10 @@ data/user_config/*.toml
 # so leftover working copies don't get re-tracked. Migration is automatic
 # in tools/arxiv_digest.py — but the canonical location is now user_config.
 email_recipients.json
+
+# Legacy: pre-DB user state backup. Only ever read by
+# `tools/init_database.py --migrate` (one-shot, completed long ago).
+# Database tables are now canonical. Kept untracked so old working copies
+# can stick around for reference without re-entering git.
+notes.json
+pending_papers.json
