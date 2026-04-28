@@ -1,6 +1,6 @@
-# SCQ Paper Database — Features & Roadmap
+# ScientificLitterScoop — Features & Roadmap
 
-A lightweight, browser-based literature management system for superconducting quantum computing research. Inspired by Mendeley circa 2017: powerful enough to be useful, simple enough to not get in the way.
+A lightweight, browser-based literature management system for superconducting quantum computing (SCQ) research. Inspired by Mendeley circa 2017: powerful enough to be useful, simple enough to not get in the way.
 
 ---
 

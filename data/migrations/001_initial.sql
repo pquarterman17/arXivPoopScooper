@@ -1,4 +1,4 @@
--- 001_initial.sql — initial schema for the SCQ paper database.
+-- 001_initial.sql — initial schema for ScientificLitterScoop's paper database.
 --
 -- Tables:
 --   papers         core paper metadata

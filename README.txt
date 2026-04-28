@@ -1,5 +1,5 @@
-SCQ Paper Database - References
-===============================
+ScientificLitterScoop
+=====================
 Superconducting Circuits & Qubits Literature Collection
 
 QUICK START — Adding a paper from arXiv:

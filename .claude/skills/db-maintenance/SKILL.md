@@ -3,9 +3,9 @@ name: db-maintenance
 description: "Perform maintenance operations on the SCQ paper database — delete papers, update tags, edit notes, fix citations, re-tag, merge duplicates, export subsets, or inspect database contents. Use this skill whenever the user asks to 'delete a paper', 'remove', 'change tags', 'edit tags', 'retag', 'add a note', 'edit note', 'fix citation', 'how many papers', 'list papers', 'show me what is in the database', 'export', 'clean up', 'merge', or any other direct database manipulation that is not adding a new paper or enriching an existing one."
 ---
 
-# SCQ Database Maintenance
+# Database Maintenance
 
-This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is a SQLite file encoded as base64 in `scq_data.js`.
+This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is the SQLite file at `data/scq_papers.db` (served directly via HTTP by `serve.py`).
 
 ## Connecting to the Database
 

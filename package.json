@@ -2,7 +2,7 @@
   "name": "scientific-litter-scoop",
   "version": "0.1.0",
   "private": true,
-  "description": "Frontend modules for the SCQ paper database. No build step — vanilla ES modules served by serve.py.",
+  "description": "Frontend modules for ScientificLitterScoop — a scientific literature manager for SCQ (superconducting quantum computing) research. No build step — vanilla ES modules served by serve.py.",
   "type": "module",
   "scripts": {
     "test": "vitest run",

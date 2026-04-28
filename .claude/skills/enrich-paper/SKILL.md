@@ -3,7 +3,7 @@ name: enrich-paper
 description: "Read a paper's PDF and fill in its summary, key results, and research group in the SCQ database. Use this skill whenever the user says 'summarize this paper', 'read the paper', 'enrich', 'fill in the details', 'what are the key results', 'who wrote this', or asks you to review/analyze a paper that's already in the database. Also trigger when the user asks 'what is this paper about' for a paper in the DB — reading and enriching go hand in hand."
 ---
 
-# Enrich Paper in SCQ Database
+# Enrich Paper
 
 After a paper is added via the add-paper pipeline, it has a truncated abstract as its summary, no key results, and no research group. This skill reads the actual PDF and fills in those fields with real scientific insight.
 

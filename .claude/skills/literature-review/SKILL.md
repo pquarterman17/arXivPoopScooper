@@ -3,7 +3,7 @@ name: literature-review
 description: "Generate a structured literature review or field summary from papers in the SCQ database, optionally supplemented by external search. Use this skill when the user asks 'what do we know about X', 'summarize the state of the field', 'literature review on', 'what papers do we have on', 'compare these papers', 'identify gaps', 'what is missing from our collection', 'survey of', or wants to understand how a set of papers in the database relate to each other or to a broader research question."
 ---
 
-# Literature Review from SCQ Database
+# Literature Review
 
 This skill synthesizes papers already in the database (and optionally external sources) into a structured overview of a research topic.
 

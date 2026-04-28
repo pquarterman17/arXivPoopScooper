@@ -3,9 +3,9 @@ name: add-paper
 description: "Add a paper to the SCQ database from an arXiv ID. Use this skill whenever the user says 'add paper', 'add this paper', gives you an arXiv ID (like 2401.12345), shares an arXiv URL, says 'fetch paper', or asks to import a paper. This skill handles the full pipeline: fetching metadata + PDF from arXiv, processing into the database, and optionally enriching with a summary. Even if the user just pastes an arXiv link with no other context, use this skill."
 ---
 
-# Add Paper to SCQ Database
+# Add Paper
 
-This skill runs the full pipeline to add an arXiv paper to the SCQ paper database. It's a two-step process because the Cowork sandbox can't reach arxiv.org directly — Step 1 runs on the host machine via Desktop Commander, Step 2 runs in the sandbox.
+This skill runs the full pipeline to add an arXiv paper to the ScientificLitterScoop database. It's a two-step process because the Cowork sandbox can't reach arxiv.org directly — Step 1 runs on the host machine via Desktop Commander, Step 2 runs in the sandbox.
 
 ## Path Setup
 

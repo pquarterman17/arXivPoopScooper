@@ -1,6 +1,8 @@
-# SCQ Paper Database — Claude Session Guide
+# ScientificLitterScoop — Claude Session Guide
 
 This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (`data/scq_papers.db`, served directly via HTTP and loaded into the browser by sql.js).
+
+> Naming note: the project lives at `github.com/pquarterman17/ScientificLitterScoop`. User-facing branding says "ScientificLitterScoop"; internal docs and code may still say "SCQ" since the *research domain* (superconducting quantum computing) is unchanged. The Python package is `scq`, the database is `scq_papers.db`, the env-var prefix is `SCQ_`. Don't rename those.
 
 > **Refactor in progress (2026-04-28+):** the codebase is being decomposed
 > from two monolithic HTML files into layered ES modules under `src/` plus a
