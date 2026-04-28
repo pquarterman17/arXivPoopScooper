@@ -1,0 +1,14 @@
+{
+  "name": "unknown key with additionalProperties=false is reported as kind=additionalProperties",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "known": { "type": "string" }
+    }
+  },
+  "payload": { "known": "ok", "typo": "oops" },
+  "expectedErrors": [
+    { "path": "$.typo", "kind": "additionalProperties" }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "error inside a nested array element has the indexed path",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "payload": {
+    "sources": [
+      { "id": "ok" },
+      { "label": "missing id" }
+    ]
+  },
+  "expectedErrors": [
+    { "path": "$.sources[1].id", "kind": "required" }
+  ]
+}

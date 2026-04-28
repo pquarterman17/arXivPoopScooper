@@ -1,0 +1,16 @@
+{
+  "name": "invalid email format reported as kind=format",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "to": {
+        "type": "string",
+        "format": "email"
+      }
+    }
+  },
+  "payload": { "to": "not an email" },
+  "expectedErrors": [
+    { "path": "$.to", "kind": "format" }
+  ]
+}

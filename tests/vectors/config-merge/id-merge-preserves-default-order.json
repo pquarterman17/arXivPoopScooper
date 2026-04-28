@@ -1,0 +1,34 @@
+{
+  "name": "id-merge: order = defaults order, then new ids in override order",
+  "defaults": {
+    "sources": [
+      { "id": "a" },
+      { "id": "b" },
+      { "id": "c" }
+    ]
+  },
+  "override": {
+    "sources": [
+      { "id": "d" },
+      { "id": "b", "label": "B-renamed" }
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sources": {
+        "type": "array",
+        "x-mergeKey": "id",
+        "items": { "type": "object" }
+      }
+    }
+  },
+  "expected": {
+    "sources": [
+      { "id": "a" },
+      { "id": "b", "label": "B-renamed" },
+      { "id": "c" },
+      { "id": "d" }
+    ]
+  }
+}

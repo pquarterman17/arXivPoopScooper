@@ -244,7 +244,9 @@ function _check(value, schema, path, errors) {
       for (let i = 0; i < value.length; i++) {
         const k = JSON.stringify(value[i]);
         if (seen.has(k)) {
-          errors.push(`${path}[${i}]: duplicate item`);
+          // Path points at the array, not the duplicate item, matching the
+          // standard JSON Schema behavior (and what python jsonschema reports).
+          errors.push(`${path}: duplicate item`);
           break;
         }
         seen.add(k);

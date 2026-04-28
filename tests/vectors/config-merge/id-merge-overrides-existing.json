@@ -1,0 +1,37 @@
+{
+  "name": "id-merge: override replaces fields on an existing entry by id",
+  "defaults": {
+    "sources": [
+      { "id": "arxiv", "label": "arXiv", "enabled": true },
+      { "id": "prl", "label": "PRL", "enabled": false }
+    ]
+  },
+  "override": {
+    "sources": [
+      { "id": "prl", "enabled": true }
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sources": {
+        "type": "array",
+        "x-mergeKey": "id",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "label": { "type": "string" },
+            "enabled": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "sources": [
+      { "id": "arxiv", "label": "arXiv", "enabled": true },
+      { "id": "prl", "label": "PRL", "enabled": true }
+    ]
+  }
+}

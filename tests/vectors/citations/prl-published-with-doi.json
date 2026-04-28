@@ -1,0 +1,18 @@
+{
+  "name": "PRL: published paper with journal, volume, pages, DOI",
+  "paper": {
+    "id": "doi-paper-1",
+    "title": "Surface oxides in tantalum",
+    "authors": "C. Researcher, D. Coauthor",
+    "shortAuthors": "Researcher, Coauthor",
+    "year": 2024,
+    "journal": "Phys. Rev. Lett.",
+    "volume": "132",
+    "pages": "012345",
+    "doi": "10.1103/PhysRevLett.132.012345",
+    "url": "https://doi.org/10.1103/PhysRevLett.132.012345"
+  },
+  "style": "prl",
+  "expectedBib": "@article{researchercoauthor2024,\n  title = {Surface oxides in tantalum},\n  author = {C. Researcher, D. Coauthor},\n  year = {2024},\n  journal = {Phys. Rev. Lett.},\n  volume = {132},\n  pages = {012345},\n  doi = {10.1103/PhysRevLett.132.012345},\n  url = {https://doi.org/10.1103/PhysRevLett.132.012345}\n}",
+  "expectedTxt": "C. Researcher, D. Coauthor, \"Surface oxides in tantalum,\" Phys. Rev. Lett., 132, 012345 (2024), doi:10.1103/PhysRevLett.132.012345."
+}

@@ -1,0 +1,14 @@
+{
+  "name": "well-formed payload reports no errors",
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name"],
+    "properties": {
+      "name": { "type": "string", "minLength": 1 },
+      "count": { "type": "integer", "minimum": 0 }
+    }
+  },
+  "payload": { "name": "ok", "count": 5 },
+  "expectedErrors": []
+}

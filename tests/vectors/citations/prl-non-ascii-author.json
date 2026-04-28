@@ -1,0 +1,16 @@
+{
+  "name": "PRL: non-ASCII author surname (e.g. Guéry-Odelin) — note the cite key drops non-ASCII chars",
+  "paper": {
+    "id": "2402.11111",
+    "arxivId": "2402.11111",
+    "title": "Floquet engineering of tight-binding",
+    "authors": "D. Ronco, F. Arrouas, D. Guéry-Odelin",
+    "shortAuthors": "Ronco, Arrouas, Guéry-Odelin",
+    "year": 2024,
+    "source": "arxiv",
+    "url": "https://arxiv.org/abs/2402.11111"
+  },
+  "style": "prl",
+  "expectedBib": "@article{roncoarrouasguryodelin2024,\n  title = {Floquet engineering of tight-binding},\n  author = {D. Ronco, F. Arrouas, D. Guéry-Odelin},\n  year = {2024},\n  eprint = {2402.11111},\n  archivePrefix = {arXiv},\n  url = {https://arxiv.org/abs/2402.11111}\n}",
+  "expectedTxt": "D. Ronco, F. Arrouas, D. Guéry-Odelin, \"Floquet engineering of tight-binding,\" arXiv:2402.11111 (2024)."
+}

@@ -1,0 +1,17 @@
+{
+  "name": "duplicate array entries with uniqueItems=true reported as kind=uniqueItems",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "uniqueItems": true
+      }
+    }
+  },
+  "payload": { "tags": ["x", "y", "x"] },
+  "expectedErrors": [
+    { "path": "$.tags", "kind": "uniqueItems" }
+  ]
+}

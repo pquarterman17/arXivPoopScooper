@@ -1,0 +1,17 @@
+{
+  "name": "number above maximum is reported with kind=maximum",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "pdfPaneWidthPct": {
+        "type": "integer",
+        "minimum": 20,
+        "maximum": 80
+      }
+    }
+  },
+  "payload": { "pdfPaneWidthPct": 999 },
+  "expectedErrors": [
+    { "path": "$.pdfPaneWidthPct", "kind": "maximum" }
+  ]
+}

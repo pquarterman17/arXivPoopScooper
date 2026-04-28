@@ -1,0 +1,17 @@
+{
+  "name": "number below minimum is reported with kind=minimum",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "maxPapers": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 200
+      }
+    }
+  },
+  "payload": { "maxPapers": 0 },
+  "expectedErrors": [
+    { "path": "$.maxPapers", "kind": "minimum" }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "nested object: properties merge key-by-key, untouched fields preserved",
+  "defaults": {
+    "autoFetch": {
+      "enabled": true,
+      "cooldownHours": 4,
+      "maxResultsPerQuery": 25
+    }
+  },
+  "override": {
+    "autoFetch": {
+      "cooldownHours": 1
+    }
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "autoFetch": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "cooldownHours": { "type": "integer" },
+          "maxResultsPerQuery": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "expected": {
+    "autoFetch": {
+      "enabled": true,
+      "cooldownHours": 1,
+      "maxResultsPerQuery": 25
+    }
+  }
+}

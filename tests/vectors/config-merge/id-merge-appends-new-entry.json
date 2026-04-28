@@ -1,0 +1,29 @@
+{
+  "name": "id-merge: a new id is appended after the defaults",
+  "defaults": {
+    "sources": [
+      { "id": "arxiv", "label": "arXiv" }
+    ]
+  },
+  "override": {
+    "sources": [
+      { "id": "prxq", "label": "PRX Quantum", "enabled": true }
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sources": {
+        "type": "array",
+        "x-mergeKey": "id",
+        "items": { "type": "object" }
+      }
+    }
+  },
+  "expected": {
+    "sources": [
+      { "id": "arxiv", "label": "arXiv" },
+      { "id": "prxq", "label": "PRX Quantum", "enabled": true }
+    ]
+  }
+}

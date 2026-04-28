@@ -1,0 +1,15 @@
+{
+  "name": "missing required field is reported with kind=required",
+  "schema": {
+    "type": "object",
+    "required": ["name", "year"],
+    "properties": {
+      "name": { "type": "string" },
+      "year": { "type": "integer" }
+    }
+  },
+  "payload": { "name": "ok" },
+  "expectedErrors": [
+    { "path": "$.year", "kind": "required" }
+  ]
+}

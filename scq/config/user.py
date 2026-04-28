@@ -198,11 +198,17 @@ def _validate(data: Any, schema: dict[str, Any]) -> list[str]:
     ignores unknown keywords by default, which is what we want.
     """
     # Use Draft 2020-12; it's what our schemas declare via $schema.
+    # Pass FormatChecker so `format: "email"` is actually validated — without
+    # this, jsonschema treats `format` as informational and the JS side would
+    # disagree with us on whether 'not an email' is valid.
     validator_cls = jsonschema.Draft202012Validator
     cleaned_schema = dict(schema)
     cleaned_schema.pop("$schema", None)
     cleaned_schema.pop("$id", None)
-    validator = validator_cls(cleaned_schema)
+    validator = validator_cls(
+        cleaned_schema,
+        format_checker=validator_cls.FORMAT_CHECKER,
+    )
     return [
         f"$.{'.'.join(str(p) for p in err.absolute_path)}: {err.message}"
         if err.absolute_path

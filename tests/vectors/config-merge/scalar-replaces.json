@@ -1,0 +1,21 @@
+{
+  "name": "scalar override replaces the default value",
+  "defaults": {
+    "theme": "system",
+    "tableDensity": "comfortable"
+  },
+  "override": {
+    "theme": "dark"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "theme": { "type": "string" },
+      "tableDensity": { "type": "string" }
+    }
+  },
+  "expected": {
+    "theme": "dark",
+    "tableDensity": "comfortable"
+  }
+}

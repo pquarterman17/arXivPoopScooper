@@ -1,0 +1,16 @@
+{
+  "name": "PRL: arXiv preprint with five authors (et al. boundary)",
+  "paper": {
+    "id": "2405.00000",
+    "arxivId": "2405.00000",
+    "title": "A bigly collaborative paper",
+    "authors": "Alice Adams, Bob Bell, Carol Cole, Dan Doe, Eve Edwards",
+    "shortAuthors": "Adams et al.",
+    "year": 2024,
+    "source": "arxiv",
+    "url": "https://arxiv.org/abs/2405.00000"
+  },
+  "style": "prl",
+  "expectedBib": "@article{adamsetal2024,\n  title = {A bigly collaborative paper},\n  author = {Alice Adams, Bob Bell, Carol Cole, Dan Doe, Eve Edwards},\n  year = {2024},\n  eprint = {2405.00000},\n  archivePrefix = {arXiv},\n  url = {https://arxiv.org/abs/2405.00000}\n}",
+  "expectedTxt": "Alice Adams, Bob Bell, Carol Cole, Dan Doe, Eve Edwards, \"A bigly collaborative paper,\" arXiv:2405.00000 (2024)."
+}

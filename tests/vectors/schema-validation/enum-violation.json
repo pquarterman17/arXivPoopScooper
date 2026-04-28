@@ -1,0 +1,16 @@
+{
+  "name": "value outside enum is reported with kind=enum",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "theme": {
+        "type": "string",
+        "enum": ["light", "dark", "system"]
+      }
+    }
+  },
+  "payload": { "theme": "neon" },
+  "expectedErrors": [
+    { "path": "$.theme", "kind": "enum" }
+  ]
+}

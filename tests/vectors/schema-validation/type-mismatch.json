@@ -1,0 +1,15 @@
+{
+  "name": "wrong type for a field is reported with kind=type",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "count": { "type": "integer" },
+      "label": { "type": "string" }
+    }
+  },
+  "payload": { "count": "not a number", "label": 42 },
+  "expectedErrors": [
+    { "path": "$.count", "kind": "type" },
+    { "path": "$.label", "kind": "type" }
+  ]
+}

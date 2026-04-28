@@ -1,0 +1,16 @@
+{
+  "name": "PRL: arXiv preprint with two authors",
+  "paper": {
+    "id": "2401.12345",
+    "arxivId": "2401.12345",
+    "title": "Coherence in transmon qubits",
+    "authors": "Alice Adams, Bob Bell",
+    "shortAuthors": "Adams, Bell",
+    "year": 2024,
+    "source": "arxiv",
+    "url": "https://arxiv.org/abs/2401.12345"
+  },
+  "style": "prl",
+  "expectedBib": "@article{adamsbell2024,\n  title = {Coherence in transmon qubits},\n  author = {Alice Adams, Bob Bell},\n  year = {2024},\n  eprint = {2401.12345},\n  archivePrefix = {arXiv},\n  url = {https://arxiv.org/abs/2401.12345}\n}",
+  "expectedTxt": "Alice Adams, Bob Bell, \"Coherence in transmon qubits,\" arXiv:2401.12345 (2024)."
+}
