@@ -1,6 +1,14 @@
 # SCQ Paper Database — Claude Session Guide
 
-This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (base64-encoded in `scq_data.js` for sql.js WASM).
+This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (`data/scq_papers.db`, served directly via HTTP and loaded into the browser by sql.js).
+
+> **Refactor in progress (2026-04-28+):** the codebase is being decomposed
+> from two monolithic HTML files into layered ES modules under `src/` plus a
+> Python package under `scq/`. See `plans/architecture-refactor.md` for the
+> tier list. The legacy `paper_database.html`, `paper_scraper.html`,
+> `db_utils.js`, and `scraper_config.js` still drive production until items
+> #8 / #9 land — don't extend them with new features. Add new functionality
+> to `src/services/*` (DOM-free) or `src/ui/*` (DOM-coupled) instead.
 
 ## Custom Skills
 
@@ -62,7 +70,9 @@ PROJECT_ROOT=$(find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | 
 4. Auto-tags based on arXiv categories + keyword matching
 5. Inserts into SQLite: paper entry, figures, FTS index, read status
 6. Appends to `references.bib` and `references.txt` (with duplicate detection)
-7. Re-exports the DB to `scq_data.js`
+
+The DB at `data/scq_papers.db` is the canonical store; the browser fetches
+it directly via HTTP and reads it with sql.js. There is no re-export step.
 
 ### Enriching a Paper
 
@@ -72,7 +82,7 @@ See the **enrich-paper** skill for full instructions. In short:
 2. Write a 2-3 sentence summary focused on what was done and why it matters
 3. Extract 3-5 key results as a JSON array of strings
 4. Identify the research group (e.g., "de Leon (Princeton)", "Ali (TU Delft)")
-5. Update the DB and re-export `scq_data.js`
+5. Update the DB at `data/scq_papers.db` (no re-export step needed)
 
 ## File Structure
 
@@ -84,18 +94,28 @@ The project is split between two OneDrive locations:
 ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
 ├── serve.py                 Local server + arXiv API proxy + no-cache headers
-├── paper_database.html      Main app: Library + Reading List + Cite tabs + Settings
-├── paper_scraper.html       Paper scraper: Search + Inbox + Quick Search tabs
-├── scq_data.js              SQLite DB as base64 (THE canonical data source)
-├── db_utils.js              Shared sql.js utility layer (includes settings table)
-├── scraper_config.js        Domain-specific config (search presets, tags)
-├── references.bib           BibTeX citations
+├── paper_database.html      Legacy main app (Library/Reading List/Cite/Settings)
+├── paper_scraper.html       Legacy scraper (Search/Inbox/Quick Search)
+├── db_utils.js              Legacy sql.js IIFE — superseded by src/core/db.js
+├── scraper_config.js        Legacy giant config object — superseded by src/config/
+├── references.bib           BibTeX citations (appended by process_paper.py)
 ├── references.txt           Plain-text citations (Physical Review style)
+├── data/
+│   ├── scq_papers.db        Canonical SQLite database (served via HTTP)
+│   ├── migrations/          Versioned schema (001_initial.sql, etc.)
+│   └── user_config/         User overrides (gitignored) + .example starters
+├── src/                     New layered frontend (no build step, ES modules)
+│   ├── core/                  db, store, events, config — DOM-free
+│   ├── services/              papers/notes/tags/citations/arxiv/etc — DOM-free
+│   ├── config/                schemas + ship-defaults
+│   ├── ui/                    DOM-coupled (filling in via items #8 / #9)
+│   └── tests/                 vitest specs (run with `npm test`)
+├── scq/                     Python package (paths.py/migrations etc.)
 ├── papers/                  [Junction → SCQ Paper Library\papers] PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
 ├── figures/                 [Junction → SCQ Paper Library\figures] Extracted figures by arXiv ID
 │   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
 ├── inbox/                   [Junction → SCQ Paper Library\inbox] Staging area for _meta.json files
-├── tools/
+├── tools/                   Python tools (will move into scq/ via plan item #12)
 │   ├── fetch_arxiv.js       Node.js: arXiv API + PDF download (host machine)
 │   ├── fetch.bat            Windows wrapper for fetch_arxiv.js
 │   ├── fetch.sh             macOS/Linux wrapper for fetch_arxiv.js
@@ -103,13 +123,16 @@ ScientificLitterScoop/
 │   ├── extract_figures.py   PyMuPDF figure + caption extractor
 │   ├── process_inbox.py     Batch PDF inbox processor
 │   ├── import_mendeley.py   .bib file importer
-│   ├── init_database.py     DB schema creator / migration tool
+│   ├── init_database.py     DB schema creator (legacy; use scq.db.migrations)
 │   └── merge_database.py    DB merge utility
+├── plans/                   Local-only working plans (gitignored)
 ├── .claude/skills/          Project-specific Claude skills
 │   ├── add-paper/           Full arXiv → DB pipeline
 │   ├── enrich-paper/        PDF → summary/results/group
 │   ├── db-maintenance/      CRUD operations on the database
 │   └── literature-review/   Synthesize papers into field overviews
+├── LICENSE                  MIT
+├── SECURITY.md              Vulnerability disclosure policy
 ├── CLAUDE.md                This file
 ├── FEATURES.md              Full feature documentation
 └── README.txt               Quick overview
@@ -125,29 +148,23 @@ ScientificLitterScoop/
 - **settings** — key, value (JSON) — stores user preferences like sources/presets
 - **papers_fts** — FTS5 full-text search index over papers
 
-The DB lives in `scq_data.js` as a base64-encoded SQLite file. To work with it:
+The DB is `data/scq_papers.db`, a regular SQLite file. To work with it from Python:
 
 ```python
-import sqlite3, re, base64, glob
-# Find DB dynamically
-matches = glob.glob("/sessions/*/mnt/*/scq_data.js")
-DB_JS = matches[0]
-with open(DB_JS) as f:
-    content = f.read()
-match = re.search(r'const SCQ_DB_BASE64 = "([^"]+)"', content)
-db_bytes = base64.b64decode(match.group(1))
-with open('/tmp/.scq_tmp.db', 'wb') as f:
-    f.write(db_bytes)
-conn = sqlite3.connect('/tmp/.scq_tmp.db')
+import sqlite3, glob
+
+# Find the repo root dynamically (sandbox or local)
+matches = glob.glob("/sessions/*/mnt/*/data/scq_papers.db")
+DB = matches[0] if matches else "data/scq_papers.db"
+
+conn = sqlite3.connect(DB)
+conn.execute("PRAGMA foreign_keys = ON")
 # ... do work ...
+conn.commit()
 conn.close()
-# Re-export:
-with open('/tmp/.scq_tmp.db', 'rb') as f:
-    b64 = base64.b64encode(f.read()).decode('ascii')
-with open(DB_JS, 'w') as f:
-    f.write('// Auto-generated database bootstrap\n')
-    f.write(f'const SCQ_DB_BASE64 = "{b64}";\n')
 ```
+
+The `scq.db.connection` helper (in `scq/db/connection.py`) does this for you and resolves the path from `data/user_config/paths.toml` if it exists. The legacy `scq_data.js` base64 bootstrap was retired in commit `c3694d1`.
 
 ## Platform Notes
 
