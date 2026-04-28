@@ -26,7 +26,7 @@ import os
 import sys
 import argparse
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scq_papers.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "scq_papers.db")
 
 SCHEMA = """
 -- Core paper metadata
@@ -464,42 +464,16 @@ def show_stats(db_path=DB_PATH):
     conn.close()
 
 
-def export_js(db_path=DB_PATH):
-    """Export the database as a base64-encoded JS file for file:// protocol compatibility."""
-    import base64
-
-    if not os.path.exists(db_path):
-        print(f"No database found at {db_path}")
-        sys.exit(1)
-
-    with open(db_path, "rb") as f:
-        db_bytes = f.read()
-
-    b64 = base64.b64encode(db_bytes).decode("ascii")
-    js_path = os.path.join(os.path.dirname(db_path), "scq_data.js")
-
-    with open(js_path, "w") as f:
-        f.write("// Auto-generated database bootstrap — regenerate with: python tools/init_database.py --export-js\n")
-        f.write("// Contains the full SQLite database as base64 for file:// protocol compatibility\n")
-        f.write(f'const SCQ_DB_BASE64 = "{b64}";\n')
-
-    print(f"Exported {js_path} ({os.path.getsize(js_path):,} bytes from {os.path.getsize(db_path):,} byte db)")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Initialize SCQ papers database")
     parser.add_argument("--migrate", action="store_true", help="Migrate from HTML + notes.json")
     parser.add_argument("--stats", action="store_true", help="Show database statistics")
-    parser.add_argument("--export-js", action="store_true", help="Export database as scq_data.js for file:// protocol")
     parser.add_argument("--db", default=DB_PATH, help="Database path")
     args = parser.parse_args()
 
     if args.stats:
         show_stats(args.db)
-    elif args.export_js:
-        export_js(args.db)
     elif args.migrate:
         migrate_from_html(args.db)
-        export_js(args.db)  # Auto-export JS after migration
     else:
         create_database(args.db)

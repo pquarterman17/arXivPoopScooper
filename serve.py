@@ -70,7 +70,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # File extensions that should never be cached (forces browser to always
 # fetch fresh copies — no more Ctrl+Shift+R needed after edits).
-NO_CACHE_EXTENSIONS = {".html", ".js", ".css", ".json"}
+NO_CACHE_EXTENSIONS = {".html", ".js", ".css", ".json", ".db"}
 
 
 def find_open_port(start=8080, end=8099):

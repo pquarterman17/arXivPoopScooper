@@ -15,7 +15,10 @@
  */
 
 const SCQ = (function () {
-  const DB_FILE = "scq_papers.db";
+  // Canonical DB location, served by serve.py from data/scq_papers.db.
+  // The legacy base64 bootstrap (scq_data.js) was retired — the page must
+  // be served over HTTP (file:// no longer supported).
+  const DB_FILE = "data/scq_papers.db";
   let db = null;
   let SQL = null;
   let dirty = false;
@@ -27,43 +30,28 @@ const SCQ = (function () {
     SQL = await initSqlJs({
       locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`
     });
-    // Load database using best available source:
-    // 1. Embedded base64 from scq_data.js (works with file:// protocol)
-    // 2. Fetch from .db file (works when served over HTTP)
-    // 3. localStorage cache (fallback)
-    // 4. Empty database (last resort)
+    // Load order:
+    //   1. HTTP fetch from data/scq_papers.db (canonical)
+    //   2. localStorage cache (offline fallback)
+    //   3. Empty database with schema (last resort)
     let loaded = false;
 
-    // 1. Try embedded base64 from scq_data.js
-    if (!loaded && typeof SCQ_DB_BASE64 === "string" && SCQ_DB_BASE64.length > 0) {
-      try {
-        const binary = atob(SCQ_DB_BASE64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        db = new SQL.Database(bytes);
+    // 1. HTTP fetch (canonical)
+    try {
+      const resp = await fetch(DB_FILE + "?" + Date.now());
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        db = new SQL.Database(new Uint8Array(buf));
         loaded = true;
-        console.log("[SCQ] Loaded database from embedded scq_data.js (" + (binary.length / 1024).toFixed(0) + "KB)");
-      } catch (e) {
-        console.warn("[SCQ] Failed to load embedded data:", e.message);
+        console.log("[SCQ] Loaded database from " + DB_FILE + " (" + (buf.byteLength / 1024).toFixed(0) + "KB)");
+      } else {
+        console.warn("[SCQ] " + DB_FILE + " returned HTTP " + resp.status);
       }
+    } catch (e) {
+      console.warn("[SCQ] fetch failed — page may be loaded via file://. Run via serve.py.", e.message);
     }
 
-    // 2. Try fetch (works on HTTP servers)
-    if (!loaded) {
-      try {
-        const resp = await fetch(DB_FILE + "?" + Date.now());
-        if (resp.ok) {
-          const buf = await resp.arrayBuffer();
-          db = new SQL.Database(new Uint8Array(buf));
-          loaded = true;
-          console.log("[SCQ] Loaded database from " + DB_FILE);
-        }
-      } catch (e) {
-        console.log("[SCQ] fetch() not available (file:// protocol), trying fallbacks");
-      }
-    }
-
-    // 3. Try localStorage cache
+    // 2. localStorage cache (offline fallback)
     if (!loaded) {
       const cached = localStorage.getItem("scq-db-base64");
       if (cached) {
@@ -80,7 +68,7 @@ const SCQ = (function () {
       }
     }
 
-    // 4. Last resort: empty database
+    // 3. Last resort: empty database
     if (!loaded) {
       console.warn("[SCQ] No database found — creating empty database");
       db = new SQL.Database();

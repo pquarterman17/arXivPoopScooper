@@ -381,7 +381,6 @@ if __name__ == "__main__":
     merge_p.add_argument("source", help="Source database to merge from")
     merge_p.add_argument("target", help="Target database to merge into")
     merge_p.add_argument("--dry-run", action="store_true", help="Preview without making changes")
-    merge_p.add_argument("--export-js", action="store_true", help="Also regenerate scq_data.js after merge")
 
     export_p = sub.add_parser("export-collection", help="Export a collection as standalone .db")
     export_p.add_argument("db", help="Source database")
@@ -392,9 +391,6 @@ if __name__ == "__main__":
 
     if args.command == "merge":
         merge_databases(args.source, args.target, dry_run=args.dry_run)
-        if args.export_js and not args.dry_run:
-            from init_database import export_js
-            export_js(args.target)
     elif args.command == "export-collection":
         output = args.output or (args.collection.replace(" ", "_") + ".db")
         export_collection(args.db, args.collection, output)

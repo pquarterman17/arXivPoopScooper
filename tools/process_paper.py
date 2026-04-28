@@ -7,7 +7,6 @@ Reads the _meta.json produced by fetch_arxiv.js, then:
   2. Generates BibTeX and plain-text citations
   3. Inserts into the SQLite database (paper, figures, read_status, FTS)
   4. Appends to references.bib and references.txt
-  5. Re-exports the DB to scq_data.js for the browser UI
 
 Usage:
   python3 tools/process_paper.py <arxiv_id> [--note "your note here"]
@@ -19,7 +18,7 @@ Expects:
   papers/<pdf_file>            (downloaded by fetch_arxiv.js)
 """
 
-import sys, os, re, json, sqlite3, subprocess, base64
+import sys, os, re, json, sqlite3, subprocess
 from pathlib import Path
 from datetime import date, datetime
 
@@ -29,11 +28,13 @@ PROJECT_DIR = SCRIPT_DIR.parent
 INBOX_DIR = PROJECT_DIR / "inbox"
 PAPERS_DIR = PROJECT_DIR / "papers"
 FIGURES_DIR = PROJECT_DIR / "figures"
-DB_PATH = PROJECT_DIR / "scq_papers.db"
-JS_PATH = PROJECT_DIR / "scq_data.js"
+DB_PATH = PROJECT_DIR / "data" / "scq_papers.db"
 BIB_PATH = PROJECT_DIR / "references.bib"
 TXT_PATH = PROJECT_DIR / "references.txt"
 EXTRACT_SCRIPT = SCRIPT_DIR / "extract_figures.py"
+
+# Make the scq package importable when running from tools/.
+sys.path.insert(0, str(PROJECT_DIR))
 
 
 # ─── Citation generators ──────────────────────────────────────────
@@ -240,38 +241,14 @@ def extract_figures(pdf_path, arxiv_id, prefix):
 # ─── Database operations ──────────────────────────────────────────
 
 def load_db():
-    """Load the SQLite DB from the base64 JS file (primary) or .db file."""
-    # Try to decode from scq_data.js first (this is the canonical source)
-    if JS_PATH.exists():
-        with open(JS_PATH, "r") as f:
-            content = f.read()
-        match = re.search(r'const SCQ_DB_BASE64\s*=\s*"([^"]+)"', content)
-        if match:
-            db_bytes = base64.b64decode(match.group(1))
-            tmp_path = PROJECT_DIR / ".scq_tmp.db"
-            with open(tmp_path, "wb") as f:
-                f.write(db_bytes)
-            return sqlite3.connect(str(tmp_path)), tmp_path
-    # Fallback to .db file
-    if DB_PATH.exists() and DB_PATH.stat().st_size > 0:
-        return sqlite3.connect(str(DB_PATH)), DB_PATH
-    print("ERROR: No database found (scq_data.js or scq_papers.db)")
-    sys.exit(1)
+    """Open the canonical SQLite DB at data/scq_papers.db, applying migrations."""
+    from scq.db.migrations import apply_pending
 
-
-def export_db(tmp_path):
-    """Re-export the SQLite DB to scq_data.js."""
-    with open(tmp_path, "rb") as f:
-        db_bytes = f.read()
-    b64 = base64.b64encode(db_bytes).decode("ascii")
-    with open(JS_PATH, "w", encoding="utf-8") as f:
-        f.write("// Auto-generated database bootstrap — regenerate with: python tools/init_database.py --export-js\n")
-        f.write("// Contains the full SQLite database as base64 for file:// protocol compatibility\n")
-        f.write(f'const SCQ_DB_BASE64 = "{b64}";\n')
-    # Also update the .db file
-    with open(DB_PATH, "wb") as f:
-        f.write(db_bytes)
-    print(f"  Exported: scq_data.js ({len(db_bytes)} bytes)")
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA foreign_keys = ON")
+    apply_pending(conn)
+    return conn
 
 
 def insert_paper(conn, meta, summary, key_results_list, tags_list,
@@ -375,7 +352,7 @@ def _process_doi(doi, note):
     print(f"{'='*60}")
 
     # Fetch metadata
-    print("\n[1/4] Looking up DOI metadata...")
+    print("\n[1/3] Looking up DOI metadata...")
     meta = lookup_doi(doi)
     if not meta:
         print("ERROR: Could not fetch DOI metadata")
@@ -386,7 +363,7 @@ def _process_doi(doi, note):
     print(f"  Year: {meta['year']}")
 
     # Load or create database
-    conn, tmp_db = load_db()
+    conn = load_db()
 
     # Generate entry ID from DOI
     entry_id = doi.replace("/", "-").replace(".", "_")[:50]
@@ -413,7 +390,7 @@ def _process_doi(doi, note):
             tags.append(tag)
 
     # Insert into database
-    print("\n[2/4] Inserting into database...")
+    print("\n[2/3] Inserting into database...")
     pdf_rel = ""  # No PDF for published papers (unless downloaded separately)
     insert_paper(conn, {
         'title': meta['title'],
@@ -437,17 +414,9 @@ def _process_doi(doi, note):
     print(f"  Paper inserted with entry_type='published'")
 
     # 3. Update citation files
-    print("\n[3/4] Updating citation files...")
+    print("\n[3/3] Updating citation files...")
     append_bib(meta['cite_bib'], entry_id)
     append_txt(meta['cite_txt'], entry_id)
-
-    # 4. Re-export DB
-    print("\n[4/4] Re-exporting database...")
-    export_db(tmp_db)
-
-    # Clean up temp DB
-    if tmp_db.name == ".scq_tmp.db":
-        tmp_db.unlink(missing_ok=True)
 
     # Print summary
     print(f"\n{'='*60}")
@@ -516,13 +485,13 @@ def main():
             sys.exit(1)
 
     # 1. Extract figures
-    print(f"\n[1/5] Extracting figures from {pdf_file}...")
+    print(f"\n[1/4] Extracting figures from {pdf_file}...")
     prefix = meta["authors"][0].split()[-1].lower() if meta["authors"] else "fig"
     figures = extract_figures(pdf_path, arxiv_id, prefix)
     print(f"  Found {len(figures)} figures")
 
     # 2. Generate citations
-    print("\n[2/5] Generating citations...")
+    print("\n[2/4] Generating citations...")
     bib_key, bib_entry = make_bibtex(meta)
     plain_cite = make_plain_cite(meta)
     print(f"  BibTeX key: {bib_key}")
@@ -569,28 +538,21 @@ def main():
     group_name = ""  # Claude fills this in interactively
 
     # 4. Insert into database
-    print("\n[3/5] Inserting into database...")
-    conn, tmp_db = load_db()
+    print("\n[3/4] Inserting into database...")
+    conn = load_db()
     pdf_rel = f"papers/{pdf_file}"
     insert_paper(conn, meta, summary, key_results, tags,
                  group_name, bib_entry, plain_cite, pdf_rel, note)
     if figures:
         insert_figures(conn, arxiv_id, figures, prefix)
+    conn.commit()
     conn.close()
     print(f"  Paper + {len(figures)} figures + read status inserted")
 
     # 5. Update citation files
-    print("\n[4/5] Updating citation files...")
+    print("\n[4/4] Updating citation files...")
     append_bib(bib_entry, arxiv_id)
     append_txt(plain_cite, arxiv_id)
-
-    # 6. Re-export DB
-    print("\n[5/5] Re-exporting database...")
-    export_db(tmp_db)
-
-    # Clean up temp DB
-    if tmp_db.name == ".scq_tmp.db":
-        tmp_db.unlink(missing_ok=True)
 
     # 7. Auto-sync to Overleaf if configured
     overleaf_config_path = PROJECT_DIR / ".overleaf" / "config.json"
@@ -599,7 +561,7 @@ def main():
             with open(overleaf_config_path) as f:
                 overleaf_config = json.load(f)
             if overleaf_config.get("auto_sync", False):
-                print("\n[6/5] Auto-syncing to Overleaf...")
+                print("\n[5/4] Auto-syncing to Overleaf...")
                 sync_script = SCRIPT_DIR / "overleaf_sync.py"
                 result = subprocess.run(
                     [sys.executable, str(sync_script)],
