@@ -36,9 +36,8 @@ dev = [
 [project.urls]
 Repository = "https://github.com/Quartzpaige/ScientificLitterScoop"
 
-# NOTE: console script entrypoints will be added in plan item #12 once scq/cli.py exists.
-# [project.scripts]
-# scq = "scq.cli:main"
+[project.scripts]
+scq = "scq.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["scq*"]

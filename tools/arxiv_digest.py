@@ -119,10 +119,21 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIGEST_DIR = os.path.join(BASE_DIR, "digests")
 PENDING_FILE = os.path.join(BASE_DIR, "pending_papers.json")
 
-# Email config — set these environment variables or edit directly
+# Email config.
+# - Sender / recipient defaults still use env vars.
+# - The Gmail App Password resolves through scq.config.secrets so the OS
+#   keyring is honored when set; CI keeps using SCQ_EMAIL_APP_PASSWORD env var.
+# Note: EMAIL_TO is a *default* recipient for when no user_config and no
+# legacy file are present; recipients are otherwise loaded by
+# _load_email_recipients(). No hardcoded address here so a fresh checkout
+# never ships a real email back to the previous maintainer.
 EMAIL_FROM = os.environ.get("SCQ_EMAIL_FROM", "")
-EMAIL_TO = os.environ.get("SCQ_EMAIL_TO", "paige.e.quarterman@gmail.com")
-EMAIL_APP_PASSWORD = os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
+EMAIL_TO = os.environ.get("SCQ_EMAIL_TO", "")
+try:
+    from scq.config import secrets as _secrets  # type: ignore[import-not-found]
+    EMAIL_APP_PASSWORD = _secrets.get("email_app_password") or ""
+except ImportError:
+    EMAIL_APP_PASSWORD = os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
 
 
 # ─── arXiv API ───
