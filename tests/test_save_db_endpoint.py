@@ -33,6 +33,26 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
+@pytest.fixture(autouse=True)
+def _block_browser_and_console_relaunch(monkeypatch):
+    """Defense in depth: if some code path *tries* to open a browser tab or
+    re-launch in a new console (the two ways earlier subprocess-based test
+    runs caused window/tab leaks), fail loudly instead of opening it.
+
+    Applied to every test in this file via autouse.
+    """
+    import webbrowser
+    def _no_browser(*_a, **_kw):
+        raise AssertionError(
+            "test attempted to open a browser tab — this should never happen "
+            "in the in-process test fixture"
+        )
+    monkeypatch.setattr(webbrowser, "open", _no_browser)
+    monkeypatch.setattr(webbrowser, "open_new_tab", _no_browser)
+    # Same for serve._ensure_console — should never fire from a test
+    monkeypatch.setattr(serve, "_ensure_console", lambda: None)
+
+
 @pytest.fixture
 def running_server(tmp_path, monkeypatch):
     """Start ThreadingHTTPServer with the real SCQHandler, pointing at an
