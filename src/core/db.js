@@ -204,6 +204,17 @@ export function isDirty() { return _dirty; }
 export function getDB() { return _db; }
 export function lastSavedAt() { return _lastSavedAt; }
 
+/**
+ * Return the loaded sql.js module so services can construct *additional*
+ * in-memory DBs (for merge/import + collection export, where the legacy
+ * code did `new SQL.Database(otherBytes)`). Throws if init() / createEmpty()
+ * / loadFromBytes() hasn't run yet.
+ */
+export function getSQL() {
+  if (!_SQL) throw new Error('[core/db] sql.js not loaded; call init() / createEmpty() first');
+  return _SQL;
+}
+
 /** Test helper: drop the in-memory DB so a fresh init() can run. */
 export function _reset() {
   if (_db) {
