@@ -1420,6 +1420,12 @@
 <script src="scraper_config.js"></script>
 <script src="db_utils.js"></script>
 
+<!-- New modular UI entry (plan #8). Loads deferred (type=module),
+     after the legacy globals above are set up. Each migrated feature
+     in src/ui/database/*.js gets shimmed onto window from main.js so
+     legacy callers and inline onclick= attributes still work. -->
+<script type="module" src="src/ui/database/main.js"></script>
+
 <script>
 
 // ─── arXiv fetch helper (local proxy when served via serve.py) ───
@@ -1941,19 +1947,9 @@ function _jp(str, fallback) {
 }
 
 // ─── Sync indicator ───
-function updateSyncIndicator(synced) {
-  const el = document.getElementById("sync-indicator");
-  if (!el) return;
-  if (synced) {
-    el.textContent = "synced";
-    el.style.color = "var(--green)";
-    el.title = "All changes saved";
-  } else {
-    el.textContent = "unsaved changes";
-    el.style.color = "var(--orange)";
-    el.title = "Click 'Save database' to persist your changes";
-  }
-}
+// Migrated to src/ui/database/sync-indicator.js (plan item #8). Exposed
+// as window.updateSyncIndicator by src/ui/database/main.js for the
+// SCQ.init().then() caller above and any other inline reference.
 
 // ─── Export/Import ───
 function exportJSON() {

@@ -1,0 +1,35 @@
+/**
+ * Entry point for the new modular paper-database UI (plan item #8).
+ *
+ * **Strangler-fig migration in progress.** The legacy `paper_database.html`
+ * is ~4700 lines of inline JS + CSS. Rather than a big-bang rewrite, we
+ * progressively peel features into modules under `src/ui/database/`. This
+ * file is the bridge: it imports each migrated feature and re-exposes its
+ * public API on `window` so existing inline callers (and `onclick=`
+ * attributes in the HTML) keep working.
+ *
+ * As more features migrate, the legacy boot block in paper_database.html
+ * shrinks. Eventually that block is replaced entirely with a `boot()`
+ * function exported from this file, and the `window.*` shims are dropped.
+ *
+ * **Loading order matters:** this script tag is `type="module"`, which
+ * defers execution until after the document is parsed *and* after legacy
+ * `<script>` tags run. So:
+ *   1. CDN scripts (sql.js, d3) — synchronous during parse
+ *   2. Legacy `db_utils.js`, `scraper_config.js` — synchronous
+ *   3. The big inline `<script>` block — synchronous, sets up SCQ.init()
+ *   4. THIS module — runs after parse; window shims installed
+ *   5. SCQ.init().then() callback fires async after sql.js + DB load
+ * The SCQ.init().then() callback is where legacy code calls our shimmed
+ * functions. By the time it runs, our shims are in place.
+ *
+ * No new boot logic here yet — the legacy block still owns initialization.
+ */
+
+import { updateSyncIndicator } from './sync-indicator.js';
+
+// ─── Legacy globals shim ───
+// Exactly what was inlined before, just re-exposed from a module so callers
+// can be migrated piecemeal. When a caller is ported to a module, it should
+// import the named export directly instead of going through window.
+window.updateSyncIndicator = updateSyncIndicator;
