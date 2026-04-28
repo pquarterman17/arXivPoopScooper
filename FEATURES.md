@@ -11,7 +11,7 @@ Two HTML pages served via a lightweight local server (`serve.py`), backed by a S
 ### File Structure
 
 ```
-References - Claude v0p1 Build/
+ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
 ├── serve.py                 Local server + arXiv API proxy
 ├── paper_database.html      Main app (Library + Reading List + Cite tabs)

@@ -12,10 +12,10 @@ like `scq-arxiv-digest`.
 
 ### 2. Push the project files
 
-Open a terminal in your `References - Claude v0p1 Build` folder and run:
+Open a terminal in your `ScientificLitterScoop` folder and run:
 
 ```bash
-cd "References - Claude v0p1 Build"
+cd ScientificLitterScoop
 git init
 git add tools/arxiv_digest.py tools/github_actions/requirements.txt
 git add digests/.gitkeep

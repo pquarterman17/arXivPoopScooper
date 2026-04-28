@@ -76,8 +76,12 @@ See the **enrich-paper** skill for full instructions. In short:
 
 ## File Structure
 
+The project is split between two OneDrive locations:
+- **Code repo:** `C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop\`
+- **Paper data:** `C:\Users\patri\OneDrive\Work and School Research\SCQ Paper Library\` — `papers/`, `figures/`, `inbox/` live here and are surfaced in the repo via Windows directory junctions.
+
 ```
-References - Claude v0p1 Build/
+ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
 ├── serve.py                 Local server + arXiv API proxy + no-cache headers
 ├── paper_database.html      Main app: Library + Reading List + Cite tabs + Settings
@@ -87,10 +91,10 @@ References - Claude v0p1 Build/
 ├── scraper_config.js        Domain-specific config (search presets, tags)
 ├── references.bib           BibTeX citations
 ├── references.txt           Plain-text citations (Physical Review style)
-├── papers/                  PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
-├── figures/                 Extracted figures by arXiv ID
+├── papers/                  [Junction → SCQ Paper Library\papers] PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
+├── figures/                 [Junction → SCQ Paper Library\figures] Extracted figures by arXiv ID
 │   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
-├── inbox/                   Staging area for _meta.json files
+├── inbox/                   [Junction → SCQ Paper Library\inbox] Staging area for _meta.json files
 ├── tools/
 │   ├── fetch_arxiv.js       Node.js: arXiv API + PDF download (host machine)
 │   ├── fetch.bat            Windows wrapper for fetch_arxiv.js
@@ -152,7 +156,8 @@ with open(DB_JS, 'w') as f:
 | Node.js path | `C:\Program Files\nodejs\node.exe` | `node` (in PATH) |
 | Fetch wrapper | `fetch.bat` (or `run_fetch.bat` in Temp) | `bash tools/fetch.sh` |
 | DC shell | Use `shell: "cmd"` (PowerShell eats stdout) | Default shell works |
-| Workspace path | `C:\Users\patri\OneDrive\Work and School Research\References - Claude v0p1 Build` | TBD — depends on OneDrive/iCloud sync setup |
+| Code path | `C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop` | TBD — depends on OneDrive/iCloud sync setup |
+| Data path | `C:\Users\patri\OneDrive\Work and School Research\SCQ Paper Library` (junctioned into the repo as `papers/`, `figures/`, `inbox/`) | TBD |
 | Python (sandbox) | Always Linux sandbox — same on both | Same |
 
 ## arXiv API Connectivity

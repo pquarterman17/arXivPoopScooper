@@ -17,8 +17,10 @@ find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | head -1 | xargs
 Store the result as `PROJECT_ROOT` and use it throughout.
 
 On the host machine (for Desktop Commander), the project lives at:
-- **Windows:** `C:\Users\patri\OneDrive\Work and School Research\References - Claude v0p1 Build`
-- **macOS:** Check OneDrive or iCloud sync path — likely `~/OneDrive/Work and School Research/References - Claude v0p1 Build`
+- **Windows:** `C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop`
+- **macOS:** Check OneDrive or iCloud sync path — likely `~/OneDrive/Coding/git/ScientificLitterScoop`
+
+The `papers/`, `figures/`, and `inbox/` subdirectories are Windows directory junctions that point into `OneDrive\Work and School Research\SCQ Paper Library\`. From the code's perspective they behave like normal subfolders.
 
 ## Extracting the arXiv ID
 
@@ -41,7 +43,7 @@ Use `shell: "cmd"` with Desktop Commander — PowerShell swallows stdout.
 If `run_fetch.bat` doesn't exist yet, create it first:
 ```bat
 @echo off
-"C:\Program Files\nodejs\node.exe" "C:\Users\patri\OneDrive\Work and School Research\References - Claude v0p1 Build\tools\fetch_arxiv.js" %*
+"C:\Program Files\nodejs\node.exe" "C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop\tools\fetch_arxiv.js" %*
 ```
 
 ### macOS / Linux
