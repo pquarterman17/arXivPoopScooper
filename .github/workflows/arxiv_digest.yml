@@ -55,7 +55,7 @@ jobs:
             DAYS=3
           fi
           echo "Looking back $DAYS day(s)"
-          python tools/arxiv_digest.py --days $DAYS --max-results 500 --smart-weekend
+          python tools/arxiv_digest.py --days $DAYS --max-results 1000 --smart-weekend
 
       - name: Commit digest to repo
         run: |
