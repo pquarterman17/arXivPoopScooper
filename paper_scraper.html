@@ -887,13 +887,24 @@ function applySortToResults(results, sortValue) {
 
 async function doSearch() {
   const query = document.getElementById('search-input').value.trim();
-  if (!query) return;
+  const status = document.getElementById('search-status');
+  if (!query) {
+    status.textContent = 'Enter a query above and click Search (or press Enter).';
+    status.className = 'status';
+    document.getElementById('search-input').focus();
+    return;
+  }
+  const activeKeys = Object.keys(activeSources).filter(k => activeSources[k]);
+  if (activeKeys.length === 0) {
+    status.textContent = 'No sources enabled — toggle at least one source under the search bar.';
+    status.className = 'status error';
+    return;
+  }
 
   const btn = document.getElementById('search-btn');
-  const status = document.getElementById('search-status');
   btn.disabled = true;
   btn.textContent = 'Searching...';
-  status.textContent = 'Fetching papers...';
+  status.textContent = `Searching ${activeKeys.length} source(s) for "${query}"...`;
   status.className = 'status';
 
   searchResults = [];
@@ -1133,9 +1144,14 @@ async function searchCrossref(query, sourceKey, sortValue = 'date-desc') {
 
 async function doDoiLookup() {
   const input = document.getElementById('doi-input').value.trim();
-  if (!input) return;
-
   const status = document.getElementById('doi-status');
+  if (!input) {
+    status.textContent = 'Enter a DOI or APS URL above and click Lookup (or press Enter).';
+    status.className = 'status';
+    document.getElementById('doi-input').focus();
+    return;
+  }
+
   const btn = document.getElementById('doi-btn');
   btn.disabled = true;
   btn.textContent = 'Looking up...';
@@ -1479,13 +1495,18 @@ document.getElementById('year-to').addEventListener('keydown', e => {
 
 async function quickDoSearch() {
   const query = document.getElementById('quick-search-input').value.trim();
-  if (!query) return;
+  const status = document.getElementById('quick-status');
+  if (!query) {
+    status.textContent = 'Enter a query above and click Search (or press Enter).';
+    status.className = 'status';
+    document.getElementById('quick-search-input').focus();
+    return;
+  }
 
   const btn = document.getElementById('quick-search-btn');
-  const status = document.getElementById('quick-status');
   btn.disabled = true;
   btn.textContent = 'Searching...';
-  status.textContent = 'Querying arXiv API...';
+  status.textContent = `Querying arXiv for "${query}"...`;
   status.className = 'status';
 
   try {
@@ -1912,4 +1933,13 @@ function clearDateFilter() {
   document.getElementById('year-to').value = '';
 }
 
-function showStatusEr
+function showStatusError(el, summary, details) {
+  el.className = 'status error';
+  const id = 'err-' + Date.now();
+  el.innerHTML = `${esc(summary)} <a href="#" onclick="event.preventDefault();document.getElementById('${id}').classList.toggle('open')" style="color:var(--accent);font-size:11px;margin-left:6px">show details</a>
+    <div class="status-error-details" id="${id}">${esc(details || '')}</div>`;
+}
+
+</script>
+</body>
+</html>
