@@ -42,3 +42,6 @@ tools/update_workflow.json
 
 # Inbox runtime state
 inbox/processed/
+
+# Local planning docs (not tracked)
+plans/
