@@ -1005,3 +1005,13 @@ const SCQ = (function () {
     getSetting, setSetting, getAllSettings,
   };
 })();
+
+// Expose SCQ as a property on the global object (window in browsers,
+// globalThis in workers). The `const SCQ = ...` above only creates a
+// binding in the global *lexical environment*, not a property on
+// `window`/`globalThis` — so ES modules (which can't see lexical globals
+// from regular scripts) couldn't reach it. The new src/ui/database/*.js
+// modules need this to call SCQ.getDB() etc.
+if (typeof window !== 'undefined') {
+  window.SCQ = SCQ;
+}

@@ -35,7 +35,13 @@ let _busy = false;
 export async function saveToDisk() {
   if (_busy) return null;
   if (!globalThis.SCQ || typeof globalThis.SCQ.getDB !== 'function') {
-    throw new Error('[save-to-disk] SCQ legacy layer not initialized yet');
+    // Most likely cause: db_utils.js didn't expose SCQ on window. Modules
+    // can't see top-level `const` bindings from regular <script> tags —
+    // db_utils.js has an explicit `window.SCQ = SCQ` at the bottom for
+    // exactly this reason. If you're seeing this error, check that
+    // db_utils.js loaded (DevTools Network tab) and that no error
+    // happened before the `window.SCQ = SCQ` line at the end of it.
+    throw new Error('[save-to-disk] window.SCQ not found — did db_utils.js load?');
   }
   _busy = true;
   _markIndicatorBusy();
