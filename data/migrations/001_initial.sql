@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS papers (
     cite_bib TEXT DEFAULT '',
     cite_txt TEXT DEFAULT '',
     pdf_path TEXT DEFAULT '',
+    entry_type TEXT DEFAULT 'preprint',  -- preprint | published | website | release | thesis | review
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
