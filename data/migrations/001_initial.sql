@@ -126,6 +126,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS pdf_text USING fts5(
     tokenize='porter unicode61'
 );
 
+-- Key/value settings store (UI prefs, cached state)
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT '{}'  -- JSON-encoded
+);
+
 -- Useful indexes
 CREATE INDEX IF NOT EXISTS idx_figures_paper ON figures(paper_id);
 CREATE INDEX IF NOT EXISTS idx_highlights_paper ON highlights(paper_id);
