@@ -189,7 +189,7 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
 
     # Combined OR query — one request for all categories
     combined_query = " OR ".join(f"cat:{c}" for c in categories)
-    combined_max = max(max_results, max_results * len(categories) // 2, 500)
+    combined_max = max(max_results, max_results * len(categories) // 2, 1000)
     params = {
         "search_query": combined_query,
         "sortBy": "submittedDate",
@@ -976,7 +976,7 @@ def main():
     parser.add_argument("--days", type=int, default=3, help="Days to look back (default: 3)")
     parser.add_argument("--no-email", action="store_true", help="Skip email, generate HTML only")
     parser.add_argument("--test", action="store_true", help="Use mock data (no network)")
-    parser.add_argument("--max-results", type=int, default=200, help="Max papers per category")
+    parser.add_argument("--max-results", type=int, default=500, help="Max papers per category")
     parser.add_argument(
         "--smart-weekend", action="store_true",
         help="Auto-extend lookback on weekends so Friday's papers are not missed"

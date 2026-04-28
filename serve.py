@@ -135,6 +135,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/arxiv"):
             self._proxy_arxiv()
+        elif self.path.startswith("/api/crossref/search"):
+            self._proxy_crossref_search()
         elif self.path.startswith("/api/crossref/"):
             self._proxy_crossref()
         else:
@@ -234,6 +236,48 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             error_msg = f'{{"error": "CrossRef API returned {e.code}: {e.reason}"}}'
+            self.wfile.write(error_msg.encode())
+        except Exception as e:
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error_msg = f'{{"error": "Proxy error: {e}"}}'
+            self.wfile.write(error_msg.encode())
+
+    def _proxy_crossref_search(self):
+        """Forward keyword search to CrossRef API.
+        Path format: /api/crossref/search?query=...&filter=...&rows=...&sort=...&order=...
+        Maps to: https://api.crossref.org/works?query=...&filter=...&rows=...&sort=...&order=...
+        """
+        parts = urllib.parse.urlparse(self.path)
+        qs = parts.query
+        if not qs:
+            self.send_error(400, "Missing query parameters")
+            return
+
+        target = f"https://api.crossref.org/works?{qs}"
+        req = urllib.request.Request(target, headers={
+            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "Accept": "application/json",
+        })
+
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                ct = resp.headers.get("Content-Type", "application/json")
+                self.send_header("Content-Type", ct)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error_msg = f'{{"error": "CrossRef search returned {e.code}: {e.reason}"}}'
             self.wfile.write(error_msg.encode())
         except Exception as e:
             self.send_response(502)

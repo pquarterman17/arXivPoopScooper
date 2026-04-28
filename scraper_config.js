@@ -87,30 +87,63 @@ const SCRAPER_CONFIG = {
       journalName: "Phys. Rev. Materials",
     },
 
-    // ── Examples for other fields (uncomment to use) ──────
+    // ── Physical Review Journals (Crossref search) ─────────
+    // These search Crossref directly, so they find published
+    // papers even when there's no arXiv preprint.
+    //
+    //   type: "crossref"    = keyword search via Crossref API
+    //   issn:               = ISSN used to filter Crossref results
+    //   journalName:        = full journal name for citations
+    //
+    prb: {
+      label: "PRB",
+      color: "#d19a66",
+      enabled: false,
+      type: "crossref",
+      issn: "2469-9950",
+      journalName: "Phys. Rev. B",
+    },
+    prx: {
+      label: "PRX",
+      color: "#e06c75",
+      enabled: false,
+      type: "crossref",
+      issn: "2160-3308",
+      journalName: "Phys. Rev. X",
+    },
+    prresearch: {
+      label: "PR Research",
+      color: "#c678dd",
+      enabled: false,
+      type: "crossref",
+      issn: "2643-1564",
+      journalName: "Phys. Rev. Research",
+    },
+    prxquantum: {
+      label: "PRX Quantum",
+      color: "#e5c07b",
+      enabled: false,
+      type: "crossref",
+      issn: "2691-3399",
+      journalName: "PRX Quantum",
+    },
+
+    // ── Other journals (uncomment to use) ────────────────
     //
     // nature: {
     //   label: "Nature",
     //   color: "#e06c75",
     //   enabled: false,
-    //   type: "arxiv-jr",
-    //   journalRef: "Nature",
+    //   type: "crossref",
+    //   issn: "1476-4687",
     //   journalName: "Nature",
-    // },
-    // prb: {
-    //   label: "PRB",
-    //   color: "#d19a66",
-    //   enabled: false,
-    //   type: "arxiv-jr",
-    //   journalRef: "Phys.+Rev.+B",
-    //   journalName: "Phys. Rev. B",
     // },
     // science: {
     //   label: "Science",
     //   color: "#e5c07b",
     //   enabled: false,
-    //   type: "arxiv-jr",
-    //   journalRef: "Science",
+    //   type: "crossref",
+    //   issn: "1095-9203",
     //   journalName: "Science",
     // },
   },
