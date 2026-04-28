@@ -8,3 +8,4 @@ See plan item #5 in plans/architecture-refactor.md.
 """
 
 from .paths import Paths, paths, repo_root, refresh  # noqa: F401
+from . import user  # noqa: F401
