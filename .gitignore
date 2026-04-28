@@ -45,3 +45,13 @@ inbox/processed/
 
 # Local planning docs (not tracked)
 plans/
+
+# User config overrides — only commit the *.example starter templates,
+# never the real files (which contain emails, paths, and other personal data)
+data/user_config/*.json
+data/user_config/*.toml
+
+# Legacy: superseded by data/user_config/digest.json. Keep the file ignored
+# so leftover working copies don't get re-tracked. Migration is automatic
+# in tools/arxiv_digest.py — but the canonical location is now user_config.
+email_recipients.json

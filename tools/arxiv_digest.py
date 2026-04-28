@@ -744,22 +744,57 @@ function savePending() {{
 # ─── Email Digest ───
 
 def _load_email_recipients():
-    """Load recipient list from email_recipients.json, falling back to env vars."""
-    recipients_file = os.path.join(BASE_DIR, "email_recipients.json")
-    recipients = []
+    """Load enabled recipient records from the digest config.
+
+    Resolution order:
+      1. data/user_config/digest.json `recipients` (the canonical location)
+      2. legacy email_recipients.json at the repo root (deprecated; warn)
+      3. SCQ_EMAIL_TO env var (single recipient, daily frequency)
+
+    Returns a list of ``{email, name, frequency}`` dicts; only enabled
+    entries are included. Frequency defaults to ``daily``.
+    """
+    recipients: list[dict] = []
+
+    # 1. user_config/digest.json via the new config system
     try:
-        with open(recipients_file, "r") as f:
-            data = json.load(f)
-        for r in data.get("recipients", []):
-            if r.get("enabled", True):
-                recipients.append({
-                    "email": r["email"],
-                    "name": r.get("name", ""),
-                    "frequency": r.get("frequency", "daily"),
-                })
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        pass
-    # Fallback: use env var if no recipients file or no entries
+        from scq.config.user import load_config  # type: ignore[import-not-found]
+        result = load_config("digest")
+        for r in result.data.get("recipients", []) or []:
+            if not isinstance(r, dict) or "email" not in r:
+                continue
+            if not r.get("enabled", True):
+                continue
+            recipients.append({
+                "email": r["email"],
+                "name": r.get("name", ""),
+                "frequency": r.get("frequency", "daily"),
+            })
+    except Exception as e:  # noqa: BLE001 — keep the digest workflow robust
+        print(f"  [recipients] could not read digest config: {e}")
+
+    # 2. legacy email_recipients.json — print a one-line nudge if it's still around
+    if not recipients:
+        legacy = os.path.join(BASE_DIR, "email_recipients.json")
+        if os.path.isfile(legacy):
+            print(
+                "  [recipients] reading legacy email_recipients.json — "
+                "migrate to data/user_config/digest.json (see plan #15) and remove this file"
+            )
+            try:
+                with open(legacy, "r") as f:
+                    data = json.load(f)
+                for r in data.get("recipients", []):
+                    if r.get("enabled", True):
+                        recipients.append({
+                            "email": r["email"],
+                            "name": r.get("name", ""),
+                            "frequency": r.get("frequency", "daily"),
+                        })
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+    # 3. SCQ_EMAIL_TO env var (used in CI when no user_config override is checked in)
     if not recipients and EMAIL_TO:
         recipients = [{"email": EMAIL_TO, "name": "", "frequency": "daily"}]
     return recipients

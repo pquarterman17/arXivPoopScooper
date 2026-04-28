@@ -46,9 +46,26 @@
     },
     "recipients": {
       "type": "array",
-      "items": { "type": "string", "format": "email" },
-      "uniqueItems": true,
-      "description": "Email addresses to send the digest to. Production overrides this from the SCQ_EMAIL_TO secret."
+      "x-mergeKey": "email",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "name": { "type": "string" },
+          "frequency": {
+            "type": "string",
+            "enum": ["daily", "weekly", "both"],
+            "description": "Which digests this recipient gets. Defaults to 'daily'."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Defaults to true. Set false to silence one address without removing it."
+          }
+        }
+      },
+      "description": "Recipients of the digest. Each entry has at least an email; optional name, frequency, enabled. Production CI also honors the SCQ_EMAIL_TO env var as a fallback when no recipients are configured here."
     },
     "subjectPrefix": {
       "type": "string",

@@ -179,3 +179,38 @@ def test_load_all_returns_every_domain(fake_repo):
     assert set(everything.keys()) == set(cfg.MANIFEST)
     for d, r in everything.items():
         assert r.data == {"d": d}
+
+
+def test_digest_recipients_objects_validate():
+    """Smoke test the post-migration recipients shape against the real digest schema."""
+    repo = Path(__file__).resolve().parents[1]
+    schema_path = repo / "src" / "config" / "schema" / "digest.schema.json"
+    if not schema_path.is_file():
+        pytest.skip("digest schema not present")
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+
+    base_required = {"cadence": "daily", "maxPapers": 25, "lookbackDays": 1}
+
+    # Valid: full object recipient + minimal object recipient
+    valid = {
+        **base_required,
+        "recipients": [
+            {"email": "you@example.com", "name": "You", "frequency": "daily", "enabled": True},
+            {"email": "team@example.org", "frequency": "weekly"},
+        ],
+    }
+    assert cfg._validate(valid, schema) == []
+
+    # Invalid: missing required `email`
+    missing_email = {**base_required, "recipients": [{"name": "no email"}]}
+    errs = cfg._validate(missing_email, schema)
+    assert any("email" in e for e in errs), f"expected an email-related error, got {errs}"
+
+    # Invalid: malformed email triggers format check
+    bad_email = {**base_required, "recipients": [{"email": "not an email"}]}
+    assert cfg._validate(bad_email, schema), "malformed email should fail validation"
+
+    # Invalid: frequency outside enum
+    bad_freq = {**base_required, "recipients": [{"email": "a@b.co", "frequency": "monthly"}]}
+    errs = cfg._validate(bad_freq, schema)
+    assert any("frequency" in e for e in errs), f"expected a frequency error, got {errs}"

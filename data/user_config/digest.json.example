@@ -5,6 +5,9 @@
   "maxPapers": 25,
   "lookbackDays": 1,
   "minRelevanceScore": 5,
-  "recipients": ["you@example.com"],
+  "recipients": [
+    { "email": "you@example.com", "name": "You",        "frequency": "daily",  "enabled": true },
+    { "email": "you@work.com",    "name": "You (work)", "frequency": "weekly", "enabled": true }
+  ],
   "subjectPrefix": "[SCQ digest]"
 }

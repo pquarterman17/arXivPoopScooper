@@ -38,7 +38,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser
+        # Install scq (with feedparser, jsonschema, tomli backport) so the
+        # digest script can read recipients from data/user_config/digest.json
+        # via scq.config.user.load_config. Falls back to the SCQ_EMAIL_TO
+        # secret if no user override is checked in.
+        run: pip install .
 
       - name: Run arXiv digest
         env:
