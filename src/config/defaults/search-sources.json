@@ -1,0 +1,95 @@
+{
+  "$schema": "../schema/search-sources.schema.json",
+  "arxivCategories": [
+    "quant-ph",
+    "cond-mat.supr-con",
+    "cond-mat.mtrl-sci",
+    "cond-mat.mes-hall"
+  ],
+  "sources": [
+    {
+      "id": "arxiv",
+      "label": "arXiv",
+      "type": "arxiv",
+      "color": "#58a6ff",
+      "enabled": true
+    },
+    {
+      "id": "prl",
+      "label": "PRL",
+      "type": "arxiv-jr",
+      "journalRef": "Phys.+Rev.+Lett.",
+      "journalName": "Phys. Rev. Lett.",
+      "color": "#bc8cff",
+      "enabled": false
+    },
+    {
+      "id": "pra",
+      "label": "PR Applied",
+      "type": "arxiv-jr",
+      "journalRef": "Phys.+Rev.+Applied",
+      "journalName": "Phys. Rev. Applied",
+      "color": "#3fb950",
+      "enabled": false
+    },
+    {
+      "id": "prm",
+      "label": "PR Materials",
+      "type": "arxiv-jr",
+      "journalRef": "Phys.+Rev.+Materials",
+      "journalName": "Phys. Rev. Materials",
+      "color": "#39d2c0",
+      "enabled": false
+    },
+    {
+      "id": "prb",
+      "label": "PRB",
+      "type": "crossref",
+      "issn": "2469-9950",
+      "journalName": "Phys. Rev. B",
+      "color": "#d19a66",
+      "enabled": false
+    },
+    {
+      "id": "prx",
+      "label": "PRX",
+      "type": "crossref",
+      "issn": "2160-3308",
+      "journalName": "Phys. Rev. X",
+      "color": "#e06c75",
+      "enabled": false
+    },
+    {
+      "id": "prresearch",
+      "label": "PR Research",
+      "type": "crossref",
+      "issn": "2643-1564",
+      "journalName": "Phys. Rev. Research",
+      "color": "#c678dd",
+      "enabled": false
+    },
+    {
+      "id": "prxquantum",
+      "label": "PRX Quantum",
+      "type": "crossref",
+      "issn": "2691-3399",
+      "journalName": "PRX Quantum",
+      "color": "#e5c07b",
+      "enabled": false
+    }
+  ],
+  "presets": [
+    { "id": "scq-materials",     "label": "SCQ materials",      "query": "superconducting qubit material" },
+    { "id": "ta-resonators",     "label": "Ta resonators",      "query": "tantalum superconducting resonator" },
+    { "id": "transmon-coherence","label": "Transmon coherence", "query": "transmon qubit coherence" },
+    { "id": "jj-fabrication",    "label": "JJ fabrication",     "query": "Josephson junction fabrication" },
+    { "id": "tls-loss",          "label": "TLS loss",           "query": "two-level system loss microwave" },
+    { "id": "surface-oxides",    "label": "Surface oxides",     "query": "surface oxide superconducting" }
+  ],
+  "autoFetch": {
+    "enabled": true,
+    "cooldownHours": 4,
+    "maxResultsPerQuery": 25,
+    "delayBetweenQueriesMs": 1500
+  }
+}

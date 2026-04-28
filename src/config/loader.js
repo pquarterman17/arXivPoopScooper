@@ -26,6 +26,8 @@ export const MANIFEST = [
   'email',
   'watchlist',
   'privacy',
+  'search-sources',
+  'auto-tag-rules',
 ];
 
 const DEFAULT_DEFAULTS_BASE = '/src/config/defaults/';
@@ -57,7 +59,7 @@ export async function loadConfig(domain, opts = {}) {
   const override = await _fetchJson(fetchFn, overrideUrl, { required: false });
   const schema = await _fetchJson(fetchFn, schemaUrl, { required: true });
 
-  const merged = override ? deepMerge(defaults, override) : { ...defaults };
+  const merged = override ? schemaAwareMerge(defaults, override, schema) : { ...defaults };
   // strip the meta $schema key before validation — it's an editor hint, not config
   const cleaned = stripSchemaKey(merged);
   const errors = validate(cleaned, schema, '$');
@@ -95,6 +97,59 @@ export function deepMerge(a, b) {
     }
   }
   return out;
+}
+
+/**
+ * Schema-aware merge. Like deepMerge, but for arrays whose items schema
+ * carries `x-mergeKey: "<field>"`, merges entries by that key instead of
+ * replacing the array. This lets users override one source by id without
+ * having to copy the full sources list.
+ *
+ * Falls back to deepMerge behavior when no schema is provided.
+ */
+export function schemaAwareMerge(a, b, schema) {
+  if (!schema || !isPlainObject(schema)) return deepMerge(a, b);
+
+  // Object: recurse property-by-property
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const props = isPlainObject(schema.properties) ? schema.properties : {};
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b)) {
+      const subSchema = props[k];
+      out[k] = subSchema ? schemaAwareMerge(out[k], v, subSchema) : (
+        isPlainObject(v) && isPlainObject(out[k]) ? deepMerge(out[k], v) : v
+      );
+    }
+    return out;
+  }
+
+  // Array with x-mergeKey: id-merge
+  if (Array.isArray(a) && Array.isArray(b)
+      && isPlainObject(schema.items)
+      && typeof schema['x-mergeKey'] === 'string') {
+    const key = schema['x-mergeKey'];
+    const aById = new Map();
+    const order = [];
+    for (const item of a) {
+      if (isPlainObject(item) && key in item) {
+        aById.set(item[key], item);
+        order.push(item[key]);
+      }
+    }
+    for (const item of b) {
+      if (!isPlainObject(item) || !(key in item)) continue;
+      if (aById.has(item[key])) {
+        aById.set(item[key], schemaAwareMerge(aById.get(item[key]), item, schema.items));
+      } else {
+        aById.set(item[key], item);
+        order.push(item[key]);
+      }
+    }
+    return order.map((k) => aById.get(k));
+  }
+
+  // Anything else: b replaces a (or stays a if b is undefined)
+  return b === undefined ? a : b;
 }
 
 function isPlainObject(x) {

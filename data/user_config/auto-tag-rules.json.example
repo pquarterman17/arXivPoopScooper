@@ -1,0 +1,7 @@
+{
+  "$schema": "../../src/config/schema/auto-tag-rules.schema.json",
+  "rules": [
+    { "tag": "fluxonium", "patterns": ["fluxonium", "fluxon"] },
+    { "tag": "machine learning", "patterns": ["machine learning", "neural network", "deep learning"] }
+  ]
+}

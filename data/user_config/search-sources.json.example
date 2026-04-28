@@ -1,0 +1,9 @@
+{
+  "$schema": "../../src/config/schema/search-sources.schema.json",
+  "sources": [
+    { "id": "prl", "label": "PRL", "type": "arxiv-jr", "enabled": true }
+  ],
+  "presets": [
+    { "id": "fluxonium", "label": "Fluxonium", "query": "fluxonium qubit coherence" }
+  ]
+}

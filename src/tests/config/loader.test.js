@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  loadConfig, loadAll, deepMerge, validate, MANIFEST,
+  loadConfig, loadAll, deepMerge, schemaAwareMerge, validate, MANIFEST,
 } from '../../config/loader.js';
 
 /** Build a fake fetch that serves a virtual { url: payload } map. */
@@ -37,6 +37,73 @@ describe('deepMerge', () => {
 
   it('null override replaces', () => {
     expect(deepMerge({ a: 1 }, { a: null })).toEqual({ a: null });
+  });
+});
+
+describe('schemaAwareMerge', () => {
+  const sourcesSchema = {
+    type: 'object',
+    properties: {
+      sources: {
+        type: 'array',
+        'x-mergeKey': 'id',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            label: { type: 'string' },
+            enabled: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  };
+
+  it('merges array entries by x-mergeKey id', () => {
+    const a = {
+      sources: [
+        { id: 'arxiv', label: 'arXiv', enabled: true },
+        { id: 'prl', label: 'PRL', enabled: false },
+      ],
+    };
+    const b = { sources: [{ id: 'prl', enabled: true }] };
+    expect(schemaAwareMerge(a, b, sourcesSchema)).toEqual({
+      sources: [
+        { id: 'arxiv', label: 'arXiv', enabled: true },
+        { id: 'prl', label: 'PRL', enabled: true },
+      ],
+    });
+  });
+
+  it('appends new array entries that have a fresh id', () => {
+    const a = { sources: [{ id: 'arxiv', label: 'arXiv', enabled: true }] };
+    const b = { sources: [{ id: 'prxq', label: 'PRX Quantum', enabled: true }] };
+    const merged = schemaAwareMerge(a, b, sourcesSchema);
+    expect(merged.sources.map((s) => s.id)).toEqual(['arxiv', 'prxq']);
+  });
+
+  it('preserves order of defaults, then appends new', () => {
+    const a = { sources: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+    ] };
+    const b = { sources: [
+      { id: 'd', label: 'D' },
+      { id: 'b', label: 'B-renamed' },
+    ] };
+    const merged = schemaAwareMerge(a, b, sourcesSchema);
+    expect(merged.sources.map((s) => s.id)).toEqual(['a', 'b', 'c', 'd']);
+    expect(merged.sources.find((s) => s.id === 'b').label).toBe('B-renamed');
+  });
+
+  it('falls back to array-replace for arrays without x-mergeKey', () => {
+    const schema = { type: 'object', properties: { tags: { type: 'array', items: { type: 'string' } } } };
+    expect(schemaAwareMerge({ tags: ['a', 'b'] }, { tags: ['c'] }, schema)).toEqual({ tags: ['c'] });
+  });
+
+  it('without a schema, behaves like deepMerge', () => {
+    expect(schemaAwareMerge({ a: 1 }, { a: 2, b: 3 }, undefined)).toEqual({ a: 2, b: 3 });
   });
 });
 

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/auto-tag-rules",
+  "title": "Keyword → tag rules",
+  "description": "When any pattern matches a paper's title or abstract (case-insensitive substring), the tag is auto-suggested.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["rules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "x-mergeKey": "tag",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tag", "patterns"],
+        "properties": {
+          "tag": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The tag string written into the paper's tags array."
+          },
+          "patterns": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1,
+            "uniqueItems": true,
+            "description": "Substrings (case-insensitive) that, if found in title or abstract, trigger the tag."
+          },
+          "caseSensitive": {
+            "type": "boolean",
+            "description": "Default false. Set true for tags that depend on letter case (e.g., 'Al' vs 'al')."
+          }
+        }
+      }
+    }
+  }
+}

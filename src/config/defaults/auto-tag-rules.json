@@ -1,0 +1,25 @@
+{
+  "$schema": "../schema/auto-tag-rules.schema.json",
+  "rules": [
+    { "tag": "tantalum",          "patterns": ["tantalum", "Ta ", "Ta-based", "beta-Ta", "α-Ta", "β-Ta"] },
+    { "tag": "aluminum",          "patterns": ["aluminum", "aluminium", "Al ", "Al-based", "Al2O3"] },
+    { "tag": "niobium",           "patterns": ["niobium", "Nb ", "NbN", "NbTiN", "Nb-based"] },
+    { "tag": "TLS",               "patterns": ["two-level system", "TLS", "two level system", "tunneling defect"] },
+    { "tag": "surface loss",      "patterns": ["surface loss", "surface participation", "surface impedance", "interface loss"] },
+    { "tag": "Josephson junction","patterns": ["Josephson junction", "JJ ", "tunnel junction", "junction fabrication"] },
+    { "tag": "transmon",          "patterns": ["transmon", "Xmon", "fixed-frequency qubit"] },
+    { "tag": "resonator",         "patterns": ["resonator", "cavity", "CPW", "coplanar waveguide", "microwave cavity"] },
+    { "tag": "qubit",             "patterns": ["qubit", "quantum bit", "superconducting qubit"] },
+    { "tag": "kinetic inductance","patterns": ["kinetic inductance", "MKID", "kinetic inductor"] },
+    { "tag": "quasiparticle",     "patterns": ["quasiparticle", "quasi-particle", "QP poisoning", "nonequilibrium"] },
+    { "tag": "oxide",             "patterns": ["oxide", "oxidation", "native oxide", "surface oxide", "AlOx", "TaOx", "NbOx"] },
+    { "tag": "sapphire",          "patterns": ["sapphire", "Al2O3 substrate", "c-plane sapphire"] },
+    { "tag": "silicon",           "patterns": ["silicon", "Si substrate", "Si wafer", "SOI", "silicon-on-insulator"] },
+    { "tag": "coherence",         "patterns": ["coherence", "T1", "T2", "relaxation time", "dephasing", "decoherence"] },
+    { "tag": "decoherence",       "patterns": ["decoherence", "dephasing", "noise", "dissipation", "loss mechanism"] },
+    { "tag": "microwave",         "patterns": ["microwave", "GHz", "RF ", "millimeter-wave"] },
+    { "tag": "cryogenic",         "patterns": ["cryogenic", "millikelvin", "dilution refrigerator", "mK ", "cryostat"] },
+    { "tag": "fabrication",       "patterns": ["fabrication", "deposition", "sputtering", "evaporation", "etching", "lithography"] },
+    { "tag": "quality factor",    "patterns": ["quality factor", "Q factor", "internal Q", "Qi "] }
+  ]
+}
