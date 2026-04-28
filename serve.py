@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SCQ Paper Database — Local Server Launcher
+ScientificLitterScoop — Local Server Launcher
 
 Double-click this file or run from a terminal to:
   1. Start an HTTP server on localhost
@@ -73,7 +73,7 @@ def _ensure_console():
     import subprocess
     script = os.path.abspath(__file__)
     args = " ".join(f'"{a}"' for a in sys.argv[1:])
-    cmd = f'start "SCQ Paper Database" /WAIT python "{script}" {args}'.strip()
+    cmd = f'start "ScientificLitterScoop" /WAIT python "{script}" {args}'.strip()
     subprocess.Popen(cmd, shell=True)
     sys.exit(0)
 
@@ -592,7 +592,7 @@ def main():
     server = http.server.HTTPServer(("127.0.0.1", port), SCQHandler)
 
     base = f"http://localhost:{port}"
-    print(f"SCQ Paper Database — serving at {base}")
+    print(f"ScientificLitterScoop — serving at {base}")
     print()
     for key in PAGES:
         marker = " *" if key in to_open else ""

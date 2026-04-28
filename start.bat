@@ -1,6 +1,6 @@
 @echo off
-title SCQ Paper Database
-echo Starting SCQ Paper Database server...
+title ScientificLitterScoop
+echo Starting ScientificLitterScoop server...
 echo.
 python "%~dp0serve.py" %*
 if errorlevel 1 (
