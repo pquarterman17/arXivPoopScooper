@@ -42,8 +42,8 @@ Per the plan, in roughly increasing complexity:
 | **NEW** Save-to-disk          | ✅ added          | `save-to-disk.js` + `services/database-sync.js` |
 | Sort                          | ✅ migrated       | `sort.js`                             |
 | Word citation copy            | ✅ migrated       | `citation-copy.js`                    |
-| PDF Viewer Panel              | open (small)      |                                       |
-| Annotation Highlights         | open (small)      |                                       |
+| PDF Viewer Panel              | ✅ migrated       | `pdf-viewer.js`                       |
+| Annotation Highlights         | ✅ migrated       | `highlights.js`                       |
 | Helpers                       | open              |                                       |
 | Collection .bib export        | open              |                                       |
 | Collection .json export       | open              |                                       |

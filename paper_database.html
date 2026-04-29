@@ -1672,7 +1672,6 @@ let pdfSearchEnabled = false;
 let pdfSearchHits = {};
 let activeCollection = null;
 let openDropdownId = null;
-let currentPdfSrc = "";
 
 // ─── Drag-and-drop PDF import ───
 let dragCounter = 0;
@@ -3057,59 +3056,15 @@ document.addEventListener("click", e => {
 });
 
 // ─── PDF Viewer Panel ───
-function openPdfViewer(paperId) {
-  const paper = PAPERS.find(p => p.id === paperId);
-  const src = getPdfPath(paperId);
-  currentPdfSrc = src;
-  document.getElementById("pdf-viewer-title").textContent = paper ? paper.shortAuthors + " — " + paper.title.substring(0, 60) : paperId;
-  document.getElementById("pdf-viewer-iframe").src = src;
-  document.getElementById("pdf-viewer-panel").classList.remove("hidden");
-  document.body.classList.add("pdf-panel-open");
-}
-function closePdfViewer() {
-  document.getElementById("pdf-viewer-panel").classList.add("hidden");
-  document.body.classList.remove("pdf-panel-open");
-  document.getElementById("pdf-viewer-iframe").src = "";
-  currentPdfSrc = "";
-}
-function openPdfExternal() {
-  if (currentPdfSrc) window.open(currentPdfSrc, "_blank");
-}
+// Migrated to src/ui/database/pdf-viewer.js — exposed via main.js as
+// window.openPdfViewer/closePdfViewer/openPdfExternal. The currentPdfSrc
+// state moved into the module since it had no callers outside these
+// three functions.
 
 // ─── Annotation Highlights ───
-function addHighlight(paperId) {
-  const textEl = document.getElementById("hl-text-" + paperId);
-  const pageEl = document.getElementById("hl-page-" + paperId);
-  const text = (textEl ? textEl.value : "").trim();
-  const page = (pageEl ? pageEl.value : "").trim();
-  if (!text) return;
-  SCQ.addHighlight(paperId, text, page || null, "#58a6ff");
-  render();
-}
-function removeHighlightById(highlightId) {
-  SCQ.removeHighlight(highlightId);
-  render();
-}
-
-function renderHighlights(paperId, hlData) {
-  const hl = hlData || SCQ.getHighlights(paperId);
-  let html = `<div class="highlights-section">
-    <div class="section-label" style="margin-bottom:6px">Highlights &amp; Annotations</div>`;
-  if (hl.length > 0) {
-    html += hl.map(h => `
-      <div class="highlight-item">
-        ${h.page ? `<span class="hl-page">p.${h.page}</span>` : ''}
-        <span class="hl-text">"${h.text}"</span>
-        <button class="hl-delete" onclick="event.stopPropagation(); removeHighlightById(${h.id})" title="Remove">&times;</button>
-      </div>`).join("");
-  }
-  html += `<div class="add-highlight-row">
-    <input type="text" id="hl-page-${paperId}" placeholder="p.#" title="Page number">
-    <textarea id="hl-text-${paperId}" placeholder="Add highlight or annotation..." rows="1"></textarea>
-    <button class="add-highlight-btn" onclick="event.stopPropagation(); addHighlight('${paperId}')">+ Add</button>
-  </div></div>`;
-  return html;
-}
+// Migrated to src/ui/database/highlights.js — exposed via main.js as
+// window.addHighlight/removeHighlightById/renderHighlights for inline
+// `onclick=` handlers and the legacy render() template.
 
 // ─── Tag Management ───
 function showTagManagerModal() {

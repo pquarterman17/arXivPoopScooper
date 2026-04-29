@@ -32,6 +32,8 @@ import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';
 import { saveToDisk, installClickToSave } from './save-to-disk.js';
 import { toggleSort, sortPapers, sortArrow, sortedClass } from './sort.js';
 import { copyForWord, copyAllForWord } from './citation-copy.js';
+import { openPdfViewer, closePdfViewer, openPdfExternal } from './pdf-viewer.js';
+import { addHighlight, removeHighlightById, renderHighlights } from './highlights.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -47,6 +49,12 @@ window.sortArrow = sortArrow;
 window.sortedClass = sortedClass;
 window.copyForWord = copyForWord;
 window.copyAllForWord = copyAllForWord;
+window.openPdfViewer = openPdfViewer;
+window.closePdfViewer = closePdfViewer;
+window.openPdfExternal = openPdfExternal;
+window.addHighlight = addHighlight;
+window.removeHighlightById = removeHighlightById;
+window.renderHighlights = renderHighlights;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
