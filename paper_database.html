@@ -4508,10 +4508,10 @@ window.addEventListener('DOMContentLoaded', function() {
 <!-- === PDF Viewer Panel === -->
 <div class="pdf-viewer-panel hidden" id="pdf-viewer-panel">
   <div class="pdf-viewer-bar">
-    <div class="title" id="pdf-title"></div>
-    <button onclick="closePdfPanel()" style="padding:4px 10px;font-size:11px;font-weight:600;font-family:inherit;border:1px solid var(--border);border-radius:4px;color:var(--text2);background:transparent;cursor:pointer;transition:all 0.12s">Close</button>
+    <div class="title" id="pdf-viewer-title"></div>
+    <button onclick="closePdfViewer()" style="padding:4px 10px;font-size:11px;font-weight:600;font-family:inherit;border:1px solid var(--border);border-radius:4px;color:var(--text2);background:transparent;cursor:pointer;transition:all 0.12s">Close</button>
   </div>
-  <iframe class="pdf-viewer-iframe" id="pdf-iframe"></iframe>
+  <iframe class="pdf-viewer-iframe" id="pdf-viewer-iframe"></iframe>
 </div>
 
 <!-- === Drag-and-Drop PDF Import === -->

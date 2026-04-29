@@ -8,12 +8,6 @@
  * `currentPdfSrc` was a top-level `let` in the legacy file referenced by
  * exactly these three functions and nothing else, so it moves into the
  * module as private state.
- *
- * Known pre-existing bug (NOT addressed here — port is 1:1): the panel
- * HTML at the bottom of paper_database.html uses ids `pdf-title` /
- * `pdf-iframe` and an inline `onclick="closePdfPanel()"`, while this code
- * targets `pdf-viewer-title` / `pdf-viewer-iframe` / `closePdfViewer`.
- * Either the JS or the HTML needs to be fixed in a separate commit.
  */
 
 import { getPdfPath } from './pdf-path.js';
