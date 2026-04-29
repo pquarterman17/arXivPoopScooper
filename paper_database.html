@@ -1654,6 +1654,7 @@ function renderAnalyticsDashboard() {
 
 // ─── App state (populated from SQLite on init) ───
 let PAPERS = [];     // compatibility array — loaded from db
+window.PAPERS = PAPERS;  // expose for migrated modules; refreshed in loadPapersFromDB
 let FIGS = {};       // figure key → file path — loaded from db
 
 // UI state
@@ -1665,6 +1666,7 @@ let readFilter = "all";
 let priorityFilter = "any";
 let typeFilter = "all";
 let tableSort = { col: "date_added", dir: "desc" };
+window.tableSort = tableSort;  // shared with src/ui/database/sort.js (mutated in place)
 let copiedTimers = {};
 let pdfSearchEnabled = false;
 let pdfSearchHits = {};
@@ -1937,6 +1939,7 @@ function loadPapersFromDB() {
     p.figures = figs.map(f => ({ key: f.figure_key, label: f.label, desc: f.caption }));
     figs.forEach(f => { FIGS[f.figure_key] = f.file_path; });
   });
+  window.PAPERS = PAPERS;  // refresh shim for migrated modules (PAPERS was reassigned above)
 }
 
 function _jp(str, fallback) {
@@ -2801,50 +2804,13 @@ function renderSidebar() {
 }
 
 // ─── Table sorting ───
-function toggleSort(col) {
-  if (tableSort.col === col) {
-    tableSort.dir = tableSort.dir === "asc" ? "desc" : "asc";
-  } else {
-    tableSort.col = col;
-    tableSort.dir = (col === "title" || col === "shortAuthors" || col === "group") ? "asc" : "desc";
-  }
-  render();
-}
-
-function sortPapers(papers) {
-  const col = tableSort.col;
-  const dir = tableSort.dir === "asc" ? 1 : -1;
-  return [...papers].sort((a, b) => {
-    let va, vb;
-    if (col === "priority" || col === "_priority") { va = a._priority || 0; vb = b._priority || 0; }
-    else if (col === "read" || col === "_read") { va = a._read ? 1 : 0; vb = b._read ? 1 : 0; }
-    else if (col === "date_added" || col === "dateAdded") { va = a.dateAdded || ""; vb = b.dateAdded || ""; }
-    else { va = a[col] || ""; vb = b[col] || ""; }
-    if (typeof va === "string") return dir * va.localeCompare(vb);
-    return dir * (va - vb);
-  });
-}
-
-function sortArrow(col) {
-  if (tableSort.col !== col) return `<span class="sort-arrow">&#8597;</span>`;
-  return `<span class="sort-arrow">${tableSort.dir === "asc" ? "&#9650;" : "&#9660;"}</span>`;
-}
-
-function sortedClass(col) {
-  return tableSort.col === col ? "sorted" : "";
-}
+// Migrated to src/ui/database/sort.js — exposed via main.js as
+// window.toggleSort/sortPapers/sortArrow/sortedClass for inline `onclick=`
+// and template-literal callers in the render block below.
 
 // ─── Word citation copy ───
-function copyForWord(paperId, btnId) {
-  const p = PAPERS.find(x => x.id === paperId);
-  if (!p) return;
-  copyText(p.citeTxt, btnId);
-}
-
-function copyAllForWord(btnId) {
-  const txt = PAPERS.map((p, i) => "[" + (i+1) + "] " + p.citeTxt).join("\n\n");
-  copyText(txt, btnId);
-}
+// Migrated to src/ui/database/citation-copy.js — exposed via main.js as
+// window.copyForWord/copyAllForWord for inline `onclick=` callers.
 
 // ─── Render ───
 function render() {

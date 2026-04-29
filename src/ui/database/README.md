@@ -40,10 +40,10 @@ Per the plan, in roughly increasing complexity:
 | Sync indicator                | ✅ migrated       | `sync-indicator.js`                   |
 | PDF path helper               | ✅ migrated       | `pdf-path.js`                         |
 | **NEW** Save-to-disk          | ✅ added          | `save-to-disk.js` + `services/database-sync.js` |
+| Sort                          | ✅ migrated       | `sort.js`                             |
+| Word citation copy            | ✅ migrated       | `citation-copy.js`                    |
 | PDF Viewer Panel              | open (small)      |                                       |
 | Annotation Highlights         | open (small)      |                                       |
-| Sort                          | open (small)      |                                       |
-| Word citation copy            | open (small)      |                                       |
 | Helpers                       | open              |                                       |
 | Collection .bib export        | open              |                                       |
 | Collection .json export       | open              |                                       |
