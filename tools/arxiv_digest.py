@@ -141,20 +141,48 @@ except ImportError:
 ARXIV_API = "http://arxiv.org/api/query"
 ARXIV_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
 
+# Wall-clock budget (set by main() from --budget-seconds). When the deadline
+# passes, network calls return None instead of starting another attempt — keeps
+# the script from chewing through the GH Actions job timeout when arXiv is slow.
+# A 2026-04-29 incident hung the runner for 15 min on a single hung connection.
+_BUDGET_DEADLINE = None
 
-def _arxiv_get(url, label, max_retries=5):
+
+def _budget_remaining():
+    """Seconds left in the wall-clock budget, or None if no budget is set."""
+    if _BUDGET_DEADLINE is None:
+        return None
+    return _BUDGET_DEADLINE - time.monotonic()
+
+
+def _budget_exceeded():
+    rem = _budget_remaining()
+    return rem is not None and rem <= 0
+
+
+_HTTP_TIMEOUT = 30  # per-request socket timeout (sec); was 60
+_MAX_BACKOFF = 30   # cap any single retry wait (sec); was 120
+
+
+def _arxiv_get(url, label, max_retries=3):
     """Fetch a URL from arXiv with polite retries.
 
     Retries on HTTP 429, 5xx, socket timeouts, and transient URL errors. Honors
     the server's Retry-After header when present; otherwise uses exponential
-    backoff with jitter.
+    backoff with jitter, capped at _MAX_BACKOFF.
+
+    Aborts (returns None) if the wall-clock budget set in main() is exhausted —
+    so a slow/hung arXiv can't run the GH Actions job clock out.
     """
     for attempt in range(max_retries):
+        if _budget_exceeded():
+            print(f"  Aborting {label}: time budget exhausted")
+            return None
         try:
             req = urllib.request.Request(url, headers={
                 "User-Agent": "SCQDigest/1.0 (paige.e.quarterman@gmail.com)"
             })
-            resp = urllib.request.urlopen(req, timeout=60)
+            resp = urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT)
             return resp.read()
         except urllib.error.HTTPError as e:
             retryable = e.code == 429 or 500 <= e.code < 600
@@ -167,8 +195,12 @@ def _arxiv_get(url, label, max_retries=5):
             except ValueError:
                 wait = 0
             if wait <= 0:
-                wait = min(120, 5 * (2 ** attempt))
+                wait = min(_MAX_BACKOFF, 5 * (2 ** attempt))
             wait += random.uniform(0, wait * 0.25)  # jitter
+            wait = _clamp_wait(wait)
+            if wait is None:
+                print(f"  Aborting {label}: time budget exhausted before retry")
+                return None
             print(f"  HTTP {e.code} on {label}, retrying in {wait:.0f}s "
                   f"(attempt {attempt + 1}/{max_retries})...")
             time.sleep(wait)
@@ -176,8 +208,12 @@ def _arxiv_get(url, label, max_retries=5):
             if attempt == max_retries - 1:
                 print(f"  Warning: Failed to fetch {label}: {e}")
                 return None
-            wait = min(120, 5 * (2 ** attempt))
+            wait = min(_MAX_BACKOFF, 5 * (2 ** attempt))
             wait += random.uniform(0, wait * 0.25)
+            wait = _clamp_wait(wait)
+            if wait is None:
+                print(f"  Aborting {label}: time budget exhausted before retry")
+                return None
             print(f"  Network error on {label} ({e}), retrying in {wait:.0f}s "
                   f"(attempt {attempt + 1}/{max_retries})...")
             time.sleep(wait)
@@ -185,6 +221,17 @@ def _arxiv_get(url, label, max_retries=5):
             print(f"  Warning: Failed to fetch {label}: {e}")
             return None
     return None
+
+
+def _clamp_wait(wait):
+    """Trim a sleep so we don't sleep past the deadline. Returns None if no
+    budget is left at all."""
+    rem = _budget_remaining()
+    if rem is None:
+        return wait
+    if rem <= 0:
+        return None
+    return min(wait, rem)
 
 
 def fetch_arxiv_papers(categories, days_back=1, max_results=200):
@@ -222,6 +269,9 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
         # Fallback: per-category with polite 3s delay between requests
         print("  Falling back to per-category fetches...")
         for i, cat in enumerate(categories):
+            if _budget_exceeded():
+                print(f"  Skipping remaining categories ({len(categories) - i} left): time budget exhausted")
+                break
             if i > 0:
                 time.sleep(3)  # arXiv API guideline: ~3s between requests
             params = {
@@ -892,7 +942,9 @@ def send_email_digest(papers, digest_date, frequency="daily"):
         msg.attach(MIMEText(body_html, "html"))
 
         try:
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            # 30s socket timeout — without this, smtplib defaults to None
+            # (block forever), which is a hang risk if Gmail is slow.
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
                 server.login(EMAIL_FROM, EMAIL_APP_PASSWORD)
                 server.send_message(msg)
             print(f"  Email sent to {recipient['email']}")
@@ -1027,7 +1079,19 @@ def main():
         "--smart-weekend", action="store_true",
         help="Auto-extend lookback on weekends so Friday's papers are not missed"
     )
+    parser.add_argument(
+        "--budget-seconds", type=int, default=600,
+        help="Hard wall-clock budget for arXiv fetching (default: 600s). "
+             "Leaves runway under the GH Actions 15-min job timeout."
+    )
     args = parser.parse_args()
+
+    # Set the network deadline. Anything in _arxiv_get that would push past
+    # this aborts cleanly with a logged warning. 0/negative disables.
+    global _BUDGET_DEADLINE
+    if args.budget_seconds > 0:
+        _BUDGET_DEADLINE = time.monotonic() + args.budget_seconds
+        print(f"  Network budget: {args.budget_seconds}s")
 
     days_back = args.days
 
