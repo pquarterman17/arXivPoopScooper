@@ -18,14 +18,18 @@ describe('_deriveSourceKey (#8 empty-key fallback)', () => {
   });
 
   it('does NOT return an empty key for a punctuation-only label (the bug)', () => {
-    const k = _deriveSourceKey('(PRL)', []);
+    // Pre-fix code returned '' for any label whose chars are all stripped by
+    // /[^a-z0-9]/g — e.g. "???" or "()". Note: "(PRL)" survives as "prl"
+    // because the parens are stripped but the letters remain; only labels
+    // with NO alphanumerics hit the bug.
+    const k = _deriveSourceKey('???', []);
     expect(k).not.toBe('');
     expect(k).toMatch(/^src[a-z0-9]+$/);
   });
 
-  it('does not collide when called twice with the same punctuation label', () => {
-    const a = _deriveSourceKey('(PRL)', []);
-    const b = _deriveSourceKey('(PRL)', [a]);
+  it('does not collide when called twice with the same punctuation-only label', () => {
+    const a = _deriveSourceKey('???', []);
+    const b = _deriveSourceKey('???', [a]);
     expect(a).not.toBe(b);
   });
 

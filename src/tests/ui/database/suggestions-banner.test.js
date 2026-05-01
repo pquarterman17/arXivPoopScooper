@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /**
  * Regression tests for bug #7 in bug-audit-2026-04-30.md.
  *

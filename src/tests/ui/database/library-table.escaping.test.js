@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /**
  * Regression tests for the HTML/JS escaping bugs found in the 2026-04-30
  * audit of src/ui/database/library-table.js.
