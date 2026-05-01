@@ -35,6 +35,22 @@ function _esc(s) {
   return d.innerHTML;
 }
 
+// Slugify a user-supplied source label into a unique short key. Pre-fix
+// behavior (`label.toLowerCase().replace(/[^a-z0-9]/g, '')`) returned ''
+// for punctuation-only labels like "(PRL)", causing every such source to
+// collide on key="" and silently overwrite earlier entries. Fall back to
+// a timestamp-derived key, then de-dupe against any existing keys.
+// Exported solely for testing the derivation logic; not part of the
+// public modal API.
+export function _deriveSourceKey(label, existingKeys = []) {
+  let key = String(label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!key) key = 'src' + Date.now().toString(36);
+  while (existingKeys.includes(key)) {
+    key = key + '_' + Math.random().toString(36).slice(2, 6);
+  }
+  return key;
+}
+
 // Mirror the three editable arrays onto window so the modal's inline
 // `onchange="_settingsSources[${i}].color=this.value"` handlers (which
 // resolve in global scope) can mutate the same array our module reads.
@@ -190,7 +206,7 @@ export function _addSource() {
   if (!label) return;
   const journalRef = prompt("arXiv journal_ref filter (e.g., 'Phys.+Rev.+B'):");
   if (!journalRef) return;
-  const key = label.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const key = _deriveSourceKey(label, _settingsSources.map(s => s.key));
   _settingsSources.push({
     key, label, color: '#58a6ff', enabled: true,
     type: 'arxiv-jr', journalRef, journalName: journalRef.replace(/\+/g, ' '),

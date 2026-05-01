@@ -20,7 +20,13 @@
  * ════════════════════════════════════════════════════════════
  */
 
-const SCRAPER_CONFIG = {
+// `var` (not `const`) so the binding lands on `window` / `globalThis`. This
+// file is a classic <script>; ES2015 const at the top level of a classic
+// script goes into the script's lexical environment, NOT onto the global
+// object. The migrated ES modules under src/ui/database/ read this via
+// `globalThis.SCRAPER_CONFIG`, so it must be reachable there. Switching to
+// `var` is the smallest fix that keeps both legacy and module callers happy.
+var SCRAPER_CONFIG = {
 
   // ── Identity ──────────────────────────────────────────────
   // Shown in page headers and the suggestions banner.

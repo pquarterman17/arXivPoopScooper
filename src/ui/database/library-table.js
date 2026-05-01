@@ -19,6 +19,37 @@
 
 function _g(name) { return globalThis[name]; }
 
+// Escape for use inside an HTML double-quoted attribute value (title="..." etc).
+// Replaces the four characters that can break out of an attribute or the
+// surrounding HTML: & < > ".
+function _attr(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Escape for use inside a *single-quoted* JS string literal embedded in an
+// inline onclick="...('${value}')" attribute. Backslashes first, then the
+// quote, then a sentinel for </script> for paranoia.
+function _js(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/<\/script/gi, '<\\/script');
+}
+
+// Escape PCDATA / RCDATA — for inserting user text between tags or inside
+// <textarea>. </textarea> is the only thing that closes a textarea, so we
+// must encode < at minimum; encode & as well to keep it idempotent.
+function _text(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function renderSidebar() {
   const SCQ = globalThis.SCQ;
   const PAPERS = _g('PAPERS') || [];
@@ -118,7 +149,7 @@ export function render() {
   // Tags
   const allTags = getAllTags();
   let tagHtml = allTags.map(t =>
-    `<button class="tag-btn ${selectedTags.has(t) ? 'active' : ''}" onclick="toggleTag('${t}')">${t}</button>`
+    `<button class="tag-btn ${selectedTags.has(t) ? 'active' : ''}" onclick="toggleTag('${_js(t)}')">${_text(t)}</button>`
   ).join("");
   if (selectedTags.size > 0) tagHtml += `<button class="tag-btn clear" onclick="clearTags()">clear</button>`;
   tagHtml += `<span class="tag-mgmt-bar"><button class="tag-mgmt-btn" onclick="showTagManagerModal()" title="Rename, merge, or delete tags">manage tags</button></span>`;
@@ -140,7 +171,7 @@ export function render() {
               <span class="badge badge-arxiv">${p.id}</span>
               ${(() => { const _tc = (_etCfg[p.entryType] || {}); return p.entryType && p.entryType !== 'preprint' ? `<span class="badge badge-type" style="background:${_tc.color || '#888'}22;color:${_tc.color || '#888'}">${_tc.label || p.entryType}</span>` : ''; })()}
               <span class="badge badge-group">${p.group}</span>
-              ${pdfSearchHits[p.id] ? `<span class="badge" style="background:rgba(210,153,34,0.15);color:var(--orange)" title="p.${pdfSearchHits[p.id].page}: ${pdfSearchHits[p.id].snippet}">PDF match p.${pdfSearchHits[p.id].page}</span>` : ''}
+              ${pdfSearchHits[p.id] ? `<span class="badge" style="background:rgba(210,153,34,0.15);color:var(--orange)" title="${_attr('p.' + pdfSearchHits[p.id].page + ': ' + pdfSearchHits[p.id].snippet)}">PDF match p.${pdfSearchHits[p.id].page}</span>` : ''}
             </div>
           </div>
           <div class="star-rating" onclick="event.stopPropagation()">${renderStars(p.id)}</div>
@@ -165,13 +196,13 @@ export function render() {
             <div class="section-label">Figures</div>
             <div class="fig-grid">
               ${p.figures.map(f => FIGS[f.key] ? `
-                <div class="fig-card" onclick="event.stopPropagation(); openLightbox('${f.key}', '${f.label}: ${f.desc.replace(/'/g, "\\'")}')">
-                  <img src="${FIGS[f.key]}" alt="${f.label}" loading="lazy">
-                  <div class="fig-label"><strong>${f.label}</strong><span>${f.desc}</span></div>
+                <div class="fig-card" onclick="event.stopPropagation(); openLightbox('${_js(f.key)}', '${_js(f.label + ': ' + f.desc)}')">
+                  <img src="${FIGS[f.key]}" alt="${_attr(f.label)}" loading="lazy">
+                  <div class="fig-label"><strong>${_text(f.label)}</strong><span>${_text(f.desc)}</span></div>
                 </div>` : `
                 <div class="fig-card" style="opacity:0.5">
                   <div style="padding:20px;text-align:center;color:var(--text3);font-size:11px">No image</div>
-                  <div class="fig-label"><strong>${f.label}</strong><span>${f.desc}</span></div>
+                  <div class="fig-label"><strong>${_text(f.label)}</strong><span>${_text(f.desc)}</span></div>
                 </div>`
               ).join("")}
             </div>
@@ -179,7 +210,7 @@ export function render() {
           <div class="section">
             <div class="section-label">My Notes</div>
             <textarea class="notes-area" placeholder="Type your notes here... (auto-saves)"
-              oninput="updateNotes('${p.id}', this.value)">${p._note || ""}</textarea>
+              oninput="updateNotes('${_js(p.id)}', this.value)">${_text(p._note || "")}</textarea>
             <div style="display:flex;align-items:center;gap:8px">
               <div class="notes-saved" id="notes-saved-${p.id}">✓ Saved</div>
               ${p._lastEdited ? `<span id="note-ts-${p.id}" style="font-size:10px;color:var(--text3)">Last edited: ${SCQ.formatRelativeTime(p._lastEdited)}</span>` : ''}
@@ -194,8 +225,8 @@ export function render() {
             return `<div class="section">
               <div class="section-label">Related Papers</div>
               <div class="related-papers">
-                ${rel.map(r => `<span class="related-chip ${r.reasons[0] === 'linked manually' ? 'manual-link' : ''}" onclick="event.stopPropagation(); expandedId='${r.paper.id}'; render();" title="${r.reasons.join(', ')}">
-                  ${r.paper.shortAuthors} (${r.paper.year}) <span class="related-reason">${r.reasons[0]}</span>
+                ${rel.map(r => `<span class="related-chip ${r.reasons[0] === 'linked manually' ? 'manual-link' : ''}" onclick="event.stopPropagation(); expandedId='${_js(r.paper.id)}'; render();" title="${_attr(r.reasons.join(', '))}">
+                  ${_text(r.paper.shortAuthors)} (${_text(r.paper.year)}) <span class="related-reason">${_text(r.reasons[0])}</span>
                 </span>`).join("")}
               </div>
             </div>`;

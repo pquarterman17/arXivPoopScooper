@@ -20,6 +20,21 @@ function _call(name, ...args) {
   if (typeof fn === 'function') return fn(...args);
 }
 
+// Convert a Uint8Array to a binary string (each char = one byte) without
+// blowing the call stack. `String.fromCharCode.apply(null, bigArray)` throws
+// `RangeError: Maximum call stack size exceeded` past ~65k args, which a
+// real SCQ database (typically 100s of KB) easily exceeds. Chunk in 8 KB
+// slices instead. Exported solely for unit-testing the chunking; not part
+// of the module's public API.
+export function _bytesToBinaryString(bytes) {
+  let binary = '';
+  const CHUNK = 0x2000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return binary;
+}
+
 export function exportJSON() {
   const state = _scq().exportJSON();
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -46,7 +61,7 @@ function _importDb(file) {
   reader.onload = function(e) {
     const bytes = new Uint8Array(e.target.result);
     try {
-      const binary = String.fromCharCode.apply(null, bytes);
+      const binary = _bytesToBinaryString(bytes);
       localStorage.setItem('scq-db-base64', btoa(binary));
       alert('Database imported! Reloading...');
       location.reload();

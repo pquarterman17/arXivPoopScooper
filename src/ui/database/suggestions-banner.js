@@ -79,6 +79,9 @@ export function renderSuggestions() {
   const countEl = document.getElementById('sug-count');
   const body = document.getElementById('suggestions-body');
   const toggle = document.getElementById('sug-toggle');
+  // The banner UI is optional — pages that don't include it (tests, alt
+  // layouts) should not crash when load callbacks fire.
+  if (!banner || !list || !countEl || !body || !toggle) return;
 
   if (scraperInbox.length === 0) {
     banner.style.display = 'none';
@@ -116,8 +119,11 @@ export function renderSuggestions() {
 
 export function toggleSuggestions() {
   suggestionsOpen = !suggestionsOpen;
-  document.getElementById('suggestions-body').classList.toggle('open', suggestionsOpen);
-  document.getElementById('sug-toggle').classList.toggle('open', suggestionsOpen);
+  const body = document.getElementById('suggestions-body');
+  const toggle = document.getElementById('sug-toggle');
+  if (!body || !toggle) return;
+  body.classList.toggle('open', suggestionsOpen);
+  toggle.classList.toggle('open', suggestionsOpen);
 }
 
 export function sugAdd(idx) {
@@ -259,6 +265,7 @@ export async function autoFetchOnLoad() {
 
   const statusEl = document.getElementById('sug-fetch-status');
   const banner = document.getElementById('suggestions-banner');
+  if (!statusEl || !banner) return;  // banner UI not present (test env / alt layout)
   banner.style.display = 'block';
   statusEl.textContent = 'Checking for new papers...';
 
