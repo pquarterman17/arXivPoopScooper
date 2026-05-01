@@ -112,7 +112,10 @@ describe('library-table escaping (bug-audit 2026-04-30)', () => {
     // What matters is that the button exists (parsing didn't break) and
     // that the onclick attribute references the tag in some form.
     expect(btn.getAttribute('onclick')).toContain('toggleTag');
-    expect(btn.getAttribute('onclick')).toMatch(/it.s/);
+    // After _js() escaping the value is `toggleTag('it\'s')`, so the
+    // sequence between `it` and `s` is `\'` (two chars). Use `.*` to
+    // tolerate any escaping form as long as both letters are present.
+    expect(btn.getAttribute('onclick')).toMatch(/it.*s/);
   });
 
   it("#4 figure with apostrophe in label renders a clickable card (no broken HTML)", () => {
