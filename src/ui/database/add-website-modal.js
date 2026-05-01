@@ -17,10 +17,27 @@
  *   - SCQ              (sql.js wrapper, db_utils.js)
  */
 
+import { lookupByDoi } from '../../services/crossref.js';
+import { formatBibTeX, formatPlainText } from '../../services/doi.js';
+
 function _scq() { return globalThis.SCQ; }
 function _call(name, ...args) {
   const fn = globalThis[name];
   if (typeof fn === 'function') return fn(...args);
+}
+
+// Proxy-aware fetch: try the local /api/crossref/<doi> proxy first, then
+// fall back to api.crossref.org. The crossref service accepts an injected
+// fetch via opts.fetch, so we hand it this wrapper.
+async function _proxyFetch(url) {
+  const m = url.match(/api\.crossref\.org\/works\/(.+)/);
+  if (m) {
+    try {
+      const proxied = await fetch(`${window.location.origin}/api/crossref/${m[1]}`);
+      if (proxied.ok || proxied.status === 404) return proxied;
+    } catch { /* fall through */ }
+  }
+  return fetch(url);
 }
 
 export function showAddWebsiteModal() {
@@ -103,18 +120,17 @@ export function fetchWebsiteMeta() {
 
 function _fetchFromDoi(doi) {
   _setStatus('Detected DOI, fetching from CrossRef...');
-  lookupDOI(doi)
-    .then(metadata => {
-      if (!metadata) { _setStatus('Could not fetch DOI metadata.'); return; }
-      _setVal('awm-title', metadata.title);
-      _setVal('awm-authors', metadata.authors);
+  lookupByDoi(doi, { fetch: _proxyFetch })
+    .then(paper => {
+      _setVal('awm-title', paper.title);
+      _setVal('awm-authors', paper.authors);
       _setVal('awm-summary',
-        (metadata.journal || '') +
-        (metadata.volume ? ` Vol. ${metadata.volume}` : '') +
-        (metadata.pages ? `, pp. ${metadata.pages}` : '')
+        (paper.journal || '') +
+        (paper.volume ? ` Vol. ${paper.volume}` : '') +
+        (paper.pages ? `, pp. ${paper.pages}` : '')
       );
       _setVal('awm-type', 'published');
-      const tags = _autoTag(metadata.title);
+      const tags = _autoTag(paper.title);
       if (tags.length > 0) _setVal('awm-tags', tags.join(', '));
       _setStatus('Populated from CrossRef API.');
     })
@@ -143,97 +159,9 @@ function _fetchFromArxiv(arxivId) {
     .catch(e => _setStatus('arXiv fetch failed: ' + e.message));
 }
 
-async function lookupDOI(doi) {
-  try {
-    const proxyUrl = `${window.location.origin}/api/crossref/${encodeURIComponent(doi)}`;
-    const directUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-
-    let response;
-    try {
-      response = await fetch(proxyUrl);
-      if (!response.ok && response.status !== 404) throw new Error('Proxy failed');
-    } catch {
-      response = await fetch(directUrl);
-    }
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const data = await response.json();
-    if (!data.message) throw new Error('Invalid CrossRef response');
-
-    const msg = data.message;
-    const title = msg.title ? msg.title[0] : '';
-    const authors = (msg.author || []).map(a => `${a.given || ''} ${a.family || ''}`.trim()).join(', ');
-    const shortAuthors = authors.split(',')[0].trim() || 'Unknown';
-    const year = msg.published?.['date-parts']?.[0]?.[0] || new Date().getFullYear();
-    const journal = msg['container-title']?.[0] || '';
-    const volume = msg.volume || '';
-    const pages = msg.page || '';
-
-    return {
-      title,
-      authors,
-      shortAuthors,
-      year,
-      journal,
-      volume,
-      pages,
-      doi,
-      citeBib: generateDOIBibTeX(doi, title, authors, year, journal, volume, pages),
-      citeTxt: generateDOIPlainText(authors, title, journal, volume, pages, year, doi),
-    };
-  } catch (e) {
-    console.error('DOI lookup error:', e);
-    return null;
-  }
-}
-
-function generateDOIBibTeX(doi, title, authors, year, journal, volume, pages) {
-  const authList = authors.split(',').filter(a => a.trim());
-  const firstLast = authList[0]?.split()?.pop()?.toLowerCase() || 'unknown';
-  const titleWord = title.split()[0]?.replace(/[^a-z]/gi, '')?.toLowerCase() || 'article';
-  const key = `${firstLast}${year}${titleWord}`;
-
-  const bibAuthors = authList.map(a => {
-    const parts = a.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`;
-    }
-    return a.trim();
-  }).join(' and ');
-
-  return `@article{${key},
-  title     = {${title}},
-  author    = {${bibAuthors}},
-  journal   = {${journal}},
-  volume    = {${volume}},
-  pages     = {${pages}},
-  year      = {${year}},
-  doi       = {${doi}}
-}`;
-}
-
-function generateDOIPlainText(authors, title, journal, volume, pages, year, doi) {
-  const authList = authors.split(',').filter(a => a.trim());
-  const formatted = authList.map(a => {
-    const parts = a.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      const initials = parts.slice(0, -1).map(p => p[0] + '.').join(' ');
-      return `${initials} ${parts[parts.length - 1]}`;
-    }
-    return a.trim();
-  });
-
-  let authorStr;
-  if (formatted.length > 2) {
-    authorStr = formatted.slice(0, -1).join(', ') + ', and ' + formatted[formatted.length - 1];
-  } else if (formatted.length === 2) {
-    authorStr = formatted.join(' and ');
-  } else {
-    authorStr = formatted[0] || 'Unknown';
-  }
-
-  return `${authorStr}, "${title}," ${journal}${volume ? ` ${volume}` : ''}${pages ? `, ${pages}` : ''} (${year}). https://doi.org/${doi}`;
-}
+// lookupDOI / generateDOIBibTeX / generateDOIPlainText migrated to
+// src/services/{crossref,doi}.js (plan #7); _fetchFromDoi calls them
+// via the injected _proxyFetch defined above.
 
 export function submitAddWebsite() {
   const url = document.getElementById('awm-url').value.trim();
