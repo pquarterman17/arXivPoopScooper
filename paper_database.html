@@ -2251,62 +2251,9 @@ function _applySettingsToConfig() {
 }
 
 // ─── Collaboration helpers ───
-function _syncToSharedFolder() {
-  const pathInput = document.getElementById("shared-folder-path");
-  const folderPath = pathInput ? pathInput.value.trim() : "";
-
-  if (!folderPath) {
-    alert("Please enter a shared folder path first.");
-    return;
-  }
-
-  // Save the path to settings
-  const collabSettings = SCQ.getSetting('collaboration') || {};
-  collabSettings.sharedFolderPath = folderPath;
-  collabSettings.lastSyncAt = new Date().toISOString();
-  SCQ.setSetting('collaboration', collabSettings);
-
-  // Download the database file
-  SCQ.saveToFile();
-  alert(`Database download started. Save it to:\n${folderPath}`);
-}
-
-function mergeSharedFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  if (!file.name.endsWith(".db")) {
-    alert("Please select a .db file to merge.");
-    event.target.value = "";
-    return;
-  }
-
-  try {
-    // Call the existing merge logic
-    SCQ.importDatabaseFile(file).then(stats => {
-      loadPapersFromDB();
-      render();
-      renderSidebar();
-
-      // Update sync timestamp
-      const collabSettings = SCQ.getSetting('collaboration') || {};
-      collabSettings.lastSyncAt = new Date().toISOString();
-      SCQ.setSetting('collaboration', collabSettings);
-
-      const msg = `Merge complete!\n\n` +
-        `• ${stats.added} new paper${stats.added !== 1 ? 's' : ''} added\n` +
-        `• ${stats.updated} paper${stats.updated !== 1 ? 's' : ''} updated\n` +
-        `• ${stats.skipped} paper${stats.skipped !== 1 ? 's' : ''} unchanged\n\n` +
-        `Remember to click "Save database" to save the merged data.`;
-      alert(msg);
-      _renderSettingsModal();
-    }).catch(err => {
-      alert("Merge failed: " + err.message);
-    });
-  } catch(err) {
-    alert("Merge failed: " + err.message);
-  }
-  event.target.value = "";
-}
+// Migrated to src/ui/database/collaboration.js (plan #8). _syncToSharedFolder
+// + mergeSharedFile are shimmed onto window from main.js for the inline
+// onclick / onchange callers in the Settings modal Collaboration section.
 
 document.addEventListener('DOMContentLoaded', function() {
   const searchInput = document.getElementById("reading-search-input");

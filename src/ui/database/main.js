@@ -88,6 +88,7 @@ import {
 } from './suggestions-banner.js';
 import { loadPapersFromDB } from './init.js';
 import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
+import { syncToSharedFolder, mergeSharedFile } from './collaboration.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -165,6 +166,10 @@ window.togglePaper = togglePaper;
 window.toggleTag = toggleTag;
 window.clearTags = clearTags;
 window.updateNotes = updateNotes;
+// Settings modal "Collaboration" section uses these names verbatim in its
+// inline onclick / onchange attributes; preserve them.
+window._syncToSharedFolder = syncToSharedFolder;
+window.mergeSharedFile = mergeSharedFile;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
