@@ -2,7 +2,11 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    # Run on main and on every feature/fix/refactor branch so we get a
+    # green/red light on every push, not just at PR-open time. Avoids the
+    # "I forgot to run tests on the branch and discovered breakage at PR
+    # review" failure mode.
+    branches: [main, 'feat/**', 'fix/**', 'refactor/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
