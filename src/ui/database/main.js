@@ -58,6 +58,23 @@ import {
   toggleCollectionDropdown,
   renderCollectionDropdown,
 } from './collections-ui.js';
+import { showLinkPaperModal, toggleManualLink } from './manual-link.js';
+import {
+  toggleReadStatus,
+  setStarRating,
+  renderStars,
+  setReadFilter,
+  setPriorityFilter,
+  setTypeFilter,
+} from './read-priority.js';
+import {
+  getAllTags,
+  getFiltered,
+  togglePdfSearch,
+  copyText,
+  openLightbox,
+  closeLightbox,
+} from './helpers.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -103,6 +120,20 @@ window.deleteCollectionUI = deleteCollectionUI;
 window.closeModal = closeModal;
 window.toggleCollectionDropdown = toggleCollectionDropdown;
 window.renderCollectionDropdown = renderCollectionDropdown;
+window.showLinkPaperModal = showLinkPaperModal;
+window.toggleManualLink = toggleManualLink;
+window.toggleReadStatus = toggleReadStatus;
+window.setStarRating = setStarRating;
+window.renderStars = renderStars;
+window.setReadFilter = setReadFilter;
+window.setPriorityFilter = setPriorityFilter;
+window.setTypeFilter = setTypeFilter;
+window.getAllTags = getAllTags;
+window.getFiltered = getFiltered;
+window.togglePdfSearch = togglePdfSearch;
+window.copyText = copyText;
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.

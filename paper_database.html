@@ -1464,23 +1464,28 @@ async function arxivFetch(url) {
 // onclick= callers in the More menu and overlay.
 
 // ─── App state (populated from SQLite on init) ───
-let PAPERS = [];     // compatibility array — loaded from db
-window.PAPERS = PAPERS;  // expose for migrated modules; refreshed in loadPapersFromDB
-let FIGS = {};       // figure key → file path — loaded from db
+// Top-level state. Declared with `var` so they auto-attach to `window`
+// (a non-module script does this for free with `var`); migrated modules
+// in src/ui/database/ read+write the same slot via globalThis. PAPERS
+// is reassigned in loadPapersFromDB; the others are mutated in place
+// or reassigned by their owning module.
+var PAPERS = [];     // compatibility array — loaded from db
+window.PAPERS = PAPERS;  // explicit pin; refreshed in loadPapersFromDB
+var FIGS = {};       // figure key → file path — loaded from db
 
 // UI state
-let currentView = "cards";
-let searchQuery = "";
-let selectedTags = new Set();
-let expandedId = null;
-let readFilter = "all";
-let priorityFilter = "any";
-let typeFilter = "all";
-let tableSort = { col: "date_added", dir: "desc" };
+var currentView = "cards";
+var searchQuery = "";
+var selectedTags = new Set();
+var expandedId = null;
+var readFilter = "all";
+var priorityFilter = "any";
+var typeFilter = "all";
+var tableSort = { col: "date_added", dir: "desc" };
 window.tableSort = tableSort;  // shared with src/ui/database/sort.js (mutated in place)
-let copiedTimers = {};
-let pdfSearchEnabled = false;
-let pdfSearchHits = {};
+var copiedTimers = {};
+var pdfSearchEnabled = false;
+var pdfSearchHits = {};
 // Both bindings exposed on `window` (via `var` hoisting in a non-module script)
 // so migrated modules in src/ui/database/ can read + write them without
 // the legacy `let` shadowing the slot. See collections-ui.js.
@@ -1562,155 +1567,24 @@ function _jp(str, fallback) {
 // openPdfViewer.
 
 // ─── Manual paper linking ───
-function showLinkPaperModal(paperId) {
-  const currentLinks = SCQ.getLinkedPapers(paperId).map(l => l.id);
-  const others = PAPERS.filter(p => p.id !== paperId);
-  const modalRoot = document.getElementById("modal-root");
-  modalRoot.innerHTML = `
-    <div class="modal-backdrop" onclick="closeModal()">
-      <div class="modal" onclick="event.stopPropagation()" style="min-width:360px;max-width:460px">
-        <h3>Link related papers to ${PAPERS.find(p=>p.id===paperId)?.shortAuthors || paperId}</h3>
-        <div class="link-picker-list">
-          ${others.map(p => `
-            <label class="link-picker-item">
-              <input type="checkbox" ${currentLinks.includes(p.id) ? 'checked' : ''}
-                onchange="toggleManualLink('${paperId}', '${p.id}', this.checked)">
-              <span>${p.shortAuthors} (${p.year}) — ${p.title.substring(0,50)}${p.title.length > 50 ? '…' : ''}</span>
-            </label>
-          `).join("")}
-        </div>
-        <div class="modal-btns">
-          <button class="modal-btn primary" onclick="closeModal()">Done</button>
-        </div>
-      </div>
-    </div>`;
-}
+// Migrated to src/ui/database/manual-link.js (plan #8). showLinkPaperModal
+// and toggleManualLink shimmed onto window from main.js.
 
-function toggleManualLink(fromId, toId, checked) {
-  if (checked) {
-    SCQ.linkPapers(fromId, toId);
-  } else {
-    SCQ.unlinkPapers(fromId, toId);
-  }
-}
-
-function toggleReadStatus(paperId, event) {
-  if (event) event.stopPropagation();
-  const p = PAPERS.find(x => x.id === paperId);
-  const newStatus = !p._read;
-  p._read = newStatus;
-  SCQ.setReadStatus(paperId, newStatus);
-  render();
-}
-
-function setStarRating(paperId, stars, event) {
-  if (event) event.stopPropagation();
-  const p = PAPERS.find(x => x.id === paperId);
-  const newPriority = (p._priority === stars) ? 0 : stars;
-  p._priority = newPriority;
-  SCQ.setPriority(paperId, newPriority);
-  render();
-}
-
-function renderStars(paperId) {
-  const p = PAPERS.find(x => x.id === paperId);
-  const current = p ? p._priority : 0;
-  return [1,2,3].map(s =>
-    `<button class="star-btn ${s <= current ? 'filled' : ''}" onclick="setStarRating('${paperId}', ${s}, event)" title="${s} star${s>1?'s':''}">&#9733;</button>`
-  ).join("");
-}
-
-function setReadFilter(filter) {
-  readFilter = filter;
-  document.querySelectorAll(".filter-read-btn").forEach(b => b.classList.remove("active"));
-  document.querySelector(`.filter-read-btn[data-readfilter="${filter}"]`).classList.add("active");
-  render();
-}
-
-function setPriorityFilter(filter) {
-  priorityFilter = filter;
-  document.querySelectorAll(".priority-filter-btn").forEach(b => b.classList.remove("active"));
-  document.querySelector(`.priority-filter-btn[data-pf="${filter}"]`).classList.add("active");
-  render();
-}
-
-function setTypeFilter(filter) {
-  typeFilter = filter;
-  render();
-}
+// ─── Read status, star priority, and table filters ───
+// Migrated to src/ui/database/read-priority.js (plan #8). Six functions
+// (toggleReadStatus, setStarRating, renderStars, setReadFilter,
+// setPriorityFilter, setTypeFilter) shimmed onto window from main.js
+// for inline onclick callers in render() output and the toolbar.
 
 // ─── Related papers detection ───
 // Migrated to src/ui/database/related-papers.js (plan #8). getRelatedPapers
 // is shimmed onto window from main.js for the legacy render() caller.
 
 // ─── Helpers ───
-function getAllTags() {
-  const s = new Set();
-  PAPERS.forEach(p => p.tags.forEach(t => s.add(t)));
-  return [...s].sort();
-}
-
-function getFiltered() {
-  const q = searchQuery.toLowerCase();
-  return PAPERS.filter(p => {
-    let matchSearch = !q ||
-      p.title.toLowerCase().includes(q) ||
-      p.authors.toLowerCase().includes(q) ||
-      p.tags.some(t => t.toLowerCase().includes(q)) ||
-      p.summary.toLowerCase().includes(q) ||
-      p.group.toLowerCase().includes(q) ||
-      p.id.includes(q) ||
-      (p._note || "").toLowerCase().includes(q) ||
-      (p.keyResults || []).some(r => r.toLowerCase().includes(q));
-    // Full-text PDF search via FTS5
-    if (!matchSearch && pdfSearchEnabled && q) {
-      const hits = SCQ.searchPdfText(q);
-      if (hits[p.id]) {
-        matchSearch = true;
-        pdfSearchHits[p.id] = hits[p.id];
-      }
-    }
-    const matchTags = selectedTags.size === 0 || [...selectedTags].every(t => p.tags.includes(t));
-    const matchRead = readFilter === "all" ||
-      (readFilter === "read" && p._read) ||
-      (readFilter === "unread" && !p._read);
-    const matchPriority = priorityFilter === "any" ||
-      (priorityFilter === "starred" && p._priority >= 1) ||
-      (priorityFilter === "high" && p._priority === 3);
-    const matchType = typeFilter === "all" || (p.entryType || "preprint") === typeFilter;
-    const matchCollection = !activeCollection || SCQ.getCollectionsForPaper(p.id).includes(activeCollection);
-    return matchSearch && matchTags && matchRead && matchPriority && matchType && matchCollection;
-  });
-}
-
-function togglePdfSearch(enabled) {
-  pdfSearchEnabled = enabled;
-  if (enabled && !SCQ.hasPdfIndex()) {
-    alert("No PDF text indexed yet. Run: python tools/init_database.py --migrate\nwith PDFs in the pdfs/ folder to index them.");
-    document.getElementById("pdf-search-toggle").checked = false;
-    pdfSearchEnabled = false;
-    return;
-  }
-  pdfSearchHits = {};
-  render();
-}
-
-function copyText(text, btnId) {
-  navigator.clipboard.writeText(text);
-  const btn = document.getElementById(btnId);
-  if (btn) { btn.classList.add("copied"); btn.dataset.origText = btn.textContent; btn.textContent = "Copied!"; }
-  clearTimeout(copiedTimers[btnId]);
-  copiedTimers[btnId] = setTimeout(() => {
-    if (btn) { btn.classList.remove("copied"); btn.textContent = btn.dataset.origText; }
-  }, 1500);
-}
-
-function openLightbox(figKey, caption) {
-  document.getElementById("lb-img").src = FIGS[figKey];
-  document.getElementById("lb-caption").textContent = caption;
-  document.getElementById("lightbox").style.display = "flex";
-}
-function closeLightbox() { document.getElementById("lightbox").style.display = "none"; }
+// Migrated to src/ui/database/helpers.js (plan #8). getAllTags,
+// getFiltered, togglePdfSearch, copyText, openLightbox, and
+// closeLightbox are shimmed onto window from main.js for the legacy
+// render() and inline onclick callers.
 
 // ─── Collections ───
 // Migrated to src/ui/database/collections-ui.js (plan #8). All 10 helpers
