@@ -10,13 +10,17 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getRelatedPapers } from '../../../ui/database/related-papers.js';
 
+// Each fixture gets a unique sentinel group so the factory default doesn't
+// silently match `p.group === paper.group` across unrelated papers. Tests
+// that want same-group behavior set group explicitly.
+let _gid = 0;
 function paper(overrides) {
   return {
     id: 'x',
     title: 't',
     authors: 'A. Author',
     tags: [],
-    group: '',
+    group: `_g${++_gid}`,
     ...overrides,
   };
 }
