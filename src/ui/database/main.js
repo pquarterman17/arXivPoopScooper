@@ -89,6 +89,7 @@ import {
 import { loadPapersFromDB } from './init.js';
 import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
 import { syncToSharedFolder, mergeSharedFile } from './collaboration.js';
+import { render, renderSidebar } from './library-table.js';
 import {
   showSettingsModal,
   closeSettingsModal,
@@ -201,6 +202,10 @@ window._addRecipient = _addRecipient;
 window._exportRecipients = _exportRecipients;
 window._saveSettings = _saveSettings;
 window._applySettingsToConfig = _applySettingsToConfig;
+// Library view rendering — every other module's mutators call window.render()
+// to redraw, and the boot block's SCQ.init().then() also reaches it here.
+window.render = render;
+window.renderSidebar = renderSidebar;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
