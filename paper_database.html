@@ -1511,44 +1511,11 @@ SCQ.init().then(() => {
   autoFetchOnLoad();
 });
 
-function loadPapersFromDB() {
-  const rows = SCQ.getAllPapers();
-  PAPERS = rows.map(r => ({
-    id: r.id,
-    title: r.title,
-    authors: r.authors,
-    shortAuthors: r.short_authors || "",
-    year: r.year,
-    group: r.group_name || "",
-    dateAdded: r.date_added || "",
-    tags: _jp(r.tags, []),
-    summary: r.summary || "",
-    keyResults: _jp(r.key_results, []),
-    url: r.url || "",
-    citeBib: r.cite_bib || "",
-    citeTxt: r.cite_txt || "",
-    entryType: r.entry_type || "preprint",
-    figures: [],
-    // State fields from JOINs
-    _read: !!r.is_read,
-    _priority: r.priority || 0,
-    _note: r.note || "",
-    _lastEdited: r.last_edited || ""
-  }));
-
-  // Load figures for all papers
-  FIGS = {};
-  PAPERS.forEach(p => {
-    const figs = SCQ.getFigures(p.id);
-    p.figures = figs.map(f => ({ key: f.figure_key, label: f.label, desc: f.caption }));
-    figs.forEach(f => { FIGS[f.figure_key] = f.file_path; });
-  });
-  window.PAPERS = PAPERS;  // refresh shim for migrated modules (PAPERS was reassigned above)
-}
-
-function _jp(str, fallback) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
+// loadPapersFromDB + the _jp JSON helper migrated to
+// src/ui/database/init.js (plan #8). Shimmed onto window from main.js
+// so the SCQ.init().then() block above keeps working, and so other
+// migrated modules (tag-manager, suggestions-banner, export-import,
+// add-website-modal) can refresh after a DB mutation.
 
 // ─── Sync indicator ───
 // Migrated to src/ui/database/sync-indicator.js (plan item #8). Exposed
@@ -1855,25 +1822,9 @@ function render() {
 }
 
 // ─── Event handlers ───
-function togglePaper(id) { expandedId = expandedId === id ? null : id; render(); }
-function toggleTag(tag) { selectedTags.has(tag) ? selectedTags.delete(tag) : selectedTags.add(tag); render(); }
-function clearTags() { selectedTags.clear(); render(); }
-
-let noteTimers = {};
-function updateNotes(paperId, value) {
-  const p = PAPERS.find(x => x.id === paperId);
-  if (p) p._note = value;
-  clearTimeout(noteTimers[paperId]);
-  noteTimers[paperId] = setTimeout(() => {
-    SCQ.setNote(paperId, value);
-    // Update local cache
-    if (p) p._lastEdited = new Date().toISOString();
-    const el = document.getElementById("notes-saved-" + paperId);
-    if (el) { el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1200); }
-    const tsEl = document.getElementById("note-ts-" + paperId);
-    if (tsEl) tsEl.textContent = "Last edited: " + SCQ.formatRelativeTime(p._lastEdited);
-  }, 500);
-}
+// togglePaper / toggleTag / clearTags / updateNotes migrated to
+// src/ui/database/events.js (plan #8). Shimmed onto window from main.js
+// for inline onclick / oninput callers in the table row template.
 
 document.getElementById("search-input").addEventListener("input", function() {
   searchQuery = this.value; render();

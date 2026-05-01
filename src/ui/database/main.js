@@ -86,6 +86,8 @@ import {
   dismissAllSuggestions,
   autoFetchOnLoad,
 } from './suggestions-banner.js';
+import { loadPapersFromDB } from './init.js';
+import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -158,6 +160,11 @@ window.toggleSuggestions = toggleSuggestions;
 window.sugAdd = sugAdd;
 window.sugIgnore = sugIgnore;
 window.dismissAllSuggestions = dismissAllSuggestions;
+window.loadPapersFromDB = loadPapersFromDB;
+window.togglePaper = togglePaper;
+window.toggleTag = toggleTag;
+window.clearTags = clearTags;
+window.updateNotes = updateNotes;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
