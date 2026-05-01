@@ -43,6 +43,7 @@ import {
   exportCollectionBib,
   exportCollectionPackage,
 } from './export-import.js';
+import { showAddWebsiteModal, fetchWebsiteMeta, submitAddWebsite } from './add-website-modal.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -72,6 +73,9 @@ window.mergeFile = mergeFile;
 window.exportCollectionAsDB = exportCollectionAsDB;
 window.exportCollectionBib = exportCollectionBib;
 window.exportCollectionPackage = exportCollectionPackage;
+window.showAddWebsiteModal = showAddWebsiteModal;
+window.fetchWebsiteMeta = fetchWebsiteMeta;
+window.submitAddWebsite = submitAddWebsite;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
