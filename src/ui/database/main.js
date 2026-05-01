@@ -34,6 +34,7 @@ import { toggleSort, sortPapers, sortArrow, sortedClass } from './sort.js';
 import { copyForWord, copyAllForWord } from './citation-copy.js';
 import { openPdfViewer, closePdfViewer, openPdfExternal } from './pdf-viewer.js';
 import { addHighlight, removeHighlightById, renderHighlights } from './highlights.js';
+import { showAnalytics, closeAnalytics } from './analytics.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -55,6 +56,8 @@ window.openPdfExternal = openPdfExternal;
 window.addHighlight = addHighlight;
 window.removeHighlightById = removeHighlightById;
 window.renderHighlights = renderHighlights;
+window.showAnalytics = showAnalytics;
+window.closeAnalytics = closeAnalytics;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
