@@ -35,6 +35,14 @@ import { copyForWord, copyAllForWord } from './citation-copy.js';
 import { openPdfViewer, closePdfViewer, openPdfExternal } from './pdf-viewer.js';
 import { addHighlight, removeHighlightById, renderHighlights } from './highlights.js';
 import { showAnalytics, closeAnalytics } from './analytics.js';
+import {
+  exportJSON,
+  importFile,
+  mergeFile,
+  exportCollectionAsDB,
+  exportCollectionBib,
+  exportCollectionPackage,
+} from './export-import.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -58,6 +66,12 @@ window.removeHighlightById = removeHighlightById;
 window.renderHighlights = renderHighlights;
 window.showAnalytics = showAnalytics;
 window.closeAnalytics = closeAnalytics;
+window.exportJSON = exportJSON;
+window.importFile = importFile;
+window.mergeFile = mergeFile;
+window.exportCollectionAsDB = exportCollectionAsDB;
+window.exportCollectionBib = exportCollectionBib;
+window.exportCollectionPackage = exportCollectionPackage;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
