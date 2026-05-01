@@ -89,6 +89,22 @@ import {
 import { loadPapersFromDB } from './init.js';
 import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
 import { syncToSharedFolder, mergeSharedFile } from './collaboration.js';
+import {
+  showSettingsModal,
+  closeSettingsModal,
+  _renderSettingsModal,
+  _toggleSource,
+  _delSource,
+  _addSource,
+  _delPreset,
+  _addPreset,
+  _toggleRecipient,
+  _delRecipient,
+  _addRecipient,
+  _exportRecipients,
+  _saveSettings,
+  _applySettingsToConfig,
+} from './settings-modal.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -170,6 +186,21 @@ window.updateNotes = updateNotes;
 // inline onclick / onchange attributes; preserve them.
 window._syncToSharedFolder = syncToSharedFolder;
 window.mergeSharedFile = mergeSharedFile;
+// Settings modal — modal HTML uses inline onclick referring to these names.
+window.showSettingsModal = showSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window._renderSettingsModal = _renderSettingsModal;
+window._toggleSource = _toggleSource;
+window._delSource = _delSource;
+window._addSource = _addSource;
+window._delPreset = _delPreset;
+window._addPreset = _addPreset;
+window._toggleRecipient = _toggleRecipient;
+window._delRecipient = _delRecipient;
+window._addRecipient = _addRecipient;
+window._exportRecipients = _exportRecipients;
+window._saveSettings = _saveSettings;
+window._applySettingsToConfig = _applySettingsToConfig;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
