@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Pre-push quality gate for ScientificLitterScoop.
+#
+# Runs vitest + pytest + a quick secret-scan against the commits that are
+# about to be pushed. Blocks the push if any check fails. Bypass with
+# `git push --no-verify` if you really need to.
+#
+# Install:
+#     git config core.hooksPath tools/git-hooks
+#
+# Each ScientificLitterScoop checkout has to opt in once — git won't honor
+# hooks under tools/ until you set core.hooksPath. Keeping the hook here
+# (not in .git/hooks/) means it travels with the repo.
+#
+# Performance: only runs tests for stacks that actually changed. If you
+# only touched .md files the hook exits in <1s.
+
+set -u
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT" || exit 0
+
+# What's about to be pushed: stdin is `<local_ref> <local_sha> <remote_ref> <remote_sha>` per ref.
+# We don't actually need the per-ref detail — diffing HEAD against origin/main
+# captures what's new on this branch.
+REMOTE_BASE=$(git merge-base HEAD origin/main 2>/dev/null || echo "")
+if [ -z "$REMOTE_BASE" ]; then
+  CHANGED=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || git diff --name-only --cached)
+else
+  CHANGED=$(git diff --name-only "$REMOTE_BASE"..HEAD)
+fi
+
+if [ -z "$CHANGED" ]; then
+  echo "[pre-push] no changes vs origin/main — skipping checks"
+  exit 0
+fi
+
+VITEST_TRIGGERS='^(src/|package\.json|package-lock\.json)'
+PYTEST_TRIGGERS='^(scq/|tests/|pyproject\.toml)'
+
+NEED_VITEST=0
+NEED_PYTEST=0
+echo "$CHANGED" | grep -qE "$VITEST_TRIGGERS" && NEED_VITEST=1
+echo "$CHANGED" | grep -qE "$PYTEST_TRIGGERS" && NEED_PYTEST=1
+
+FAIL=0
+WARN=0
+
+# ── vitest ──────────────────────────────────────────────────────
+if [ "$NEED_VITEST" = "1" ]; then
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "[pre-push] WARN: npm not found, skipping vitest (CI will catch it)"
+    WARN=$((WARN + 1))
+  elif [ ! -d node_modules ]; then
+    echo "[pre-push] WARN: node_modules missing, run 'npm ci' to enable local tests"
+    WARN=$((WARN + 1))
+  else
+    echo "[pre-push] running vitest..."
+    if ! npm test --silent; then
+      echo "[pre-push] FAIL: vitest"
+      FAIL=$((FAIL + 1))
+    fi
+  fi
+fi
+
+# ── pytest ──────────────────────────────────────────────────────
+if [ "$NEED_PYTEST" = "1" ]; then
+  if ! command -v pytest >/dev/null 2>&1; then
+    echo "[pre-push] WARN: pytest not found, skipping (run 'pip install -e .[dev]' to enable)"
+    WARN=$((WARN + 1))
+  else
+    echo "[pre-push] running pytest..."
+    if ! pytest tests/ -q; then
+      echo "[pre-push] FAIL: pytest"
+      FAIL=$((FAIL + 1))
+    fi
+  fi
+fi
+
+# ── secret scan ─────────────────────────────────────────────────
+# Cheap grep for accidental commits of credentials. Not exhaustive — CI
+# / a full secret scanner is the real defense — but catches the common
+# foot-guns. Skips the hook script itself + test fixtures.
+SECRET_PATTERNS='AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|gho_[A-Za-z0-9]{36}|sk-[A-Za-z0-9]{32,}|-----BEGIN ([A-Z]+ )?PRIVATE KEY-----'
+SECRET_HITS=""
+for f in $CHANGED; do
+  case "$f" in
+    tools/git-hooks/*) continue ;;
+    *.test.js|*.test.py|tests/*) continue ;;
+  esac
+  [ -f "$f" ] || continue
+  hit=$(grep -nE "$SECRET_PATTERNS" "$f" 2>/dev/null || true)
+  if [ -n "$hit" ]; then
+    SECRET_HITS="${SECRET_HITS}${f}:\n${hit}\n"
+  fi
+done
+if [ -n "$SECRET_HITS" ]; then
+  echo "[pre-push] FAIL: possible secret in changed files:"
+  printf "%b" "$SECRET_HITS"
+  FAIL=$((FAIL + 1))
+fi
+
+# ── verdict ─────────────────────────────────────────────────────
+echo
+if [ "$FAIL" -gt 0 ]; then
+  echo "[pre-push] BLOCKED ($FAIL fail / $WARN warn). Use 'git push --no-verify' to override."
+  exit 1
+fi
+if [ "$WARN" -gt 0 ]; then
+  echo "[pre-push] PASS (with $WARN warnings)"
+else
+  echo "[pre-push] PASS"
+fi
+exit 0
