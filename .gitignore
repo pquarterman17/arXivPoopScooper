@@ -7,6 +7,11 @@ papers/*.pdf
 *.db-shm
 .scq_tmp.db
 
+# Canonical paper database — user-private. Bootstrap a fresh DB with
+# `scq init` (plan #2 / #13). Path is configurable via SCQ_DB_PATH or
+# data/user_config/paths.toml.
+data/scq_papers.db
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -30,8 +35,9 @@ node_modules/
 *.swo
 *~
 
-# Claude local settings
+# Claude local settings + transient agent worktrees
 .claude/settings.local.json
+.claude/worktrees/
 
 # Personal launcher with hardcoded Windows paths
 tools/run_digest.bat

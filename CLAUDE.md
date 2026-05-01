@@ -35,9 +35,9 @@ The Cowork sandbox cannot reach arxiv.org. Use Desktop Commander to run the fetc
 
 **Windows:**
 ```
-C:\Users\patri\AppData\Local\Temp\run_fetch.bat <arxiv_id>
+%TEMP%\run_fetch.bat <arxiv_id>
 ```
-> Note: `run_fetch.bat` is a wrapper at the above path that handles Windows path quoting.
+> Note: `run_fetch.bat` is a wrapper in `%TEMP%` that handles Windows path quoting.
 > The actual script lives at `tools/fetch_arxiv.js`. If `run_fetch.bat` doesn't exist,
 > create it with: `"C:\Program Files\nodejs\node.exe" "<project_path>\tools\fetch_arxiv.js" %*`
 
@@ -88,9 +88,12 @@ See the **enrich-paper** skill for full instructions. In short:
 
 ## File Structure
 
-The project is split between two OneDrive locations:
-- **Code repo:** `C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop\`
-- **Paper data:** `C:\Users\patri\OneDrive\Work and School Research\SCQ Paper Library\` — `papers/`, `figures/`, `inbox/` live here and are surfaced in the repo via Windows directory junctions.
+The project is split between two OneDrive locations (paths shown below
+are examples — the actual values depend on your username and OneDrive
+mount). On macOS the equivalents live under
+`~/Library/CloudStorage/OneDrive-*` or wherever you sync OneDrive.
+- **Code repo:** `<OneDrive>\Coding\git\ScientificLitterScoop\`
+- **Paper data:** `<OneDrive>\Work and School Research\SCQ Paper Library\` — `papers/`, `figures/`, `inbox/` live here and are surfaced in the repo via Windows directory junctions.
 
 ```
 ScientificLitterScoop/
@@ -175,8 +178,8 @@ The `scq.db.connection` helper (in `scq/db/connection.py`) does this for you and
 | Node.js path | `C:\Program Files\nodejs\node.exe` | `node` (in PATH) |
 | Fetch wrapper | `fetch.bat` (or `run_fetch.bat` in Temp) | `bash tools/fetch.sh` |
 | DC shell | Use `shell: "cmd"` (PowerShell eats stdout) | Default shell works |
-| Code path | `C:\Users\patri\OneDrive\Coding\git\ScientificLitterScoop` | TBD — depends on OneDrive/iCloud sync setup |
-| Data path | `C:\Users\patri\OneDrive\Work and School Research\SCQ Paper Library` (junctioned into the repo as `papers/`, `figures/`, `inbox/`) | TBD |
+| Code path | `<OneDrive>\Coding\git\ScientificLitterScoop` | `~/Library/CloudStorage/OneDrive-*/Coding/git/ScientificLitterScoop` (or wherever you sync) |
+| Data path | `<OneDrive>\Work and School Research\SCQ Paper Library` (junctioned into the repo as `papers/`, `figures/`, `inbox/`) | Equivalent OneDrive path on the Mac side |
 | Python (sandbox) | Always Linux sandbox — same on both | Same |
 
 ## arXiv API Connectivity

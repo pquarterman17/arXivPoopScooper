@@ -54,7 +54,7 @@ Then add secrets to your GitHub repo:
 |------------------------|----------------------------------------|
 | `SCQ_EMAIL_FROM`       | your-gmail@gmail.com                   |
 | `SCQ_EMAIL_APP_PASSWORD` | the 16-char app password from step 2 |
-| `SCQ_EMAIL_TO`         | paige.e.quarterman@gmail.com           |
+| `SCQ_EMAIL_TO`         | recipient@example.com                  |
 
 ### 5. Test it
 
