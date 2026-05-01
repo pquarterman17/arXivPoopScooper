@@ -75,6 +75,17 @@ import {
   openLightbox,
   closeLightbox,
 } from './helpers.js';
+import { showTagManagerModal, promptRenameTag, promptMergeTag, doDeleteTag } from './tag-manager.js';
+import {
+  installSourceStyles,
+  loadSuggestions,
+  renderSuggestions,
+  toggleSuggestions,
+  sugAdd,
+  sugIgnore,
+  dismissAllSuggestions,
+  autoFetchOnLoad,
+} from './suggestions-banner.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -134,9 +145,23 @@ window.togglePdfSearch = togglePdfSearch;
 window.copyText = copyText;
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
+window.showTagManagerModal = showTagManagerModal;
+window.promptRenameTag = promptRenameTag;
+window.promptMergeTag = promptMergeTag;
+window.doDeleteTag = doDeleteTag;
+// Suggestions banner — boot helpers used by legacy loadPapersFromDB,
+// plus inline onclick callers in the banner markup.
+window.loadSuggestions = loadSuggestions;
+window.renderSuggestions = renderSuggestions;
+window.autoFetchOnLoad = autoFetchOnLoad;
+window.toggleSuggestions = toggleSuggestions;
+window.sugAdd = sugAdd;
+window.sugIgnore = sugIgnore;
+window.dismissAllSuggestions = dismissAllSuggestions;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
 installMoreMenuOutsideClick();
 installClickToSave();
 installDragDropImport();
+installSourceStyles();
