@@ -44,6 +44,20 @@ import {
   exportCollectionPackage,
 } from './export-import.js';
 import { showAddWebsiteModal, fetchWebsiteMeta, submitAddWebsite } from './add-website-modal.js';
+import { installDragDropImport, findArxivId, findDOI } from './drag-drop-import.js';
+import { getRelatedPapers } from './related-papers.js';
+import {
+  getCollectionNames,
+  isPaperInCollection,
+  togglePaperCollection,
+  setActiveCollection,
+  showNewCollectionModal,
+  createCollection,
+  deleteCollectionUI,
+  closeModal,
+  toggleCollectionDropdown,
+  renderCollectionDropdown,
+} from './collections-ui.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -76,8 +90,22 @@ window.exportCollectionPackage = exportCollectionPackage;
 window.showAddWebsiteModal = showAddWebsiteModal;
 window.fetchWebsiteMeta = fetchWebsiteMeta;
 window.submitAddWebsite = submitAddWebsite;
+window.findArxivId = findArxivId;
+window.findDOI = findDOI;
+window.getRelatedPapers = getRelatedPapers;
+window.getCollectionNames = getCollectionNames;
+window.isPaperInCollection = isPaperInCollection;
+window.togglePaperCollection = togglePaperCollection;
+window.setActiveCollection = setActiveCollection;
+window.showNewCollectionModal = showNewCollectionModal;
+window.createCollection = createCollection;
+window.deleteCollectionUI = deleteCollectionUI;
+window.closeModal = closeModal;
+window.toggleCollectionDropdown = toggleCollectionDropdown;
+window.renderCollectionDropdown = renderCollectionDropdown;
 
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
 installMoreMenuOutsideClick();
 installClickToSave();
+installDragDropImport();

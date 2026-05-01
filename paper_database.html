@@ -1481,228 +1481,17 @@ window.tableSort = tableSort;  // shared with src/ui/database/sort.js (mutated i
 let copiedTimers = {};
 let pdfSearchEnabled = false;
 let pdfSearchHits = {};
-let activeCollection = null;
-let openDropdownId = null;
+// Both bindings exposed on `window` (via `var` hoisting in a non-module script)
+// so migrated modules in src/ui/database/ can read + write them without
+// the legacy `let` shadowing the slot. See collections-ui.js.
+var activeCollection = null;
+var openDropdownId = null;
 
 // ─── Drag-and-drop PDF import ───
-let dragCounter = 0;
-
-document.addEventListener('dragenter', (e) => {
-  e.preventDefault();
-  dragCounter++;
-  const overlay = document.getElementById('drop-overlay');
-  if (overlay) overlay.classList.add('active');
-});
-
-document.addEventListener('dragleave', (e) => {
-  e.preventDefault();
-  dragCounter--;
-  if (dragCounter === 0) {
-    const overlay = document.getElementById('drop-overlay');
-    if (overlay) overlay.classList.remove('active');
-  }
-});
-
-document.addEventListener('dragover', (e) => {
-  e.preventDefault();
-});
-
-document.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dragCounter = 0;
-  const overlay = document.getElementById('drop-overlay');
-  if (overlay) overlay.classList.remove('active');
-
-  if (e.dataTransfer && e.dataTransfer.files) {
-    handleDroppedFiles(e.dataTransfer.files);
-  }
-});
-
-async function handleDroppedFiles(files) {
-  const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'));
-
-  if (pdfFiles.length === 0) {
-    alert('No PDF files found. Please drag PDF files only.');
-    return;
-  }
-
-  // Show import progress panel
-  const progressPanel = document.getElementById('import-progress');
-  if (progressPanel) progressPanel.style.display = 'block';
-
-  const importList = document.getElementById('import-list');
-  if (importList) importList.innerHTML = '';
-
-  // Process each PDF
-  for (const file of pdfFiles) {
-    const itemId = `import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    if (importList) {
-      const item = document.createElement('div');
-      item.id = itemId;
-      item.className = 'import-item';
-      item.innerHTML = `
-        <div class="import-item-icon loading">⟳</div>
-        <div class="import-item-details">
-          <div class="import-item-name">${escapeHtml(file.name)}</div>
-          <div class="import-item-status">Uploading...</div>
-        </div>
-      `;
-      importList.appendChild(item);
-    }
-
-    try {
-      // Extract text from first 2 pages to find arXiv ID or DOI
-      const firstPageText = await extractTextFromPDF(file, 2);
-      const arxivId = findArxivId(firstPageText);
-      const doi = findDOI(firstPageText);
-
-      // Upload the PDF
-      const uploadResponse = await uploadPDF(file);
-
-      if (!uploadResponse.ok) {
-        updateImportItem(itemId, 'error', `Upload failed: ${uploadResponse.statusText}`);
-        continue;
-      }
-
-      const result = await uploadResponse.json();
-
-      // Update status based on what was found
-      if (arxivId) {
-        updateImportItem(itemId, 'success', `Processing arXiv:${arxivId}`);
-        // Queue for async processing via process_paper.py
-        queuePaperForProcessing(arxivId, result.path);
-      } else if (doi) {
-        updateImportItem(itemId, 'success', `Lookup DOI: ${doi}`);
-        // TODO: Queue for DOI lookup via CrossRef
-      } else {
-        updateImportItem(itemId, 'success', `Uploaded: ${file.name}`);
-        // TODO: Queue for manual entry
-      }
-    } catch (error) {
-      console.error('Import error:', error);
-      updateImportItem(itemId, 'error', `Error: ${error.message}`);
-    }
-  }
-
-  // Auto-hide after 5 seconds if all succeeded
-  setTimeout(() => {
-    const items = document.querySelectorAll('.import-item-icon.error');
-    if (items.length === 0) {
-      setTimeout(() => {
-        if (progressPanel) progressPanel.style.display = 'none';
-      }, 3000);
-    }
-  }, 1000);
-}
-
-async function extractTextFromPDF(file, maxPages = 2) {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-    let text = '';
-
-    for (let i = 1; i <= Math.min(maxPages, pdf.numPages); i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      text += textContent.items.map(item => item.str).join(' ') + '\n';
-    }
-
-    return text;
-  } catch (error) {
-    console.error('PDF text extraction error:', error);
-    return '';
-  }
-}
-
-function findArxivId(text) {
-  // Match arXiv:YYMM.NNNNN (v1, v2, etc.) or arxiv.org/abs/YYMM.NNNNN
-  const patterns = [
-    /arXiv:(\d{4}\.\d{4,5})/i,
-    /arxiv\.org\/abs\/(\d{4}\.\d{4,5})/i,
-    /(\d{4}\.\d{4,5})/  // General YYMM.NNNNN pattern
-  ];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const id = match[1];
-      // Validate format: should be YYMM.NNNNN where YY is 00-99 and MM is 01-12
-      if (/^\d{4}\.\d{4,5}$/.test(id)) {
-        return id;
-      }
-    }
-  }
-
-  return null;
-}
-
-function findDOI(text) {
-  // Match DOI: 10.XXXX/YYYY or doi.org/10.XXXX/YYYY or just 10.XXXX/
-  const patterns = [
-    /doi:\s*(10\.\S+)/i,
-    /doi\.org\/(10\.\S+)/i,
-    /(10\.\d+\/[^\s]+)/
-  ];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      let doi = match[1];
-      // Clean up common punctuation at the end
-      doi = doi.replace(/[.,;:)\]]*$/, '');
-      if (doi.startsWith('10.')) {
-        return doi;
-      }
-    }
-  }
-
-  return null;
-}
-
-async function uploadPDF(file) {
-  const formData = new FormData();
-  formData.append('pdf', file);
-
-  return fetch('/api/upload-pdf', {
-    method: 'POST',
-    body: formData
-  });
-}
-
-function updateImportItem(itemId, status, statusText) {
-  const item = document.getElementById(itemId);
-  if (!item) return;
-
-  const icon = item.querySelector('.import-item-icon');
-  const statusEl = item.querySelector('.import-item-status');
-
-  if (status === 'success') {
-    icon.className = 'import-item-icon success';
-    icon.textContent = '✓';
-  } else if (status === 'error') {
-    icon.className = 'import-item-icon error';
-    icon.textContent = '✕';
-  }
-
-  if (statusEl) {
-    statusEl.textContent = statusText;
-  }
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function queuePaperForProcessing(arxivId, pdfPath) {
-  // This would normally queue the paper for the backend process_paper.py script
-  // For now, we just log it. In a full implementation, this would:
-  // 1. Create an inbox/<arxivId>_meta.json with the PDF path
-  // 2. Trigger process_paper.py to run on the backend
-  console.log(`Paper queued for processing: ${arxivId} (${pdfPath})`);
-}
+// Migrated to src/ui/database/drag-drop-import.js (plan #8). Document
+// listeners are installed once at boot via installDragDropImport() in
+// main.js; findArxivId / findDOI are also exposed on window for any
+// stragglers.
 
 // ─── Init: load database then render ───
 SCQ.init().then(() => {
@@ -1851,31 +1640,8 @@ function setTypeFilter(filter) {
 }
 
 // ─── Related papers detection ───
-function getRelatedPapers(paper) {
-  const related = [];
-  const myLinks = SCQ.getLinkedPapers(paper.id).map(l => l.id);
-  const myAuthors = paper.authors.split(",").map(a => a.trim().split(" ").pop().toLowerCase());
-  const myTags = new Set(paper.tags.map(t => t.toLowerCase()));
-  PAPERS.forEach(p => {
-    if (p.id === paper.id) return;
-    const reasons = [];
-    if (myLinks.includes(p.id)) reasons.push("linked manually");
-    const theirAuthors = p.authors.split(",").map(a => a.trim().split(" ").pop().toLowerCase());
-    const shared = myAuthors.filter(a => theirAuthors.includes(a));
-    if (shared.length >= 2) reasons.push("shared authors: " + shared.slice(0,3).join(", "));
-    const theirTags = new Set(p.tags.map(t => t.toLowerCase()));
-    const sharedTags = [...myTags].filter(t => theirTags.has(t));
-    if (sharedTags.length >= 2) reasons.push("tags: " + sharedTags.slice(0,3).join(", "));
-    if (p.group === paper.group) reasons.push("same group");
-    if (reasons.length > 0) related.push({ paper: p, reasons });
-  });
-  related.sort((a, b) => {
-    const aManual = a.reasons[0] === "linked manually" ? 1 : 0;
-    const bManual = b.reasons[0] === "linked manually" ? 1 : 0;
-    return bManual - aManual;
-  });
-  return related;
-}
+// Migrated to src/ui/database/related-papers.js (plan #8). getRelatedPapers
+// is shimmed onto window from main.js for the legacy render() caller.
 
 // ─── Helpers ───
 function getAllTags() {
@@ -1947,71 +1713,12 @@ function openLightbox(figKey, caption) {
 function closeLightbox() { document.getElementById("lightbox").style.display = "none"; }
 
 // ─── Collections ───
-function getCollectionNames() {
-  return SCQ.getCollections();
-}
-
-function isPaperInCollection(paperId, collName) {
-  return SCQ.getCollectionsForPaper(paperId).includes(collName);
-}
-
-function togglePaperCollection(paperId, collName, event) {
-  if (event) event.stopPropagation();
-  if (isPaperInCollection(paperId, collName)) {
-    SCQ.removeFromCollection(collName, paperId);
-  } else {
-    SCQ.addToCollection(collName, paperId);
-  }
-  render();
-}
-
-function setActiveCollection(name) {
-  activeCollection = (activeCollection === name) ? null : name;
-  render();
-}
-
-function showNewCollectionModal() {
-  const root = document.getElementById("modal-root");
-  root.innerHTML = `<div class="modal-overlay" onclick="closeModal()">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h3>New Collection</h3>
-      <input type="text" id="new-coll-name" placeholder="e.g., Dissertation Ch.3, Group meeting..." autofocus>
-      <div class="modal-btns">
-        <button class="modal-btn" onclick="closeModal()">Cancel</button>
-        <button class="modal-btn primary" onclick="createCollection()">Create</button>
-      </div>
-    </div>
-  </div>`;
-  setTimeout(() => document.getElementById("new-coll-name").focus(), 50);
-  document.getElementById("new-coll-name").addEventListener("keydown", e => {
-    if (e.key === "Enter") createCollection();
-    if (e.key === "Escape") closeModal();
-  });
-}
-
-function createCollection() {
-  const name = document.getElementById("new-coll-name").value.trim();
-  if (!name) return;
-  if (getCollectionNames().includes(name)) { alert("Collection already exists"); return; }
-  // Add a dummy entry and remove it to register the collection, or just add directly when a paper is assigned
-  // For now, we need at least one paper to create a collection row. Use a placeholder approach:
-  // Actually, let's just store it — the user will add papers to it
-  SCQ.run("INSERT OR IGNORE INTO collections (name, paper_id) VALUES (?, '')", [name]);
-  closeModal();
-  render();
-}
-
-function deleteCollectionUI(name, event) {
-  if (event) event.stopPropagation();
-  if (!confirm("Delete collection \"" + name + "\"? (Papers won't be removed from the database.)")) return;
-  SCQ.deleteCollection(name);
-  if (activeCollection === name) activeCollection = null;
-  render();
-}
-
-function closeModal() {
-  document.getElementById("modal-root").innerHTML = "";
-}
+// Migrated to src/ui/database/collections-ui.js (plan #8). All 10 helpers
+// (getCollectionNames, isPaperInCollection, togglePaperCollection,
+// setActiveCollection, showNewCollectionModal, createCollection,
+// deleteCollectionUI, closeModal, toggleCollectionDropdown,
+// renderCollectionDropdown) are shimmed onto window from main.js for
+// legacy callers in render(), the toolbar, and inline modal markup.
 
 // ─── Add Website / Link modal ───
 // Migrated to src/ui/database/add-website-modal.js (plan #8).
@@ -2019,22 +1726,8 @@ function closeModal() {
 // onto window from main.js for inline onclick callers; lookupDOI plus the
 // DOI BibTeX / plain-text helpers are module-internal.
 
-function toggleCollectionDropdown(paperId, event) {
-  if (event) event.stopPropagation();
-  openDropdownId = (openDropdownId === paperId) ? null : paperId;
-  render();
-}
-
-function renderCollectionDropdown(paperId) {
-  const names = getCollectionNames();
-  if (names.length === 0) return `<div class="collection-dropdown"><div class="collection-dropdown-item" style="color:var(--text3)">No collections yet</div></div>`;
-  return `<div class="collection-dropdown">${names.map(n =>
-    `<div class="collection-dropdown-item" onclick="togglePaperCollection('${paperId}', '${n.replace(/'/g, "\\'")}', event)">
-      <span class="cdi-check">${isPaperInCollection(paperId, n) ? '&#10003;' : ''}</span>
-      <span>${n}</span>
-    </div>`
-  ).join("")}</div>`;
-}
+// toggleCollectionDropdown + renderCollectionDropdown migrated alongside
+// the rest of Collections to src/ui/database/collections-ui.js.
 
 function renderSidebar() {
   const names = getCollectionNames();
