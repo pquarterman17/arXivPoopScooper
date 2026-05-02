@@ -204,7 +204,9 @@ const CFG = SCRAPER_CONFIG; // shorthand
 
 let searchResults = [];     // current search results
 let selectedIdxs = new Set();
-let inbox = [];             // staged papers awaiting review
+// `var inbox` (not `let`) so globalThis.inbox is the same binding —
+// scraper/inbox-persistence.js reads/writes it cross-module.
+var inbox = [];             // staged papers awaiting review
 let savedQueries = [];      // persisted queries
 let existingIds = new Set(); // paper IDs already in the DB
 
@@ -1561,23 +1563,8 @@ function updateStats() {
     : 'never';
 }
 
-// ═══════════════════════════════════════════════════════════
-//  PERSISTENCE — Inbox
-// ═══════════════════════════════════════════════════════════
-
-function saveInbox() {
-  try {
-    localStorage.setItem('scq-scraper-inbox', JSON.stringify(inbox));
-  } catch (e) {
-    console.warn('[Scraper] Failed to save inbox:', e.message);
-  }
-}
-
-function loadInbox() {
-  try {
-    inbox = JSON.parse(localStorage.getItem('scq-scraper-inbox') || '[]');
-  } catch { inbox = []; }
-}
+// PERSISTENCE — Inbox: extracted to src/ui/scraper/inbox-persistence.js
+// (saveInbox / loadInbox imported via scraper/main.js, shimmed onto window)
 
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
