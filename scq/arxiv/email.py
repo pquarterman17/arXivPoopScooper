@@ -26,6 +26,8 @@ import sys
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from scq.arxiv.search import ARXIV_CATEGORIES
+
 # Email config.
 # - Sender / recipient defaults still use env vars.
 # - The Gmail App Password resolves through scq.config.secrets so the OS

@@ -14,8 +14,11 @@ both contexts need the styling embedded.
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime, timezone
+
+from scq.arxiv.search import ARXIV_CATEGORIES
 
 
 # ─── HTML Digest Generator ───
