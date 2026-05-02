@@ -42,13 +42,16 @@ if str(PROJECT_DIR) not in sys.path:
 
 from scq.config.paths import paths as _scq_paths  # noqa: E402
 
-_P = _scq_paths()
-INBOX_DIR = Path(_P.inbox_dir)
-PAPERS_DIR = Path(_P.papers_dir)
-FIGURES_DIR = Path(_P.figures_dir)
-DB_PATH = Path(_P.db_path)
-BIB_PATH = Path(_P.references_bib_path)
-TXT_PATH = Path(_P.references_txt_path)
+# Resolve paths lazily on each access so paths.refresh() / SCQ_REPO_ROOT
+# overrides take effect mid-process (e.g. integration tests using tmp_path).
+# Capturing them at module load was B4 from the 2026-04-30 audit.
+def _inbox_dir()    -> Path: return Path(_scq_paths().inbox_dir)
+def _papers_dir()   -> Path: return Path(_scq_paths().papers_dir)
+def _figures_dir()  -> Path: return Path(_scq_paths().figures_dir)
+def _db_path()      -> Path: return Path(_scq_paths().db_path)
+def _bib_path()     -> Path: return Path(_scq_paths().references_bib_path)
+def _txt_path()     -> Path: return Path(_scq_paths().references_txt_path)
+
 # Figure extraction lives at scq.ingest.extract; invoke via the `-m` runner
 # so the same path works in pip-installed and source-checkout setups.
 EXTRACT_CMD = [sys.executable, "-m", "scq.ingest.extract"]
@@ -235,7 +238,7 @@ def _make_doi_plain_cite(authors, title, journal, volume, pages, year, doi):
 
 def extract_figures(pdf_path, arxiv_id, prefix):
     """Run extract_figures.py and return the captions dict."""
-    fig_dir = FIGURES_DIR / arxiv_id
+    fig_dir = _figures_dir() / arxiv_id
     fig_dir.mkdir(parents=True, exist_ok=True)
 
     result = subprocess.run(
@@ -260,8 +263,9 @@ def load_db():
     """Open the canonical SQLite DB at data/scientific_litter_scoop.db, applying migrations."""
     from scq.db.migrations import apply_pending
 
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = _db_path()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA foreign_keys = ON")
     apply_pending(conn)
     return conn
@@ -336,25 +340,27 @@ def insert_figures(conn, arxiv_id, figures, prefix):
 
 def append_bib(bib_entry, arxiv_id):
     """Append a BibTeX entry to references.bib if not already present."""
-    existing = BIB_PATH.read_text(encoding="utf-8") if BIB_PATH.exists() else ""
+    bib_path = _bib_path()
+    existing = bib_path.read_text(encoding="utf-8") if bib_path.exists() else ""
     if arxiv_id in existing:
         print("  references.bib: already contains this entry")
         return
-    with open(BIB_PATH, "a", encoding="utf-8") as f:
+    with open(bib_path, "a", encoding="utf-8") as f:
         f.write("\n" + bib_entry + "\n")
     print("  references.bib: appended")
 
 
 def append_txt(plain_cite, arxiv_id):
     """Append a plain-text citation to references.txt."""
-    existing = TXT_PATH.read_text(encoding="utf-8") if TXT_PATH.exists() else ""
+    txt_path = _txt_path()
+    existing = txt_path.read_text(encoding="utf-8") if txt_path.exists() else ""
     if arxiv_id in existing:
         print("  references.txt: already contains this entry")
         return
     # Find next reference number
     nums = re.findall(r'^\[(\d+)\]', existing, re.MULTILINE)
     next_num = max(int(n) for n in nums) + 1 if nums else 1
-    with open(TXT_PATH, "a", encoding="utf-8") as f:
+    with open(txt_path, "a", encoding="utf-8") as f:
         f.write(f"\n[{next_num}] {plain_cite}\n")
     print(f"  references.txt: appended as [{next_num}]")
 
@@ -473,7 +479,7 @@ def main():
     arxiv_id = sys.argv[1]
 
     # Load metadata
-    meta_path = INBOX_DIR / f"{arxiv_id}_meta.json"
+    meta_path = _inbox_dir() / f"{arxiv_id}_meta.json"
     if not meta_path.exists():
         print(f"ERROR: {meta_path} not found.")
         print(f"Run fetch_arxiv.js first: node tools/fetch_arxiv.js {arxiv_id}")
@@ -489,10 +495,11 @@ def main():
 
     # Find the PDF
     pdf_file = meta.get("pdf_file", "")
-    pdf_path = PAPERS_DIR / pdf_file
+    papers_dir = _papers_dir()
+    pdf_path = papers_dir / pdf_file
     if not pdf_path.exists():
         # Try to find it by arxiv_id prefix
-        matches = list(PAPERS_DIR.glob(f"{arxiv_id}*"))
+        matches = list(papers_dir.glob(f"{arxiv_id}*"))
         if matches:
             pdf_path = matches[0]
             pdf_file = pdf_path.name
