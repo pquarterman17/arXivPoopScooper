@@ -81,10 +81,17 @@ def _passthrough_init_db(rest: list[str]) -> int:
     return _initdb_mod.main(rest)
 
 
+def _passthrough_digest(rest: list[str]) -> int:
+    from .arxiv import digest as _digest_mod
+    _digest_mod.main(rest)
+    return 0
+
+
 _PASSTHROUGH_COMMANDS = {
     "process": _passthrough_process,
     "merge": _passthrough_merge,
     "init-db": _passthrough_init_db,
+    "digest": _passthrough_digest,
 }
 
 
@@ -131,6 +138,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "init-db",
         help="legacy schema initializer / migrator / stats viewer (--migrate / --stats / --db)",
+        add_help=False,
+    )
+    sub.add_parser(
+        "digest",
+        help="generate + email the daily arXiv digest (--days N / --no-email / --test / --smart-weekend)",
         add_help=False,
     )
 
