@@ -4,336 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScientificLitterScoop — Paper Scraper</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
-  :root {
-    --bg: #0e1117; --bg2: #161b22; --bg3: #1c2333;
-    --border: #2d3548; --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
-    --accent: #58a6ff; --accent2: #1f6feb; --green: #3fb950; --orange: #d29922;
-    --red: #f85149; --purple: #bc8cff; --teal: #39d2c0; --radius: 8px;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.5;
-  }
-
-  .layout { display: flex; min-height: 100vh; }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 260px; min-width: 260px; background: var(--bg2); border-right: 1px solid var(--border);
-    padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
-  }
-  .sidebar h2 { font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
-  .sidebar-section { display: flex; flex-direction: column; gap: 8px; }
-  .sidebar-section h3 { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
-
-  .saved-query {
-    display: flex; align-items: center; gap: 6px; padding: 6px 10px;
-    border: 1px solid var(--border); border-radius: 6px; background: var(--bg3);
-    cursor: pointer; transition: all 0.12s; font-size: 12px; color: var(--text2);
-  }
-  .saved-query:hover { border-color: var(--accent); color: var(--accent); }
-  .saved-query .source-badge {
-    font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
-    flex-shrink: 0; text-transform: uppercase;
-  }
-  /* Source-specific colors injected dynamically from scraper_config.js */
-  .saved-query .q-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .saved-query .q-remove {
-    font-size: 14px; color: var(--text3); cursor: pointer; line-height: 1; padding: 0 2px;
-    opacity: 0; transition: opacity 0.12s;
-  }
-  .saved-query:hover .q-remove { opacity: 1; }
-  .saved-query .q-remove:hover { color: var(--red); }
-
-  .add-query-btn {
-    padding: 6px 10px; border: 1px dashed var(--border); border-radius: 6px;
-    background: transparent; color: var(--text3); font-size: 12px; font-family: inherit;
-    cursor: pointer; text-align: center; transition: all 0.12s;
-  }
-  .add-query-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .sidebar-stats { font-size: 11px; color: var(--text3); margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
-  .sidebar-stats div { margin-bottom: 2px; }
-  .sidebar-stats span { color: var(--text2); font-weight: 600; }
-
-  /* ── Main ── */
-  .main { flex: 1; padding: 24px 32px; max-width: 960px; overflow-y: auto; }
-
-  .header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-left h1 { font-size: 20px; font-weight: 700; }
-  .header-left p { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .header-left a { color: var(--accent); text-decoration: none; font-size: 13px; }
-  .header-left a:hover { text-decoration: underline; }
-  .header-right { display: flex; gap: 8px; align-items: center; }
-
-  /* Tab bar */
-  .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
-  .tab {
-    padding: 8px 16px; font-size: 13px; font-weight: 600; font-family: inherit;
-    border: 1.5px solid var(--border); border-radius: 6px; background: transparent;
-    color: var(--text3); cursor: pointer; transition: all 0.12s;
-  }
-  .tab:hover { color: var(--text2); border-color: var(--text3); }
-  .tab.active { background: var(--accent2); border-color: var(--accent); color: #fff; }
-  .tab .badge {
-    display: inline-block; font-size: 10px; padding: 0 5px; margin-left: 4px;
-    background: var(--red); color: #fff; border-radius: 8px; font-weight: 700;
-  }
-
-  /* Search panel */
-  .search-panel { margin-bottom: 20px; }
-  .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .search-row input {
-    flex: 1; padding: 10px 14px; border: 1.5px solid var(--border);
-    border-radius: var(--radius); background: var(--bg2); color: var(--text);
-    font-size: 14px; font-family: inherit; outline: none;
-  }
-  .search-row input:focus { border-color: var(--accent); }
-  .search-row input::placeholder { color: var(--text3); }
-
-  .source-toggles { display: flex; gap: 6px; margin-bottom: 0; }
-  .source-toggles::before {
-    content: 'Sources:'; font-size: 12px; color: var(--text3); font-weight: 500;
-    display: flex; align-items: center; margin-right: 4px;
-  }
-
-  .filter-bar {
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    padding: 8px 12px; margin: 8px 0 10px; font-size: 13px; color: var(--text2);
-    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
-  }
-  .filter-bar .filter-group { display: flex; align-items: center; gap: 6px; }
-  .filter-bar label { font-size: 12px; color: var(--text3); font-weight: 500; white-space: nowrap; }
-  .filter-bar select, .filter-bar input[type="number"] {
-    padding: 4px 6px; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 4px; color: var(--text); font-size: 13px; font-family: inherit;
-  }
-  .filter-bar input[type="number"] { width: 72px; }
-  .filter-bar .separator { width: 1px; height: 20px; background: var(--border); }
-  .source-toggle {
-    padding: 5px 12px; font-size: 12px; font-weight: 600; font-family: inherit;
-    border: 1.5px solid var(--border); border-radius: 5px; background: transparent;
-    color: var(--text3); cursor: pointer; transition: all 0.12s;
-  }
-  .source-toggle:hover { border-color: var(--text3); color: var(--text2); }
-  .source-toggle.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.08); }
-  /* Source toggle active colors injected dynamically */
-
-  .btn {
-    padding: 10px 20px; border: none; border-radius: var(--radius);
-    background: var(--accent2); color: #fff; font-size: 13px; font-weight: 600;
-    font-family: inherit; cursor: pointer; white-space: nowrap;
-  }
-  .btn:hover { background: var(--accent); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 5px; }
-  .btn-outline {
-    background: transparent; border: 1.5px solid var(--border); color: var(--text2);
-  }
-  .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
-  .btn-green { background: rgba(63,185,80,0.15); border: 1.5px solid var(--green); color: var(--green); }
-  .btn-green:hover { background: rgba(63,185,80,0.25); }
-  .btn-red { background: rgba(248,81,73,0.1); border: 1.5px solid transparent; color: var(--red); }
-  .btn-red:hover { background: rgba(248,81,73,0.2); border-color: var(--red); }
-  .btn-save-query { padding: 10px 14px; }
-
-  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-  .preset-btn {
-    padding: 4px 10px; font-size: 11px; font-weight: 600; font-family: inherit;
-    border: 1px solid var(--border); border-radius: 4px; background: transparent;
-    color: var(--text3); cursor: pointer; transition: all 0.12s;
-  }
-  .preset-btn:hover { color: var(--accent); border-color: var(--accent); }
-
-  .status { font-size: 12px; color: var(--text3); margin-bottom: 12px; min-height: 18px; }
-  .status.error { color: var(--red); }
-  .status.success { color: var(--green); }
-
-  /* ── Result / Inbox cards ── */
-  .card-list { display: flex; flex-direction: column; gap: 8px; }
-
-  .paper-card {
-    border: 1.5px solid var(--border); border-radius: var(--radius);
-    background: var(--bg2); padding: 14px 16px; transition: border-color 0.15s;
-  }
-  .paper-card:hover { border-color: var(--accent2); }
-  .paper-card.in-db { border-color: var(--green); opacity: 0.6; }
-
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .card-info { flex: 1; min-width: 0; }
-  .card-title { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 3px; }
-  .card-meta { font-size: 12px; color: var(--text2); margin-bottom: 4px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .card-id { font-size: 10px; color: var(--accent); font-weight: 600; }
-  .card-source {
-    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
-    text-transform: uppercase;
-  }
-  /* Card source badge colors injected dynamically */
-
-  .card-abstract { font-size: 12px; color: var(--text3); line-height: 1.45; margin-top: 6px; }
-  .card-abstract.collapsed { max-height: 40px; overflow: hidden; position: relative; }
-  .card-abstract.collapsed::after {
-    content: ""; position: absolute; bottom: 0; left: 0; right: 0;
-    height: 20px; background: linear-gradient(transparent, var(--bg2));
-  }
-  .toggle-abs {
-    font-size: 10px; color: var(--accent); cursor: pointer; border: none;
-    background: none; font-family: inherit; padding: 0; margin-top: 2px;
-  }
-
-  .card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-  .card-tag {
-    font-size: 10px; padding: 1px 6px; border-radius: 8px;
-    border: 1px solid var(--border); color: var(--text3);
-  }
-  .card-tag.auto { border-color: rgba(210,153,34,0.4); color: var(--orange); }
-
-  .card-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: flex-start; }
-
-  /* Inbox-specific */
-  .inbox-note {
-    margin-top: 8px; width: 100%;
-  }
-  .inbox-note textarea {
-    width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px;
-    background: var(--bg3); color: var(--text); font-size: 12px; font-family: inherit;
-    resize: vertical; min-height: 36px; outline: none;
-  }
-  .inbox-note textarea:focus { border-color: var(--accent); }
-  .inbox-note textarea::placeholder { color: var(--text3); }
-
-  .in-db-badge {
-    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
-    background: rgba(63,185,80,0.12); color: var(--green); border: 1px solid rgba(63,185,80,0.3);
-  }
-
-  .empty-state {
-    text-align: center; padding: 60px 20px; color: var(--text3);
-  }
-  .empty-state h3 { font-size: 16px; margin-bottom: 6px; color: var(--text2); }
-  .empty-state p { font-size: 13px; margin-bottom: 16px; }
-  .empty-state .preset-hint { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
-  .empty-state .preset-hint .preset-btn {
-    padding: 6px 14px; font-size: 12px; border-color: var(--accent2);
-    color: var(--accent); transition: all 0.15s;
-  }
-  .empty-state .preset-hint .preset-btn:hover {
-    background: rgba(88,166,255,0.1); border-color: var(--accent);
-  }
-
-  .status-error-details {
-    font-size: 11px; color: var(--text3); margin-top: 4px;
-    max-height: 0; overflow: hidden; transition: max-height 0.2s;
-    word-break: break-all;
-  }
-  .status-error-details.open { max-height: 200px; }
-
-  /* ── Quick Search result cards (from arxiv_search.html) ── */
-  .quick-result-card {
-    border: 1.5px solid var(--border); border-radius: var(--radius);
-    background: var(--bg2); padding: 14px; margin-bottom: 8px;
-    display: flex; gap: 12px; align-items: flex-start;
-    transition: border-color 0.15s;
-  }
-  .quick-result-card:hover { border-color: var(--accent2); }
-  .quick-result-card.selected { border-color: var(--green); background: rgba(63,185,80,0.04); }
-  .quick-result-card input[type="checkbox"] { margin-top: 3px; accent-color: var(--green); flex-shrink: 0; }
-  .quick-result-info { flex: 1; min-width: 0; }
-  .quick-result-title { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 3px; }
-  .quick-result-meta { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-  .quick-result-abstract { font-size: 12px; color: var(--text3); line-height: 1.45; }
-  .quick-result-abstract.collapsed { max-height: 40px; overflow: hidden; position: relative; }
-  .quick-result-abstract.collapsed::after {
-    content: ""; position: absolute; bottom: 0; left: 0; right: 0;
-    height: 20px; background: linear-gradient(transparent, var(--bg2));
-  }
-  .quick-result-card.selected .quick-result-abstract.collapsed::after {
-    background: linear-gradient(transparent, rgba(22,27,34,0.97));
-  }
-  .quick-result-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-  .quick-result-tag {
-    font-size: 10px; padding: 1px 6px; border-radius: 8px;
-    border: 1px solid var(--border); color: var(--text3);
-  }
-  .quick-result-id { font-size: 10px; color: var(--accent); font-weight: 600; }
-  .quick-toggle-abstract {
-    font-size: 10px; color: var(--accent); cursor: pointer; border: none;
-    background: none; font-family: inherit; padding: 0; margin-top: 2px;
-  }
-
-  .quick-results-actions {
-    display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
-  }
-  .quick-results-actions button {
-    padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: inherit;
-    border: 1px solid var(--border); border-radius: 5px; background: transparent;
-    color: var(--text2); cursor: pointer; transition: all 0.12s;
-  }
-  .quick-results-actions button:hover { border-color: var(--accent); color: var(--accent); }
-  .quick-results-actions button.primary { background: var(--accent2); border-color: var(--accent); color: #fff; }
-  .quick-results-actions button.primary:hover { background: var(--accent); }
-  .quick-results-actions span { font-size: 12px; color: var(--text3); }
-
-  .quick-export-box {
-    margin-top: 16px; padding: 14px; background: var(--bg2);
-    border: 1px solid var(--border); border-radius: var(--radius);
-  }
-  .quick-export-box h3 { font-size: 14px; margin-bottom: 8px; }
-  .quick-export-box pre {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text2);
-    background: var(--bg); padding: 10px; border-radius: 4px;
-    overflow-x: auto; max-height: 300px; white-space: pre-wrap;
-  }
-  .quick-export-box .actions { display: flex; gap: 6px; margin-top: 8px; }
-  .quick-export-box .actions button {
-    padding: 5px 12px; font-size: 11px; font-weight: 600; font-family: inherit;
-    border: 1px solid var(--border); border-radius: 4px; background: transparent;
-    color: var(--text2); cursor: pointer;
-  }
-  .quick-export-box .actions button:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
-  }
-  .modal-overlay.show { display: flex; }
-  .modal {
-    background: var(--bg2); border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 24px; width: 420px; max-width: 90vw;
-  }
-  .modal h3 { font-size: 16px; margin-bottom: 16px; }
-  .modal label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; font-weight: 600; }
-  .modal input, .modal select {
-    width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px;
-    background: var(--bg3); color: var(--text); font-size: 13px; font-family: inherit;
-    outline: none; margin-bottom: 12px;
-  }
-  .modal input:focus, .modal select:focus { border-color: var(--accent); }
-  .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
-
-  /* ── Batch actions ── */
-  .batch-bar {
-    display: none; position: sticky; top: 0; z-index: 50;
-    background: var(--bg3); border: 1.5px solid var(--accent2); border-radius: var(--radius);
-    padding: 10px 16px; margin-bottom: 12px;
-    align-items: center; justify-content: space-between;
-  }
-  .batch-bar.show { display: flex; }
-  .batch-bar .batch-info { font-size: 13px; font-weight: 600; }
-  .batch-bar .batch-actions { display: flex; gap: 6px; }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .main { padding: 16px; }
-  }
-</style>
+<link rel="stylesheet" href="src/styles/scraper.css">
 </head>
 <body>
 
@@ -348,12 +19,12 @@
     <div class="sidebar-section">
       <h3>Saved Queries</h3>
       <div id="saved-queries-list"></div>
-      <button class="add-query-btn" onclick="openAddQueryModal()">+ Add query</button>
+      <button class="add-query-btn" data-action="openAddQueryModal">+ Add query</button>
     </div>
 
     <div class="sidebar-section">
       <h3>Quick Actions</h3>
-      <button class="add-query-btn" onclick="runAllSavedQueries()" id="run-all-btn">Run all saved queries</button>
+      <button class="add-query-btn" data-action="runAllSavedQueries" id="run-all-btn">Run all saved queries</button>
     </div>
 
     <div class="sidebar-stats" id="sidebar-stats">
@@ -362,7 +33,7 @@
       <div>Last fetch: <span id="stat-last">never</span></div>
       <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         arXiv: <span id="conn-status" style="font-weight:600">testing...</span>
-        <a href="#" id="conn-retest" onclick="event.preventDefault();runConnectionTest()" style="color:var(--accent);font-size:10px;margin-left:4px;display:none">retest</a>
+        <a href="#" id="conn-retest" data-action="runConnectionTest" style="color:var(--accent);font-size:10px;margin-left:4px;display:none">retest</a>
       </div>
       <div id="conn-details" style="display:none;margin-top:4px;font-size:10px;color:var(--text3);line-height:1.6"></div>
     </div>
@@ -377,16 +48,16 @@
         <a href="paper_database.html">&larr; Back to database</a>
       </div>
       <div class="header-right">
-        <button class="btn btn-sm btn-outline" onclick="clearInbox()" title="Clear all dismissed/added items">Clear inbox</button>
+        <button class="btn btn-sm btn-outline" data-action="clearInbox" title="Clear all dismissed/added items">Clear inbox</button>
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('search')" id="tab-search">Search</button>
-      <button class="tab" onclick="switchTab('inbox')" id="tab-inbox">Inbox <span class="badge" id="inbox-badge" style="display:none">0</span></button>
-      <button class="tab" onclick="switchTab('quick')" id="tab-quick">Quick Search</button>
-      <button class="tab" onclick="switchTab('doi')" id="tab-doi">DOI Lookup</button>
+      <button class="tab active" data-action="switchScraperTab" data-tab="search" id="tab-search">Search</button>
+      <button class="tab" data-action="switchScraperTab" data-tab="inbox" id="tab-inbox">Inbox <span class="badge" id="inbox-badge" style="display:none">0</span></button>
+      <button class="tab" data-action="switchScraperTab" data-tab="quick" id="tab-quick">Quick Search</button>
+      <button class="tab" data-action="switchScraperTab" data-tab="doi" id="tab-doi">DOI Lookup</button>
     </div>
 
     <!-- ── Search Tab ── -->
@@ -394,8 +65,8 @@
       <div class="search-panel">
         <div class="search-row">
           <input type="text" id="search-input" placeholder="Search papers (e.g., tantalum transmon surface loss)..." autofocus>
-          <button class="btn btn-save-query btn-outline btn-sm" onclick="saveCurrentSearch()" title="Save this query">&#9733;</button>
-          <button class="btn" id="search-btn" onclick="doSearch()">Search</button>
+          <button class="btn btn-save-query btn-outline btn-sm" data-action="saveCurrentSearch" title="Save this query">&#9733;</button>
+          <button class="btn" id="search-btn" data-action="doSearch">Search</button>
         </div>
         <div class="filter-bar">
           <div class="source-toggles" id="source-toggles"></div>
@@ -416,7 +87,7 @@
             <input type="number" id="year-from" placeholder="From" min="1990" max="2099">
             <span style="color:var(--text3)">–</span>
             <input type="number" id="year-to" placeholder="To" min="1990" max="2099">
-            <button class="btn btn-sm btn-outline" onclick="clearDateFilter()" style="font-size:11px;padding:3px 8px">Clear</button>
+            <button class="btn btn-sm btn-outline" data-action="clearDateFilter" style="font-size:11px;padding:3px 8px">Clear</button>
           </div>
         </div>
         <div class="presets" id="presets-bar"></div>
@@ -428,8 +99,8 @@
       <div class="batch-bar" id="batch-bar">
         <span class="batch-info"><span id="batch-count">0</span> selected</span>
         <div class="batch-actions">
-          <button class="btn btn-sm btn-green" onclick="stageSelected()">Add to inbox</button>
-          <button class="btn btn-sm btn-outline" onclick="clearSelection()">Clear</button>
+          <button class="btn btn-sm btn-green" data-action="stageSelected">Add to inbox</button>
+          <button class="btn btn-sm btn-outline" data-action="clearSelection">Clear</button>
         </div>
       </div>
 
@@ -443,7 +114,7 @@
           Review papers before adding to your database. You can add notes and edit tags.
         </div>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-sm btn-green" onclick="approveAll()">Approve all</button>
+          <button class="btn btn-sm btn-green" data-action="approveAll">Approve all</button>
         </div>
       </div>
       <div class="card-list" id="inbox-list"></div>
@@ -454,7 +125,7 @@
       <div class="search-panel">
         <div class="search-row">
           <input type="text" id="quick-search-input" placeholder="Search arXiv (e.g., superconducting qubit tantalum surface loss)..." autofocus>
-          <button class="btn" id="quick-search-btn" onclick="quickDoSearch()">Search</button>
+          <button class="btn" id="quick-search-btn" data-action="quickDoSearch">Search</button>
         </div>
         <div class="filter-bar">
           <div class="filter-group">
@@ -474,10 +145,10 @@
       <div class="status" id="quick-status"></div>
 
       <div id="quick-results-actions" style="display:none" class="quick-results-actions">
-        <button onclick="quickSelectAll()">Select all</button>
-        <button onclick="quickSelectNone()">Clear selection</button>
+        <button data-action="quickSelectAll">Select all</button>
+        <button data-action="quickSelectNone">Clear selection</button>
         <span id="quick-selection-count">0 selected</span>
-        <button class="primary" onclick="quickExportSelected()">Export selected for Claude</button>
+        <button class="primary" data-action="quickExportSelected">Export selected for Claude</button>
       </div>
 
       <div id="quick-results"></div>
@@ -491,8 +162,8 @@
           Paste a DOI, APS URL, or doi.org link to look up a specific paper.
         </div>
         <div class="search-row">
-          <input type="text" id="doi-input" placeholder="e.g., 10.1103/9xbq-t64b or https://journals.aps.org/prb/abstract/10.1103/..." onkeydown="if(event.key==='Enter')doDoiLookup()">
-          <button class="btn" id="doi-btn" onclick="doDoiLookup()">Lookup</button>
+          <input type="text" id="doi-input" placeholder="e.g., 10.1103/9xbq-t64b or https://journals.aps.org/prb/abstract/10.1103/..." data-action="doDoiLookupOnEnter">
+          <button class="btn" id="doi-btn" data-action="doDoiLookup">Lookup</button>
         </div>
       </div>
       <div class="status" id="doi-status"></div>
@@ -510,8 +181,8 @@
     <label>Source</label>
     <select id="modal-source"></select>
     <div class="modal-actions">
-      <button class="btn btn-sm btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-sm" onclick="confirmSaveQuery()">Save</button>
+      <button class="btn btn-sm btn-outline" data-action="closeScraperModal">Cancel</button>
+      <button class="btn btn-sm" data-action="confirmSaveQuery">Save</button>
     </div>
   </div>
 </div>
@@ -519,6 +190,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 <script src="scraper_config.js"></script>
 <script src="db_utils.js"></script>
+<!-- Modular scraper UI entry (plan #9). Loads deferred (type=module) after
+     the legacy globals + the inline boot block, mirroring the database-side
+     setup. Migrated modules get window-shimmed here for the still-inline
+     callers in the boot block + dynamic template strings. -->
+<script type="module" src="src/ui/scraper/main.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 //  STATE
