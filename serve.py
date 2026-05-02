@@ -112,6 +112,52 @@ def _atomic_write(target: Path, text: str) -> None:
         raise
 
 
+def _load_email_config():
+    """Return (email_cfg_dict, smtp_app_password). Falls back to env vars
+    if user_config/email.json is missing or the keyring/secret isn't set.
+    Used by the /api/test/smtp + /api/test/digest endpoints."""
+    from scq.config import user as _user_cfg
+    try:
+        from scq.config import secrets as _secrets_mod  # type: ignore[import-not-found]
+        password = _secrets_mod.get("email_app_password") or os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
+    except Exception:  # noqa: BLE001
+        password = os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
+    try:
+        cfg = _user_cfg.load_config("email").data
+    except Exception:  # noqa: BLE001
+        cfg = {}
+    return cfg, password
+
+
+def _load_digest_config():
+    """Return the merged digest config (defaults + user_config override)."""
+    from scq.config import user as _user_cfg
+    try:
+        return _user_cfg.load_config("digest").data
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _normalize_recipients(raw):
+    """Accept either a list of strings or a list of {email, active?} dicts.
+    Returns a flat list of active email strings, deduplicated, order preserved."""
+    out = []
+    seen = set()
+    for entry in raw or []:
+        if isinstance(entry, str):
+            email = entry.strip()
+            active = True
+        elif isinstance(entry, dict):
+            email = (entry.get("email") or "").strip()
+            active = entry.get("active", True)
+        else:
+            continue
+        if email and active and email not in seen:
+            seen.add(email)
+            out.append(email)
+    return out
+
+
 def _serialize_paths_toml(value: dict) -> str:
     """Serialize the paths config as TOML.
 
@@ -205,6 +251,12 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_save_db()
         elif self.path.startswith("/api/config/"):
             self._handle_config_post()
+        elif self.path == "/api/test/db-path":
+            self._handle_test_db_path()
+        elif self.path == "/api/test/smtp":
+            self._handle_test_smtp()
+        elif self.path == "/api/test/digest":
+            self._handle_test_digest()
         else:
             self.send_error(404)
 
@@ -534,6 +586,115 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
+
+    # ── Test-button endpoints (plan #11) ──
+    #
+    # Each verifies one side of the user's configuration end-to-end and
+    # returns `{ok: true, ...details}` or `{ok: false, error}`. Designed to
+    # be cheap and *non-destructive* — `test_smtp` doesn't send anything,
+    # `test_digest` sends a single tiny email rather than running the full
+    # arxiv pipeline.
+    def _handle_test_db_path(self):
+        import sqlite3
+        from scq.config.paths import paths as _paths_resolver
+        try:
+            p = _paths_resolver(force_reload=True).db_path
+            if not p.exists():
+                self._json_response(200, {"ok": False, "error": f"File not found: {p}"})
+                return
+            size = p.stat().st_size
+            try:
+                conn = sqlite3.connect(f"file:{p}?mode=ro", uri=True)
+            except sqlite3.OperationalError as e:
+                self._json_response(200, {"ok": False, "error": f"Open failed: {e}"})
+                return
+            try:
+                # Check magic + papers count. Both fail loudly if the file isn't a valid SQLite paper DB.
+                row = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers'").fetchone()
+                papers = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0] if row else None
+            finally:
+                conn.close()
+            if papers is None:
+                self._json_response(200, {"ok": False, "error": "File exists but has no `papers` table — not an SCQ database."})
+                return
+            self._json_response(200, {
+                "ok": True,
+                "path": str(p),
+                "size": size,
+                "papers": papers,
+            })
+        except Exception as e:  # noqa: BLE001
+            self._json_response(200, {"ok": False, "error": str(e)})
+
+    def _handle_test_smtp(self):
+        import smtplib, ssl
+        try:
+            email_cfg, app_password = _load_email_config()
+            host = email_cfg.get("smtp_host") or "smtp.gmail.com"
+            port = int(email_cfg.get("smtp_port") or 465)
+            from_addr = email_cfg.get("from_address") or os.environ.get("SCQ_EMAIL_FROM", "")
+            if not from_addr:
+                self._json_response(200, {"ok": False, "error": "No from_address set (data/user_config/email.json or SCQ_EMAIL_FROM)."})
+                return
+            if not app_password:
+                self._json_response(200, {"ok": False, "error": "No SMTP app password — `scq config set-secret email_app_password` or set SCQ_EMAIL_APP_PASSWORD."})
+                return
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP_SSL(host, port, timeout=10, context=ctx) as smtp:
+                smtp.login(from_addr, app_password)
+            self._json_response(200, {
+                "ok": True,
+                "host": host,
+                "port": port,
+                "from": from_addr,
+            })
+        except smtplib.SMTPAuthenticationError as e:
+            self._json_response(200, {"ok": False, "error": f"Auth failed ({e.smtp_code}): {e.smtp_error.decode(errors='replace') if hasattr(e, 'smtp_error') else e}"})
+        except Exception as e:  # noqa: BLE001
+            self._json_response(200, {"ok": False, "error": str(e)})
+
+    def _handle_test_digest(self):
+        import smtplib, ssl
+        from email.message import EmailMessage
+        from datetime import datetime, timezone
+        try:
+            email_cfg, app_password = _load_email_config()
+            digest_cfg = _load_digest_config()
+            host = email_cfg.get("smtp_host") or "smtp.gmail.com"
+            port = int(email_cfg.get("smtp_port") or 465)
+            from_addr = email_cfg.get("from_address") or os.environ.get("SCQ_EMAIL_FROM", "")
+            recipients = _normalize_recipients(digest_cfg.get("recipients", []))
+            if not from_addr or not app_password:
+                self._json_response(200, {"ok": False, "error": "Missing email credentials — see Email tab."})
+                return
+            if not recipients:
+                self._json_response(200, {"ok": False, "error": "No active recipients in digest config."})
+                return
+
+            msg = EmailMessage()
+            msg["From"] = from_addr
+            msg["To"] = ", ".join(recipients)
+            msg["Subject"] = "[ScientificLitterScoop] Test digest"
+            msg.set_content(
+                "This is a test digest sent from the Settings UI to verify your "
+                f"email pipeline.\n\nSent at {datetime.now(timezone.utc).isoformat()} "
+                f"from {from_addr} to {len(recipients)} recipient(s).\n\n"
+                "If you got this, your SMTP credentials and recipient list are "
+                "wired up correctly.\n"
+            )
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP_SSL(host, port, timeout=15, context=ctx) as smtp:
+                smtp.login(from_addr, app_password)
+                smtp.send_message(msg)
+
+            self._json_response(200, {
+                "ok": True,
+                "recipients": recipients,
+                "papers": 0,  # this is a stub digest, no papers fetched
+                "from": from_addr,
+            })
+        except Exception as e:  # noqa: BLE001
+            self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_bookmarklet(self):
         """Handle bookmarklet POST requests.

@@ -19,19 +19,41 @@
  */
 
 import { renderForm } from './schema-form.js';
+import { renderCollaborationTab } from './tabs/collaboration-tab.js';
+import { renderOverleafTab } from './tabs/overleaf-tab.js';
+import { mountStorageExtras, mountDigestExtras, mountEmailExtras } from './tabs/test-buttons.js';
 
-/** All editable domains. Order = tab order in the UI. */
+/**
+ * Tab definitions. `kind` decides how the tab body is filled:
+ *
+ *   - "schema": load a JSON Schema + the current value, render via
+ *     `renderForm`, and let `extras(body, ctx)` (optional) append
+ *     custom UI (e.g. test buttons) below the form. The footer Save
+ *     button posts the edited form to /api/config/<id>.
+ *
+ *   - "custom": call `renderFn(body, ctx)`. The tab handles its own
+ *     state, save flow, and UI. The footer Save button is hidden on
+ *     these tabs because save semantics are tab-specific (e.g.
+ *     collaboration writes to the DB settings table, not a config file).
+ *
+ * `ctx` passed to renderFn / extras provides a stable mini-API:
+ *   - setStatus(text, kind)   — write to the modal footer status line
+ *   - getDbSetting(key)       — read SCQ.getSetting (browser DB)
+ *   - setDbSetting(key, val)  — write SCQ.setSetting
+ */
 export const TABS = [
-  { id: 'paths', label: 'Storage' },
-  { id: 'search-sources', label: 'Search' },
-  { id: 'digest', label: 'Digest' },
-  { id: 'email', label: 'Email' },
-  { id: 'citations', label: 'Citations' },
-  { id: 'ingest', label: 'Ingest' },
-  { id: 'ui', label: 'UI' },
-  { id: 'watchlist', label: 'Watchlist' },
-  { id: 'privacy', label: 'Privacy' },
-  { id: 'auto-tag-rules', label: 'Auto-Tag' },
+  { id: 'paths', label: 'Storage', kind: 'schema', extras: mountStorageExtras },
+  { id: 'search-sources', label: 'Search', kind: 'schema' },
+  { id: 'digest', label: 'Digest', kind: 'schema', extras: mountDigestExtras },
+  { id: 'email', label: 'Email', kind: 'schema', extras: mountEmailExtras },
+  { id: 'citations', label: 'Citations', kind: 'schema' },
+  { id: 'ingest', label: 'Ingest', kind: 'schema' },
+  { id: 'ui', label: 'UI', kind: 'schema' },
+  { id: 'watchlist', label: 'Watchlist', kind: 'schema' },
+  { id: 'privacy', label: 'Privacy', kind: 'schema' },
+  { id: 'auto-tag-rules', label: 'Auto-Tag', kind: 'schema' },
+  { id: 'collaboration', label: 'Collaboration', kind: 'custom', renderFn: renderCollaborationTab },
+  { id: 'overleaf', label: 'Overleaf', kind: 'custom', renderFn: renderOverleafTab },
 ];
 
 let _modal = null;       // cached top-level overlay element
@@ -142,7 +164,18 @@ async function switchTab(domainId) {
   body.innerHTML = '';
   body.appendChild(spinner());
 
+  const tab = TABS.find((t) => t.id === domainId);
+  // Footer Save button is only meaningful for schema tabs; hide on custom.
+  const saveBtn = _modal.querySelector('.settings-v2-save');
+  if (saveBtn) saveBtn.style.display = tab.kind === 'custom' ? 'none' : '';
+
   try {
+    if (tab.kind === 'custom') {
+      body.innerHTML = '';
+      tab.renderFn(body, _ctx());
+      return;
+    }
+    // schema kind
     const [schema, value] = await Promise.all([
       fetchSchema(domainId),
       fetchConfig(domainId),
@@ -162,6 +195,7 @@ async function switchTab(domainId) {
       markDirty(domainId, true);
     });
     body.appendChild(form);
+    if (typeof tab.extras === 'function') tab.extras(body, _ctx());
   } catch (err) {
     body.innerHTML = '';
     const msg = document.createElement('div');
@@ -169,6 +203,15 @@ async function switchTab(domainId) {
     msg.textContent = `Failed to load ${domainId}: ${err.message}`;
     body.appendChild(msg);
   }
+}
+
+/** Stable mini-API passed into custom tab renderFns and schema-tab extras. */
+function _ctx() {
+  return {
+    setStatus,
+    getDbSetting: (key) => globalThis.SCQ?.getSetting?.(key),
+    setDbSetting: (key, val) => globalThis.SCQ?.setSetting?.(key, val),
+  };
 }
 
 function highlightActiveTab(domainId) {

@@ -253,3 +253,84 @@
   letter-spacing: 0;
   line-height: 1.4;
 }
+
+/* ── Custom-tab + test-button styling (Collaboration / Overleaf / extras) ── */
+
+.settings-v2-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 6px;
+}
+.settings-v2-action-btn {
+  background: var(--bg, #1a1d24);
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  color: var(--text, #e8e8e8);
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+}
+.settings-v2-action-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--accent, #6cf);
+  color: var(--accent, #6cf);
+}
+
+.settings-v2-meta {
+  font-size: 11px;
+  color: var(--text-dim, #aaa);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.settings-v2-meta code {
+  background: var(--bg, #1a1d24);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+}
+
+.settings-v2-test-section {
+  border-top: 1px solid var(--border, #333);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+.settings-v2-test-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text, #e8e8e8);
+}
+.settings-v2-test-desc {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--text-dim, #aaa);
+  line-height: 1.5;
+}
+.settings-v2-test-btn {
+  background: transparent;
+  border: 1px solid var(--accent, #6cf);
+  border-radius: 4px;
+  color: var(--accent, #6cf);
+  cursor: pointer;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12px;
+}
+.settings-v2-test-btn:hover { background: rgba(102, 204, 255, 0.08); }
+.settings-v2-test-btn:disabled { opacity: 0.5; cursor: progress; }
+
+.settings-v2-test-result {
+  margin-top: 8px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 16px;
+  padding: 6px 10px;
+  border-radius: 3px;
+}
+.settings-v2-test-result:empty { display: none; }
+.settings-v2-test-result[data-kind="ok"]      { background: rgba(102, 204, 102, 0.08); color: var(--green, #6c6); }
+.settings-v2-test-result[data-kind="error"]   { background: rgba(232, 136, 136, 0.08); color: var(--red, #e88); }
+.settings-v2-test-result[data-kind="pending"] { color: var(--text-dim, #aaa); }
