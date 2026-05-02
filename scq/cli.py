@@ -1,12 +1,17 @@
 """Command-line interface for the SCQ toolkit.
 
-Currently exposes ``scq config <subcommand>`` for inspecting paths, viewing
-resolved config, and managing OS-keyring secrets. More subcommands (``serve``,
-``fetch``, ``ingest``, ``digest``) will land with plan item #12 when the
-``tools/`` scripts move into ``scq/``.
+Currently exposes:
+
+    scq init                               # create + migrate the DB
+    scq config <subcommand>                # inspect/manage config + secrets
+
+More subcommands (``serve``, ``fetch``, ``ingest``, ``digest``) will land
+with plan item #12 when the ``tools/`` scripts move into ``scq/``.
 
 Usage::
 
+    scq init                               # create DB at paths.db_path
+    scq init --force                       # overwrite an existing populated DB
     scq config show                        # all domains, JSON
     scq config show digest                 # one domain
     scq config get digest maxPapers        # one nested key
@@ -22,12 +27,15 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import sqlite3
 import sys
+from pathlib import Path
 from typing import Any
 
 from .config.paths import paths as get_paths
 from .config import secrets as secrets_mod
 from .config import user as user_cfg
+from .db import migrations as db_migrations
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -48,6 +56,21 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Scientific Literature Scoop CLI",
     )
     sub = parser.add_subparsers(dest="command", metavar="<command>")
+
+    p_init = sub.add_parser(
+        "init",
+        help="create + migrate the paper database at paths.db_path",
+    )
+    p_init.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite an existing DB that already contains paper data",
+    )
+    p_init.add_argument(
+        "--db-path",
+        help="override paths.db_path for this invocation (e.g. for testing)",
+    )
+    p_init.set_defaults(func=_cmd_init)
 
     config = sub.add_parser("config", help="inspect and manage configuration")
     config_sub = config.add_subparsers(dest="config_command", metavar="<config-command>")
@@ -96,6 +119,62 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 # ─── command handlers ───
+
+
+def _cmd_init(args: argparse.Namespace) -> int:
+    if args.db_path:
+        db_path = Path(args.db_path).expanduser().resolve()
+    else:
+        db_path = get_paths(force_reload=True).db_path
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    existed = db_path.exists()
+    if existed and not args.force:
+        # Idempotent on a clean / migration-only DB; refuse only if real data is present.
+        # NB: ``with sqlite3.connect()`` only commits — does NOT close. Must close
+        # explicitly or Windows holds the file lock and breaks subsequent unlink().
+        probe = sqlite3.connect(db_path)
+        try:
+            row = probe.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='papers'"
+            ).fetchone()
+            count = (
+                probe.execute("SELECT COUNT(*) FROM papers").fetchone()[0] if row else 0
+            )
+        except sqlite3.DatabaseError as e:
+            probe.close()
+            print(f"error: {db_path} is not a valid SQLite database ({e})", file=sys.stderr)
+            return 1
+        finally:
+            probe.close()
+        if count > 0:
+            print(
+                f"error: {db_path} already contains {count} paper(s). "
+                "Use --force to overwrite, or move it aside first.",
+                file=sys.stderr,
+            )
+            return 1
+
+    if existed and args.force:
+        db_path.unlink()
+        print(f"removed existing database at {db_path}")
+
+    conn = sqlite3.connect(db_path)
+    try:
+        applied = db_migrations.apply_pending(conn)
+    finally:
+        conn.close()
+
+    if applied:
+        verb = "Created" if not existed or args.force else "Migrated"
+        print(
+            f"{verb} database at {db_path} (applied {len(applied)} migration(s); "
+            f"now at version {applied[-1].version})."
+        )
+    else:
+        print(f"Database at {db_path} is already up to date.")
+    return 0
 
 
 def _cmd_show(args: argparse.Namespace) -> int:

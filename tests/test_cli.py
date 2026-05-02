@@ -118,3 +118,107 @@ def test_set_secret_without_keyring_returns_2(monkeypatch, capsys):
     assert rc == 2
     assert "pip install" in err
     assert "keyring" in err
+
+
+# ─── scq init ───
+
+
+def test_init_creates_fresh_db(tmp_path, capsys):
+    db = tmp_path / "scq_papers.db"
+    rc = main(["init", "--db-path", str(db)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert db.exists()
+    assert "Created" in out or "Migrated" in out
+    # Schema actually present
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        tables = {r[0] for r in c.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()}
+    finally:
+        c.close()
+    assert "papers" in tables
+    assert "schema_version" in tables
+
+
+def test_init_idempotent_on_empty_db(tmp_path, capsys):
+    db = tmp_path / "scq_papers.db"
+    main(["init", "--db-path", str(db)])
+    capsys.readouterr()  # discard
+    rc = main(["init", "--db-path", str(db)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "up to date" in out
+
+
+def test_init_refuses_when_papers_present(tmp_path, capsys):
+    db = tmp_path / "scq_papers.db"
+    main(["init", "--db-path", str(db)])
+    capsys.readouterr()
+    # Insert a paper row to simulate real user data.
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        c.execute(
+            "INSERT INTO papers (id, title, authors, year) VALUES (?, ?, ?, ?)",
+            ("test/0001", "T", "A", 2026),
+        )
+        c.commit()
+    finally:
+        c.close()
+    rc = main(["init", "--db-path", str(db)])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "already contains" in err
+    # DB untouched
+    c = sqlite3.connect(db)
+    try:
+        n = c.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+    finally:
+        c.close()
+    assert n == 1
+
+
+def test_init_force_overwrites_populated_db(tmp_path, capsys):
+    db = tmp_path / "scq_papers.db"
+    main(["init", "--db-path", str(db)])
+    capsys.readouterr()
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        c.execute(
+            "INSERT INTO papers (id, title, authors, year) VALUES (?, ?, ?, ?)",
+            ("test/0001", "T", "A", 2026),
+        )
+        c.commit()
+    finally:
+        c.close()
+    rc = main(["init", "--force", "--db-path", str(db)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "removed existing" in out
+    c = sqlite3.connect(db)
+    try:
+        n = c.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+    finally:
+        c.close()
+    assert n == 0
+
+
+def test_init_creates_parent_directory(tmp_path, capsys):
+    db = tmp_path / "nested" / "subdir" / "scq_papers.db"
+    rc = main(["init", "--db-path", str(db)])
+    capsys.readouterr()
+    assert rc == 0
+    assert db.exists()
+
+
+def test_init_rejects_non_sqlite_file(tmp_path, capsys):
+    db = tmp_path / "junk.db"
+    db.write_bytes(b"this is definitely not a sqlite file " * 100)
+    rc = main(["init", "--db-path", str(db)])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "not a valid SQLite" in err
