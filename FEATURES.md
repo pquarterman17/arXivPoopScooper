@@ -16,8 +16,8 @@ ScientificLitterScoop/
 ├── serve.py                 Local server + arXiv API proxy
 ├── paper_database.html      Main app (Library + Reading List + Cite tabs)
 ├── paper_scraper.html       Paper discovery (Search + Inbox + Quick Search tabs)
-├── scq_data.js              SQLite DB as base64 (canonical data source)
-├── db_utils.js              Shared sql.js utility layer
+├── data/scientific_litter_scoop.db   SQLite database (canonical data source, served via HTTP)
+├── db_utils.js              Shared sql.js utility layer (legacy; superseded by src/core/db.js)
 ├── scraper_config.js        Domain config (presets, tags, sources)
 ├── papers/                  [junction] PDFs in SCQ Paper Library/papers/
 ├── figures/                 [junction] Figures in SCQ Paper Library/figures/
@@ -113,7 +113,7 @@ ScientificLitterScoop/
 
 ### State Durability
 
-- All state stored in SQLite database (`scq_data.js` as base64, `scientific_litter_scoop.db` as raw file)
+- All state stored in SQLite database at `data/scientific_litter_scoop.db` (served directly via HTTP and loaded into the browser by sql.js)
 - **Save database** button downloads the `.db` file
 - **Export JSON** button downloads full state as JSON backup
 - **Import** button restores from `.db` or `.json` file
@@ -203,7 +203,7 @@ The primary workflow for adding papers from arXiv. Two-step process: fetch (host
 - Auto-tags from arXiv categories + keyword detection (18+ SCQ domain terms)
 - Inserts into SQLite: paper, figures, FTS index, read status, optional notes
 - Appends to `references.bib` and `references.txt` with duplicate detection
-- Re-exports DB to `scq_data.js`
+- Writes directly to `data/scientific_litter_scoop.db` (no re-export step — the canonical store is the .db file itself)
 - Usage: `python3 tools/process_paper.py <arxiv_id> [--note "..."]`
 
 ### Python Tools
