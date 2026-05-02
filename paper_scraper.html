@@ -220,8 +220,10 @@ for (const [key, src] of Object.entries(CFG.sources)) {
   activeSources[key] = !!src.enabled;
 }
 
-let dbReady = false;
-let lastFetchTime = null;
+// `var` (not `let`) so globalThis.{dbReady,lastFetchTime} are the same
+// bindings — scraper/tabs.js reads them cross-module.
+var dbReady = false;
+var lastFetchTime = null;
 
 // Auto-tag using config dictionary
 function autoTag(title, abstract) {
@@ -1519,49 +1521,9 @@ async function runAllSavedQueries() {
   if (totalNew > 0) switchTab('inbox');
 }
 
-// ═══════════════════════════════════════════════════════════
-//  TABS & UI
-// ═══════════════════════════════════════════════════════════
-
-function switchTab(tab) {
-  document.getElementById('panel-search').style.display = tab === 'search' ? 'block' : 'none';
-  document.getElementById('panel-inbox').style.display = tab === 'inbox' ? 'block' : 'none';
-  document.getElementById('panel-quick').style.display = tab === 'quick' ? 'block' : 'none';
-  document.getElementById('panel-doi').style.display = tab === 'doi' ? 'block' : 'none';
-  document.getElementById('tab-search').classList.toggle('active', tab === 'search');
-  document.getElementById('tab-inbox').classList.toggle('active', tab === 'inbox');
-  document.getElementById('tab-quick').classList.toggle('active', tab === 'quick');
-  document.getElementById('tab-doi').classList.toggle('active', tab === 'doi');
-
-  if (tab === 'inbox') renderInbox();
-  if (tab === 'quick') {
-    setTimeout(() => document.getElementById('quick-search-input').focus(), 100);
-  }
-  if (tab === 'doi') {
-    setTimeout(() => document.getElementById('doi-input').focus(), 100);
-  }
-}
-
-function updateInboxBadge() {
-  const badge = document.getElementById('inbox-badge');
-  if (inbox.length > 0) {
-    badge.style.display = 'inline-block';
-    badge.textContent = inbox.length;
-  } else {
-    badge.style.display = 'none';
-  }
-  document.getElementById('stat-inbox').textContent = inbox.length;
-}
-
-function updateStats() {
-  if (dbReady) {
-    const stats = SCQ.getStats();
-    document.getElementById('stat-db').textContent = stats.papers;
-  }
-  document.getElementById('stat-last').textContent = lastFetchTime
-    ? lastFetchTime.toLocaleTimeString()
-    : 'never';
-}
+// TABS & UI: extracted to src/ui/scraper/tabs.js
+// (switchTab / updateInboxBadge / updateStats imported via scraper/main.js,
+//  shimmed onto globalThis)
 
 // PERSISTENCE — Inbox: extracted to src/ui/scraper/inbox-persistence.js
 // (saveInbox / loadInbox imported via scraper/main.js, shimmed onto window)

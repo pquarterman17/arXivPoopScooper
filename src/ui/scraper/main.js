@@ -3,6 +3,7 @@
 // Keep this list alphabetised; it doubles as a manifest of what's been
 // extracted from the boot block under plan #9 Phase B.
 import './inbox-persistence.js';
+import './tabs.js';
 
 /**
  * Entry point for the modular paper-scraper UI (plan #9 — companion to #8).
