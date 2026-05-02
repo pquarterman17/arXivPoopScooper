@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScientificLitterScoop — Paper Database</title>
 <link rel="stylesheet" href="src/styles/database.css">
+<link rel="stylesheet" href="src/styles/settings-v2.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 </head>
 <body>
@@ -32,6 +33,7 @@
         <button data-action="menuMergeDb" title="Merge another .db" style="color:var(--accent)">Merge .db</button>
         <div class="toolbar-more-divider"></div>
         <button data-action="menuShowAnalytics" title="View reading analytics">Reading analytics</button>
+        <button data-action="menuShowSettingsV2" title="Schema-driven configuration (paths, digest, citations, ...)">Configuration…</button>
         <button data-action="menuExportCollectionPackage" title="Export current collection as package" id="export-pkg-btn" style="display:none">Export collection package</button>
         <button data-action="menuImportPackage" title="Import a collection package">Import package</button>
         <button data-action="menuOpenBatchImport" title="Batch import: pick folder or single PDF">Batch import PDFs</button>

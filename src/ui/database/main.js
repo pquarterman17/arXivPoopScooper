@@ -106,6 +106,7 @@ import {
   _saveSettings,
   _applySettingsToConfig,
 } from './settings-modal.js';
+import { showSettings as showSettingsV2, closeSettings as closeSettingsV2 } from '../settings/main.js';
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers
@@ -235,6 +236,11 @@ const ACTIONS = {
   // ─ Top toolbar
   showAddWebsiteModal: () => showAddWebsiteModal(),
   showSettingsModal: () => showSettingsModal(),
+  showSettingsV2: () => showSettingsV2(),
+  closeSettingsV2: () => closeSettingsV2(),
+  closeSettingsV2IfBackdrop: (el, e) => {
+    if (e.target === el) closeSettingsV2();
+  },
   toggleMoreMenu: (el) => el.nextElementSibling.classList.toggle('open'),
   // ─ "More" menu items (each closes the menu after running)
   menuSaveToDisk: () => {
@@ -261,6 +267,7 @@ const ACTIONS = {
     closeMoreMenu();
   },
   menuOpenBatchImport: () => { window.openBatchImport?.(); closeMoreMenu(); },
+  menuShowSettingsV2: () => { showSettingsV2(); closeMoreMenu(); },
   closeMoreMenu: () => closeMoreMenu(),
   // ─ Suggestions banner
   toggleSuggestions: () => toggleSuggestions(),

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/paths",
+  "title": "Filesystem locations",
+  "description": "Bootstrap config for where the database, papers, figures, citations, and digests live. Read before any other config because the database itself can't house this. Stored in `data/user_config/paths.toml` (TOML, single-quoted strings preserve backslashes verbatim).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "db_path": {
+      "type": "string",
+      "description": "Absolute path to the SQLite database file. Defaults to `data/scientific_litter_scoop.db` under the repo root."
+    },
+    "papers_dir": {
+      "type": "string",
+      "description": "Directory containing PDF papers, named `<arXivId>_<Author>_<ShortTitle>.pdf`. On Windows commonly a directory junction into OneDrive."
+    },
+    "figures_dir": {
+      "type": "string",
+      "description": "Directory of extracted figure JPEGs, one subdirectory per arXiv ID."
+    },
+    "inbox_dir": {
+      "type": "string",
+      "description": "Staging area where the arXiv-fetch script drops `<id>_meta.json` files for the processor to pick up."
+    },
+    "exports_dir": {
+      "type": "string",
+      "description": "Output directory for collection .bib / .db / .json exports. Usually local — output, not data store."
+    },
+    "digests_dir": {
+      "type": "string",
+      "description": "Directory where daily arXiv digest HTML files (`digest_YYYY-MM-DD.html`) are written by `tools/arxiv_digest.py`."
+    },
+    "references_bib_path": {
+      "type": "string",
+      "description": "BibTeX citations file appended by `process_paper.py` when adding a paper."
+    },
+    "references_txt_path": {
+      "type": "string",
+      "description": "Plain-text (Physical Review style) citations file, appended in lockstep with references.bib."
+    }
+  },
+  "required": [
+    "db_path",
+    "papers_dir",
+    "figures_dir",
+    "inbox_dir",
+    "exports_dir",
+    "digests_dir",
+    "references_bib_path",
+    "references_txt_path"
+  ]
+}
