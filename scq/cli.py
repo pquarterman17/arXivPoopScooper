@@ -39,12 +39,53 @@ from .db import migrations as db_migrations
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Passthrough subcommands forward their unparsed argv to a sibling
+    # module's main(). Argparse's REMAINDER is unreliable with option-style
+    # args (e.g. `scq init-db --stats` is parsed as a parent flag), so we
+    # short-circuit before argparse touches them.
+    raw = sys.argv[1:] if argv is None else argv
+    if raw and raw[0] in _PASSTHROUGH_COMMANDS:
+        return _PASSTHROUGH_COMMANDS[raw[0]](raw[1:])
+
     parser = _build_parser()
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):
         parser.print_help()
         return 1
     return args.func(args)
+
+
+# Subcommands that swallow the rest of argv verbatim and forward it to the
+# corresponding module's main(). Built lazily so we don't import heavy
+# dependencies until they're needed.
+def _passthrough_process(rest: list[str]) -> int:
+    from .ingest import process as _process_mod
+    saved = sys.argv
+    try:
+        sys.argv = ["scq process"] + rest
+        _process_mod.main()
+    except SystemExit as e:
+        return int(e.code or 0)
+    finally:
+        sys.argv = saved
+    return 0
+
+
+def _passthrough_merge(rest: list[str]) -> int:
+    from .db import merge as _merge_mod
+    return _merge_mod.main(rest)
+
+
+def _passthrough_init_db(rest: list[str]) -> int:
+    from .db import init as _initdb_mod
+    return _initdb_mod.main(rest)
+
+
+_PASSTHROUGH_COMMANDS = {
+    "process": _passthrough_process,
+    "merge": _passthrough_merge,
+    "init-db": _passthrough_init_db,
+}
 
 
 # ─── parser construction ───
@@ -71,6 +112,27 @@ def _build_parser() -> argparse.ArgumentParser:
         help="override paths.db_path for this invocation (e.g. for testing)",
     )
     p_init.set_defaults(func=_cmd_init)
+
+    # Passthrough subcommands (see _PASSTHROUGH_COMMANDS in main()). These
+    # appear in `scq --help` for discoverability, but main() short-circuits
+    # before argparse touches them — argparse.REMAINDER is unreliable with
+    # option-style args like `--stats`. Run `scq <cmd> --help` to see the
+    # underlying module's options.
+    sub.add_parser(
+        "process",
+        help="ingest a paper end-to-end: extract figures, generate citations, insert into DB (arxiv_id [--note ...])",
+        add_help=False,  # underlying module owns help
+    )
+    sub.add_parser(
+        "merge",
+        help="merge SCQ paper databases or export a collection (scq.db.merge subcommands)",
+        add_help=False,
+    )
+    sub.add_parser(
+        "init-db",
+        help="legacy schema initializer / migrator / stats viewer (--migrate / --stats / --db)",
+        add_help=False,
+    )
 
     config = sub.add_parser("config", help="inspect and manage configuration")
     config_sub = config.add_subparsers(dest="config_command", metavar="<config-command>")

@@ -222,3 +222,58 @@ def test_init_rejects_non_sqlite_file(tmp_path, capsys):
     err = capsys.readouterr().err
     assert rc == 1
     assert "not a valid SQLite" in err
+
+
+# ─── plan #12: passthrough subcommands ───
+
+
+def test_process_subcommand_dispatches_to_module(monkeypatch, capsys):
+    """`scq process X` should route to scq.ingest.process.main with `process` not in argv."""
+    called_with = []
+    def fake_main():
+        called_with.append(list(__import__('sys').argv))
+    monkeypatch.setattr("scq.ingest.process.main", fake_main)
+    rc = main(["process", "2401.12345", "--note", "x"])
+    assert rc == 0
+    # The fake saw argv = ["scq process", "2401.12345", "--note", "x"]
+    assert called_with[0][1:] == ["2401.12345", "--note", "x"]
+
+
+def test_merge_subcommand_dispatches_to_module(monkeypatch):
+    received = []
+    def fake_main(argv):
+        received.append(list(argv))
+        return 0
+    monkeypatch.setattr("scq.db.merge.main", fake_main)
+    rc = main(["merge", "merge", "src.db", "dst.db", "--dry-run"])
+    assert rc == 0
+    assert received[0] == ["merge", "src.db", "dst.db", "--dry-run"]
+
+
+def test_init_db_subcommand_with_options(monkeypatch):
+    """init-db --stats should pass through cleanly even though `--stats` is option-shaped."""
+    received = []
+    def fake_main(argv):
+        received.append(list(argv))
+        return 0
+    monkeypatch.setattr("scq.db.init.main", fake_main)
+    rc = main(["init-db", "--stats"])
+    assert rc == 0
+    assert received[0] == ["--stats"]
+
+
+def test_passthrough_appears_in_help(capsys):
+    rc = main([])
+    out = capsys.readouterr().out
+    assert "process" in out
+    assert "merge" in out
+    assert "init-db" in out
+    assert rc == 1
+
+
+def test_top_level_init_still_works_after_passthrough_added(tmp_path, capsys):
+    """Regression: the original `scq init --db-path X` (no passthrough) still works."""
+    db = tmp_path / "fresh.db"
+    rc = main(["init", "--db-path", str(db)])
+    assert rc == 0
+    assert db.exists()
