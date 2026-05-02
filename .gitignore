@@ -54,9 +54,10 @@ node_modules/
 *.swo
 *~
 
-# Claude local settings + transient agent worktrees
+# Claude local settings + transient agent worktrees + scheduled-task locks
 .claude/settings.local.json
 .claude/worktrees/
+.claude/scheduled_tasks.lock
 
 # Personal launcher with hardcoded Windows paths
 tools/run_digest.bat

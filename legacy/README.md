@@ -10,35 +10,21 @@ project's history.
 
 ## Contents
 
-### `archive/` — superseded HTML pages
+### `archive/` — (empty)
 
-Pre-refactor versions of the database and scraper UIs, plus separate
-single-page tools that have been folded into the main app:
+Pre-refactor HTML pages once lived here (`paper_database_old.html`,
+`paper_database_v2.html`, `paper_scraper_old.html`, `paper_scraper_v2.html`,
+`arxiv_search.html`, `cite_helper.html`, `to_read.html`). All seven were
+deleted on 2026-05-02 once `paper_database.html` and `paper_scraper.html`
+were confirmed to cover their functionality. Recover any of them from
+git history if a UI detail needs to be referenced:
 
-| File                          | Replaced by                                  |
-|-------------------------------|----------------------------------------------|
-| `paper_database_old.html`     | `paper_database.html` (and eventually `src/ui/database/`) |
-| `paper_database_v2.html`      | `paper_database.html`                        |
-| `paper_scraper_old.html`      | `paper_scraper.html` (and eventually `src/ui/scraper/`)   |
-| `paper_scraper_v2.html`       | `paper_scraper.html`                         |
-| `arxiv_search.html`           | `paper_scraper.html` Search tab              |
-| `cite_helper.html`            | `paper_database.html` Cite tab               |
-| `to_read.html`                | `paper_database.html` Reading List tab       |
-
-These should be deleted once the corresponding successor file has been
-verified to cover all the functionality. Until then they stay around as a
-reference for "how did the old version handle X?".
+```bash
+git show <commit>:legacy/archive/paper_database_v2.html > /tmp/v2.html
+```
 
 ### `COWORK_MIGRATION_GUIDE.md`
 
 Notes from the project's earlier phase when the workspace was hosted in
 Cowork. Mostly historical; some path patterns are still useful when
 debugging sandbox vs local-machine issues.
-
-## When to delete the archive
-
-When `paper_database.html` and `paper_scraper.html` themselves are
-decomposed into `src/ui/` modules (plan items #8 and #9), the legacy HTML
-pages will also become superseded. At that point most of `archive/` can
-be deleted entirely. Leave a small index here so the git history is
-discoverable, but the bulk should go.
