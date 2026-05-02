@@ -62,7 +62,7 @@ python3 tools/process_paper.py <arxiv_id> --note "optional note"
 
 Find `PROJECT_ROOT` dynamically:
 ```bash
-PROJECT_ROOT=$(find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | head -1 | xargs dirname)
+PROJECT_ROOT=$(find /sessions -name "scientific_litter_scoop.db" -path "*/mnt/*/data/*" 2>/dev/null | head -1 | xargs dirname | xargs dirname)
 ```
 
 **What it does (all automatic):**
@@ -204,8 +204,8 @@ local proxy in `serve.py` that avoids CORS and sets a proper User-Agent header:
 
 **Add paper:** Use the `add-paper` skill, or manually: fetch.bat/sh → process_paper.py → enrich
 **Enrich paper:** Use the `enrich-paper` skill to read PDF and fill summary/results/group
-**Add note:** Use `db-maintenance` skill, or: update `notes` table, re-export scq_data.js
-**Change tags:** Use `db-maintenance` skill, or: update `tags` JSON in `papers` table, re-export
+**Add note:** Use `db-maintenance` skill, or: update `notes` table, then `conn.commit()` (no re-export — the .db is canonical)
+**Change tags:** Use `db-maintenance` skill, or: update `tags` JSON in `papers` table, then `conn.commit()`
 **Literature review:** Use the `literature-review` skill to synthesize papers on a topic
 **Bulk import:** Use `tools/import_mendeley.py` for .bib files
 **DB migration:** Use `tools/init_database.py` to create/update schema

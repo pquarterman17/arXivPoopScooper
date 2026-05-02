@@ -10,20 +10,15 @@ This skill synthesizes papers already in the database (and optionally external s
 ## Step 1: Gather Papers from the Database
 
 ```python
-import sqlite3, re, base64, json, os, glob
+import sqlite3, json, os, glob
 
-# Find project root dynamically
-matches = glob.glob("/sessions/*/mnt/*/scq_data.js")
-DB_JS = matches[0] if matches else None
-PROJECT_ROOT = os.path.dirname(DB_JS)
+# Find project root + DB dynamically
+matches = glob.glob("/sessions/*/mnt/*/data/scientific_litter_scoop.db")
+DB = matches[0] if matches else "data/scientific_litter_scoop.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(DB))
 
-with open(DB_JS) as f:
-    content = f.read()
-match = re.search(r'const SCQ_DB_BASE64 = "([^"]+)"', content)
-db_bytes = base64.b64decode(match.group(1))
-with open('/tmp/.scq_tmp.db', 'wb') as f:
-    f.write(db_bytes)
-conn = sqlite3.connect('/tmp/.scq_tmp.db')
+conn = sqlite3.connect(DB)
+conn.execute("PRAGMA foreign_keys = ON")
 conn.row_factory = sqlite3.Row
 
 # Search by FTS

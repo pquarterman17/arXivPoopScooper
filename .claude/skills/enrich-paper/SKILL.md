@@ -9,13 +9,13 @@ After a paper is added via the add-paper pipeline, it has a truncated abstract a
 
 ## Path Setup
 
-Find the project root in the sandbox:
+Find the project root in the sandbox by locating the canonical SQLite database:
 ```bash
-PROJECT_ROOT=$(find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | head -1 | xargs dirname)
+PROJECT_ROOT=$(find /sessions -name "scientific_litter_scoop.db" -path "*/mnt/*/data/*" 2>/dev/null | head -1 | xargs dirname | xargs dirname)
 ```
 
 The key file paths relative to `$PROJECT_ROOT`:
-- Database: `scq_data.js`
+- Database: `data/scientific_litter_scoop.db`
 - PDFs: `papers/<arxiv_id>_<Author>_<ShortTitle>.pdf`
 - Figures: `figures/<arxiv_id>/`
 
@@ -24,21 +24,15 @@ The key file paths relative to `$PROJECT_ROOT`:
 The user might refer to a paper by arXiv ID, author name, or partial title.
 
 ```python
-import sqlite3, re, base64, json, os
+import sqlite3, json, os, glob
 
-# Find project root dynamically
-import glob
-matches = glob.glob("/sessions/*/mnt/*/scq_data.js")
-DB_JS = matches[0] if matches else None
-PROJECT_ROOT = os.path.dirname(DB_JS)
+# Find project root + DB dynamically
+matches = glob.glob("/sessions/*/mnt/*/data/scientific_litter_scoop.db")
+DB = matches[0] if matches else "data/scientific_litter_scoop.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(DB))
 
-with open(DB_JS) as f:
-    content = f.read()
-match = re.search(r'const SCQ_DB_BASE64 = "([^"]+)"', content)
-db_bytes = base64.b64decode(match.group(1))
-with open('/tmp/.scq_tmp.db', 'wb') as f:
-    f.write(db_bytes)
-conn = sqlite3.connect('/tmp/.scq_tmp.db')
+conn = sqlite3.connect(DB)
+conn.execute("PRAGMA foreign_keys = ON")
 conn.row_factory = sqlite3.Row
 
 # Search by ID, title, or author
@@ -99,13 +93,7 @@ conn.execute(
 )
 conn.commit()
 conn.close()
-
-# Re-export to scq_data.js
-with open('/tmp/.scq_tmp.db', 'rb') as f:
-    b64 = base64.b64encode(f.read()).decode('ascii')
-with open(DB_JS, 'w') as f:
-    f.write('// Auto-generated database bootstrap\n')
-    f.write(f'const SCQ_DB_BASE64 = "{b64}";\n')
+# No re-export step — the .db file is canonical and the browser reads it directly.
 ```
 
 ## Presenting Results
@@ -115,7 +103,7 @@ After enriching, show the user what you wrote so they can confirm or tweak:
 - **Key results:** (bulleted list)
 - **Group:** (group name)
 
-Apply their edits and re-export.
+Apply their edits with another `UPDATE` + `commit()` — no re-export step.
 
 ## Batch Enrichment
 

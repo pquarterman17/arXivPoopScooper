@@ -5,42 +5,34 @@ description: "Perform maintenance operations on the SCQ paper database — delet
 
 # Database Maintenance
 
-This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is the SQLite file at `data/scq_papers.db` (served directly via HTTP by `serve.py`).
+This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is the SQLite file at `data/scientific_litter_scoop.db` (served directly via HTTP by `serve.py`).
 
 ## Connecting to the Database
 
-Every operation follows: decode → modify → re-encode. Use this helper pattern:
+Open the .db file directly — there is no encode/decode step. The base64 `scq_data.js` bootstrap was retired 2026-04-28 (commit `c3694d1`); the .db is now canonical.
 
 ```python
-import sqlite3, re, base64, json, os, glob
+import sqlite3, json, os, glob
 from datetime import datetime
 
-# Find project root dynamically (works across sessions)
-matches = glob.glob("/sessions/*/mnt/*/scq_data.js")
-DB_JS = matches[0] if matches else None
-PROJECT_ROOT = os.path.dirname(DB_JS)
-TMP_DB = "/tmp/.scq_tmp.db"
+# Find the canonical .db dynamically. Works in the Cowork sandbox via the
+# /sessions glob; falls back to a relative path when running locally.
+matches = glob.glob("/sessions/*/mnt/*/data/scientific_litter_scoop.db")
+DB = matches[0] if matches else "data/scientific_litter_scoop.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(DB))
 
 def open_db():
-    with open(DB_JS) as f:
-        content = f.read()
-    match = re.search(r'const SCQ_DB_BASE64 = "([^"]+)"', content)
-    db_bytes = base64.b64decode(match.group(1))
-    with open(TMP_DB, 'wb') as f:
-        f.write(db_bytes)
-    conn = sqlite3.connect(TMP_DB)
+    conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.row_factory = sqlite3.Row
     return conn
 
 def save_db(conn):
     conn.commit()
     conn.close()
-    with open(TMP_DB, 'rb') as f:
-        b64 = base64.b64encode(f.read()).decode('ascii')
-    with open(DB_JS, 'w') as f:
-        f.write('// Auto-generated database bootstrap\n')
-        f.write(f'const SCQ_DB_BASE64 = "{b64}";\n')
 ```
+
+> When running in a checkout where `scq` is installed, prefer `from scq.db.connection import connect; conn = connect()` — it resolves the path through `data/user_config/paths.toml` (honoring the OneDrive override) and runs `PRAGMA foreign_keys = ON` for you.
 
 ## Common Operations
 
@@ -135,6 +127,6 @@ print(f"Papers: {paper_count}, Tagged: {tagged}, Enriched: {enriched}, With note
 
 ## Important Reminders
 
-- Always call `save_db(conn)` after changes — this re-encodes and writes `scq_data.js`
-- `scq_data.js` is the canonical data source. If it doesn't get updated, changes are lost.
-- Confirm destructive operations (delete, bulk retag) with the user before executing
+- Always call `conn.commit()` (or `save_db(conn)`) after changes — without commit, SQLite leaves the change in the rolled-back transaction and the next reader sees the old state.
+- `data/scientific_litter_scoop.db` is the canonical data source — the running browser fetches it directly via HTTP and reads it with sql.js. There is no re-export step.
+- Confirm destructive operations (delete, bulk retag) with the user before executing.

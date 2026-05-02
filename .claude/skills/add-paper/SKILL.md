@@ -11,8 +11,8 @@ This skill runs the full pipeline to add an arXiv paper to the ScientificLitterS
 
 The project root in the sandbox is wherever the user's workspace folder is mounted. Find it with:
 ```bash
-# The mount point follows this pattern — look for the folder containing scq_data.js
-find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | head -1 | xargs dirname
+# The mount point follows this pattern — look for the folder containing data/scientific_litter_scoop.db
+find /sessions -name "scientific_litter_scoop.db" -path "*/mnt/*/data/*" 2>/dev/null | head -1 | xargs dirname | xargs dirname
 ```
 Store the result as `PROJECT_ROOT` and use it throughout.
 
@@ -66,9 +66,8 @@ This automatically:
 2. Extracts figures and captions from the PDF
 3. Generates BibTeX and plain-text citations
 4. Auto-tags based on arXiv categories + keyword matching
-5. Inserts everything into the SQLite database
-6. Appends to `references.bib` and `references.txt`
-7. Re-exports the DB to `scq_data.js`
+5. Inserts everything into the SQLite database at `data/scientific_litter_scoop.db`
+6. Appends to `references.bib` and `references.txt` (resolved through `paths.toml` — typically in `OneDrive/SCQ Paper Library/citations/`)
 
 If the user provided a note (e.g., "interesting T1 results"), pass it with `--note`.
 
