@@ -277,3 +277,73 @@ def test_top_level_init_still_works_after_passthrough_added(tmp_path, capsys):
     rc = main(["init", "--db-path", str(db)])
     assert rc == 0
     assert db.exists()
+
+
+# ─── plan #12 wave 2: ingest/overleaf/search passthrough subcommands ───
+
+
+def test_mendeley_subcommand_routes_to_module(monkeypatch):
+    received = []
+    def fake_main():
+        import sys as _sys
+        received.append(list(_sys.argv))
+    monkeypatch.setattr("scq.ingest.mendeley.main", fake_main)
+    rc = main(["mendeley", "ref.bib"])
+    assert rc == 0
+    # supports_argv=False splices argv[0] = module path
+    assert received[0][1:] == ["ref.bib"]
+
+
+def test_inbox_subcommand_routes_to_module(monkeypatch):
+    received = []
+    def fake_main():
+        import sys as _sys
+        received.append(list(_sys.argv))
+    monkeypatch.setattr("scq.ingest.inbox.main", fake_main)
+    rc = main(["inbox"])
+    assert rc == 0
+    assert received[0][1:] == []
+
+
+def test_overleaf_subcommand_routes_to_module(monkeypatch):
+    received = []
+    def fake_main():
+        import sys as _sys
+        received.append(list(_sys.argv))
+    monkeypatch.setattr("scq.overleaf.sync.main", fake_main)
+    rc = main(["overleaf", "--status"])
+    assert rc == 0
+    assert received[0][1:] == ["--status"]
+
+
+def test_build_index_subcommand_routes_to_module(monkeypatch):
+    """build-index uses supports_argv=True (its main signature accepts argv)."""
+    received = []
+    def fake_main(argv=None):
+        received.append(list(argv or []))
+        return 0
+    monkeypatch.setattr("scq.search.index.main", fake_main)
+    rc = main(["build-index", "--stats"])
+    assert rc == 0
+    assert received[0] == ["--stats"]
+
+
+def test_wave2_passthrough_appears_in_help(capsys):
+    rc = main([])
+    out = capsys.readouterr().out
+    assert "mendeley" in out
+    assert "inbox" in out
+    assert "watch" in out
+    assert "overleaf" in out
+    assert "build-index" in out
+
+
+def test_mendeley_lazy_import_doesnt_crash():
+    """Regression: importing scq.ingest.mendeley shouldn't try to import
+    bibtexparser at module load — that used to sys.exit(1) and break the
+    CLI's lazy-passthrough dispatch."""
+    import importlib
+    mod = importlib.import_module("scq.ingest.mendeley")
+    assert hasattr(mod, "main")
+    # bibtexparser should still be None at this point (lazy)
+    assert mod.bibtexparser is None

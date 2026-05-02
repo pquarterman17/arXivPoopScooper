@@ -578,11 +578,11 @@ def main():
                 overleaf_config = json.load(f)
             if overleaf_config.get("auto_sync", False):
                 print("\n[5/4] Auto-syncing to Overleaf...")
-                # overleaf_sync.py still lives in tools/ (not yet ported to scq/).
-                # Spawn it via the tools-relative path so the shim chain stays simple.
-                sync_script = PROJECT_DIR / "tools" / "overleaf_sync.py"
+                # Overleaf sync now lives at scq.overleaf.sync (#12 wave 2).
+                # Use the `-m` runner so any environment with the scq package
+                # installed works regardless of cwd.
                 result = subprocess.run(
-                    [sys.executable, str(sync_script)],
+                    [sys.executable, "-m", "scq.overleaf.sync"],
                     capture_output=True, text=True, timeout=60
                 )
                 if result.returncode == 0:

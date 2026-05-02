@@ -87,11 +87,45 @@ def _passthrough_digest(rest: list[str]) -> int:
     return 0
 
 
+def _passthrough_module(module_path: str, *, supports_argv: bool = True):
+    """Build a passthrough handler for a module whose `main()` takes argv.
+
+    `supports_argv=False` is for modules whose main() reads sys.argv directly
+    (legacy ones we haven't updated). Those need argv injected via sys.argv.
+    """
+    def handler(rest: list[str]) -> int:
+        import importlib
+        mod = importlib.import_module(module_path)
+        if supports_argv:
+            try:
+                rc = mod.main(rest)
+                return int(rc) if rc is not None else 0
+            except SystemExit as e:
+                return int(e.code or 0)
+        # Legacy main()-with-no-args path: splice argv
+        saved = sys.argv
+        try:
+            sys.argv = [module_path] + rest
+            mod.main()
+        except SystemExit as e:
+            return int(e.code or 0)
+        finally:
+            sys.argv = saved
+        return 0
+    return handler
+
+
 _PASSTHROUGH_COMMANDS = {
     "process": _passthrough_process,
     "merge": _passthrough_merge,
     "init-db": _passthrough_init_db,
     "digest": _passthrough_digest,
+    # Wave 2 (#12): the remaining ingest/overleaf/search tools
+    "mendeley":     _passthrough_module("scq.ingest.mendeley",   supports_argv=False),
+    "inbox":        _passthrough_module("scq.ingest.inbox",      supports_argv=False),
+    "watch":        _passthrough_module("scq.ingest.watch",      supports_argv=False),
+    "overleaf":     _passthrough_module("scq.overleaf.sync",     supports_argv=False),
+    "build-index":  _passthrough_module("scq.search.index",      supports_argv=True),
 }
 
 
@@ -145,6 +179,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="generate + email the daily arXiv digest (--days N / --no-email / --test / --smart-weekend)",
         add_help=False,
     )
+    # Wave 2 of #12 — the remaining ingest/overleaf/search tools
+    sub.add_parser("mendeley",    help="import a Mendeley/Zotero .bib file into the SCQ database",    add_help=False)
+    sub.add_parser("inbox",       help="batch-process PDFs dropped into the inbox/ folder",          add_help=False)
+    sub.add_parser("watch",       help="watch the inbox folder for new .bib/.ris/.json files",       add_help=False)
+    sub.add_parser("overleaf",    help="sync references.bib to your Overleaf project (--setup / --status)", add_help=False)
+    sub.add_parser("build-index", help="(legacy) build a full-text JSON search index from PDFs",     add_help=False)
 
     config = sub.add_parser("config", help="inspect and manage configuration")
     config_sub = config.add_subparsers(dest="config_command", metavar="<config-command>")
