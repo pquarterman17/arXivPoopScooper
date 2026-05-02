@@ -26,6 +26,7 @@
  * No new boot logic here yet — the legacy block still owns initialization.
  */
 
+import './escape-html.js';  // side-effect: shims globalThis.escapeHtml
 import { updateSyncIndicator } from './sync-indicator.js';
 import { getPdfPath } from './pdf-path.js';
 import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';

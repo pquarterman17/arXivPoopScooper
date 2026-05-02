@@ -181,11 +181,9 @@ function updateImportItem(itemId, status, statusText) {
   if (statusEl) statusEl.textContent = statusText;
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+// escapeHtml lives in escape-html.js; the boot-block global shim makes it
+// available here without an explicit import (this module reads it via
+// closure from the page's global scope at runtime).
 
 function queuePaperForProcessing(arxivId, pdfPath) {
   console.log(`Paper queued for processing: ${arxivId} (${pdfPath})`);
