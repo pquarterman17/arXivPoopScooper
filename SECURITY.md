@@ -10,10 +10,13 @@ If you find a security issue:
 - **Do NOT open a public GitHub issue.** Open issues are immediately visible
   to scrapers and would expose users running the tool locally before the
   patch lands.
-- Email the maintainer directly at `paige.e.quarterman@gmail.com`. Use the
-  subject line `[SCQ-SECURITY]` so it's easy to spot.
-- Include: the vulnerable file/function, repro steps, and impact (data
-  disclosure, code execution, denial of service, etc.).
+- **Use GitHub's private vulnerability reporting:**
+  <https://github.com/pquarterman17/ScientificLitterScoop/security/advisories/new>
+  (or click the "Security" tab on the repo page → "Report a vulnerability").
+  Reports are private to the maintainer and the reporter; nothing is public
+  until an advisory is published.
+- Include in the report: the vulnerable file/function, repro steps, and
+  impact (data disclosure, code execution, denial of service, etc.).
 
 I aim to acknowledge within 48 hours and ship a fix within 30 days for
 plausible reports. The repo is single-maintainer best-effort — no SLA.
