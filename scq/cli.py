@@ -45,6 +45,13 @@ def main(argv: list[str] | None = None) -> int:
     # short-circuit before argparse touches them.
     raw = sys.argv[1:] if argv is None else argv
     if raw and raw[0] in _PASSTHROUGH_COMMANDS:
+        # B5/B9 fix: intercept --help BEFORE the passthrough fires. Most
+        # underlying modules don't use argparse, so they'd treat `--help`
+        # as a positional arg (process: ARXIV-ID; mendeley: .bib path) or
+        # ignore it entirely (watch: enters the daemon loop). Short-circuit
+        # to a docstring summary instead.
+        if len(raw) >= 2 and raw[1] in ("--help", "-h"):
+            return _passthrough_help(raw[0])
         return _PASSTHROUGH_COMMANDS[raw[0]](raw[1:])
 
     parser = _build_parser()
@@ -127,6 +134,55 @@ _PASSTHROUGH_COMMANDS = {
     "overleaf":     _passthrough_module("scq.overleaf.sync",     supports_argv=False),
     "build-index":  _passthrough_module("scq.search.index",      supports_argv=True),
 }
+
+
+# Maps each passthrough subcommand to its underlying module path. Used by
+# _passthrough_help to fetch the right docstring without invoking main().
+# Keep in sync with _PASSTHROUGH_COMMANDS above.
+_PASSTHROUGH_MODULES = {
+    "process":     "scq.ingest.process",
+    "merge":       "scq.db.merge",
+    "init-db":     "scq.db.init",
+    "digest":      "scq.arxiv.digest",
+    "mendeley":    "scq.ingest.mendeley",
+    "inbox":       "scq.ingest.inbox",
+    "watch":       "scq.ingest.watch",
+    "overleaf":    "scq.overleaf.sync",
+    "build-index": "scq.search.index",
+}
+
+
+def _passthrough_help(name: str) -> int:
+    """Print a passthrough subcommand's documentation without invoking it.
+
+    Most underlying modules don't use argparse, so passing ``--help`` to
+    them either produces wrong behaviour (process treats it as ARXIV-ID,
+    mendeley as .bib path) or hangs (watch enters the daemon loop).
+    Print the module's docstring instead — that's where the usage notes
+    actually live.
+    """
+    import importlib
+    mod_path = _PASSTHROUGH_MODULES.get(name)
+    if not mod_path:
+        print(f"scq {name}: no help available", file=sys.stderr)
+        return 1
+    try:
+        mod = importlib.import_module(mod_path)
+    except ImportError as e:
+        print(f"scq {name}: failed to load {mod_path} ({e})", file=sys.stderr)
+        return 1
+    doc = (mod.__doc__ or "").strip()
+    print(f"scq {name} -- {mod_path}\n")
+    if doc:
+        print(doc)
+    else:
+        print(f"(no docstring on {mod_path})")
+    print(
+        f"\nThis subcommand forwards its arguments to {mod_path}.main(). "
+        "Some modules accept --help themselves; others don't. The summary "
+        "above is the canonical usage."
+    )
+    return 0
 
 
 # ─── parser construction ───

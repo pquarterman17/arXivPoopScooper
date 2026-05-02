@@ -24,6 +24,65 @@ def test_no_args_prints_help_and_exits_nonzero(capsys):
     assert "scq" in out
 
 
+# ─── MT-5: --help smoke for every passthrough subcommand ───
+#
+# B5/B9 from the 2026-04-30 audit: passthroughs (process, mendeley, watch,
+# overleaf, ...) lack argparse-aware help handling, so `scq <cmd> --help`
+# either crashed (watch entered the daemon loop), produced "ARXIV-ID
+# --help not found" (process treated --help as the positional id), or
+# silently parsed --help as the path argument. Fix: scq.cli intercepts
+# --help/-h before the passthrough fires and prints the underlying
+# module's docstring.
+#
+# This test asserts that for *every* passthrough, --help and -h:
+#   1. exit 0
+#   2. print the underlying module path
+#   3. print a non-empty docstring summary (or a "no docstring" notice)
+#
+# If a future passthrough is added to scq.cli._PASSTHROUGH_COMMANDS but
+# not to _PASSTHROUGH_MODULES, the parametrize set drifts and the
+# missing-module check below catches it.
+
+@pytest.mark.parametrize("flag", ["--help", "-h"])
+@pytest.mark.parametrize("subcmd", [
+    "process", "merge", "init-db", "digest",
+    "mendeley", "inbox", "watch", "overleaf", "build-index",
+])
+def test_passthrough_help_exits_zero_and_prints_docstring(subcmd, flag, capsys):
+    rc = main([subcmd, flag])
+    out = capsys.readouterr().out
+    assert rc == 0, f"`scq {subcmd} {flag}` should return 0, got {rc}"
+    # Module path is always printed in the header
+    assert f"scq {subcmd}" in out
+    assert "scq." in out, f"missing module path in output: {out!r}"
+    # Either a real docstring or the explicit "no docstring" notice
+    assert ("(no docstring on" in out) or (len(out.strip().splitlines()) >= 3)
+
+
+def test_passthrough_modules_table_covers_every_passthrough_command():
+    """Drift catcher: keep _PASSTHROUGH_COMMANDS and _PASSTHROUGH_MODULES in sync."""
+    from scq.cli import _PASSTHROUGH_COMMANDS, _PASSTHROUGH_MODULES
+    cmd_names = set(_PASSTHROUGH_COMMANDS.keys())
+    mod_names = set(_PASSTHROUGH_MODULES.keys())
+    missing = cmd_names - mod_names
+    extra = mod_names - cmd_names
+    assert not missing, f"_PASSTHROUGH_MODULES missing entries: {missing}"
+    assert not extra, f"_PASSTHROUGH_MODULES has stale entries: {extra}"
+
+
+def test_passthrough_help_for_unknown_command_returns_1(capsys):
+    """Defense-in-depth: _passthrough_help on an unknown name returns 1.
+
+    Not directly reachable through main() (which checks _PASSTHROUGH_COMMANDS
+    first), but the helper itself should be safe to call.
+    """
+    from scq.cli import _passthrough_help
+    rc = _passthrough_help("not-a-real-passthrough")
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "no help available" in err
+
+
 def test_show_emits_json_for_all_domains(capsys):
     rc = main(["config", "show"])
     out = capsys.readouterr().out
