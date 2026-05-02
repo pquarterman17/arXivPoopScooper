@@ -7,6 +7,7 @@ import './cors-fetch.js';
 import './connection-test.js';
 import './inbox-persistence.js';
 import './tabs.js';
+import './search-tab.js';
 
 /**
  * Entry point for the modular paper-scraper UI (plan #9 — companion to #8).
