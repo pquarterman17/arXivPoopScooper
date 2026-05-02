@@ -305,6 +305,35 @@ const ACTIONS = {
   closeBatchImport: () => window.closeBatchImport?.(),
   pickBatchFiles: () => window.pickBatchFiles?.(),
   pickBatchFolder: () => window.pickBatchFolder?.(),
+
+  // ─ Dynamic-template handlers (rendered from boot-block tabs).
+  // These replace the inline `onclick="foo(${idx})"` patterns in render
+  // functions; the boot-block functions stay in place, called via window.
+  // Dataset numbers come back as strings; parse where the underlying
+  // function expects an integer.
+  stopPropagation: (_el, e) => e.stopPropagation(),
+  readingMarkRead: (el) => window.readingMarkRead?.(el.dataset.id),
+  readingViewFullEntry: (el) => {
+    const id = el.dataset.id;
+    window.switchMainTab?.('library');
+    window.expandedId = id;
+    window.render?.();
+  },
+  citeToggleSelect: (el) => window.citeToggleSelect?.(el.dataset.id),
+  citeToggleSelectStop: (el, e) => {
+    e.stopPropagation();
+    window.citeToggleSelect?.(el.dataset.id);
+  },
+  citeQuickCopy: (el) => window.citeQuickCopy?.(el.dataset.id, el.dataset.fmt, el),
+  toggleAbstract: (el) => window.toggleAbstract?.(Number(el.dataset.idx)),
+  inboxRemoveTag: (el) => window.inboxRemoveTag?.(
+    Number(el.dataset.idx), Number(el.dataset.tidx),
+  ),
+  inboxSetPriority: (el) => window.inboxSetPriority?.(
+    Number(el.dataset.idx), Number(el.dataset.rating),
+  ),
+  inboxImportOne: (el) => window.inboxImportOne?.(Number(el.dataset.idx)),
+  inboxSkipOne: (el) => window.inboxSkipOne?.(Number(el.dataset.idx)),
 };
 
 const CHANGES = {
@@ -327,6 +356,20 @@ document.addEventListener('change', (e) => {
   if (!el) return;
   const fn = CHANGES[el.dataset.change];
   if (fn) fn(el, e);
+});
+
+// Keydown delegate for ``data-action="<thing>OnEnter"`` — strips the suffix
+// and calls window.<thing>(event, ...dataset-args). Currently only the inbox
+// tag input uses this for Enter-to-add.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const el = e.target.closest('[data-action$="OnEnter"]');
+  if (!el) return;
+  const fnName = el.dataset.action.slice(0, -'OnEnter'.length);
+  const fn = window[fnName];
+  if (typeof fn !== 'function') return;
+  // The boot-block inboxTagKeypress reads (event, idx); pass both.
+  fn(e, Number(el.dataset.idx));
 });
 
 // ─── One-time DOM wiring ───

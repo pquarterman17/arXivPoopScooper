@@ -938,7 +938,7 @@ function renderDoiResult(paper, inDb) {
           </div>
         </div>
         <div class="card-actions">
-          ${!inDb ? `<button class="btn btn-sm btn-green" onclick="stageDoiPaper()">+ Inbox</button>` : ''}
+          ${!inDb ? `<button class="btn btn-sm btn-green" data-action="stageDoiPaper">+ Inbox</button>` : ''}
           <a href="${esc(paper.url)}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none">&nearr;</a>
         </div>
       </div>
@@ -969,7 +969,7 @@ function renderSearchResults() {
 
   if (searchResults.length === 0) {
     const presetBtns = CFG.presets.map(p =>
-      `<button class="preset-btn" onclick="document.getElementById('search-input').value='${p.query.replace(/'/g,"\\'")}';doSearch()" title="${esc(p.query)}">${esc(p.label)}</button>`
+      `<button class="preset-btn" data-action="usePreset" data-query="${esc(p.query)}" title="${esc(p.query)}">${esc(p.label)}</button>`
     ).join('');
     container.innerHTML = `<div class="empty-state">
       <h3>No results</h3>
@@ -988,8 +988,8 @@ function renderSearchResults() {
     <div class="paper-card ${inDb ? 'in-db' : ''} ${sel ? 'selected' : ''}" style="${sel ? 'border-color:var(--green);background:rgba(63,185,80,0.04)' : ''}">
       <div class="card-top">
         <div style="display:flex;gap:10px;align-items:flex-start;flex:1;min-width:0">
-          ${!inDb && !inInbox ? `<input type="checkbox" ${sel ? 'checked' : ''} onclick="toggleSelect(${i})" style="margin-top:3px;accent-color:var(--green);flex-shrink:0">` : ''}
-          <div class="card-info" ${!inDb && !inInbox ? 'onclick="toggleSelect(' + i + ')" style="cursor:pointer"' : ''}>
+          ${!inDb && !inInbox ? `<input type="checkbox" ${sel ? 'checked' : ''} data-action="toggleSelect" data-idx="${i}" style="margin-top:3px;accent-color:var(--green);flex-shrink:0">` : ''}
+          <div class="card-info" ${!inDb && !inInbox ? `data-action="toggleSelect" data-idx="${i}" style="cursor:pointer"` : ''}>
             <div class="card-title">${esc(r.title)}</div>
             <div class="card-meta">
               <span class="card-source ${r.source}">${(CFG.sources[r.source] || {}).label || r.source.toUpperCase()}</span>
@@ -999,7 +999,7 @@ function renderSearchResults() {
               ${inInbox ? '<span class="in-db-badge" style="color:var(--orange);border-color:rgba(210,153,34,0.3);background:rgba(210,153,34,0.1)">In inbox</span>' : ''}
             </div>
             <div class="card-abstract collapsed" id="abs-${i}">${esc(r.summary)}</div>
-            <button class="toggle-abs" onclick="event.stopPropagation();document.getElementById('abs-${i}').classList.toggle('collapsed')">show/hide abstract</button>
+            <button class="toggle-abs" data-action="toggleSearchAbstract" data-idx="${i}">show/hide abstract</button>
             <div class="card-tags">
               ${r.tags.map(t => `<span class="card-tag auto">${esc(t)}</span>`).join('')}
               ${r.categories ? r.categories.slice(0, 3).map(c => `<span class="card-tag">${esc(c)}</span>`).join('') : ''}
@@ -1007,8 +1007,8 @@ function renderSearchResults() {
           </div>
         </div>
         <div class="card-actions">
-          ${!inDb && !inInbox ? `<button class="btn btn-sm btn-green" onclick="event.stopPropagation();stageOne(${i})">+ Inbox</button>` : ''}
-          <a href="${esc(r.url)}" target="_blank" class="btn btn-sm btn-outline" onclick="event.stopPropagation()" style="text-decoration:none">&nearr;</a>
+          ${!inDb && !inInbox ? `<button class="btn btn-sm btn-green" data-action="stageOneStop" data-idx="${i}">+ Inbox</button>` : ''}
+          <a href="${esc(r.url)}" target="_blank" class="btn btn-sm btn-outline" data-action="stopPropagation" style="text-decoration:none">&nearr;</a>
         </div>
       </div>
     </div>`;
@@ -1080,17 +1080,17 @@ function renderInbox() {
             <span>${esc(r.shortAuthors)} (${r.year})</span>
           </div>
           <div class="card-abstract collapsed" id="inbox-abs-${i}">${esc(r.summary)}</div>
-          <button class="toggle-abs" onclick="document.getElementById('inbox-abs-${i}').classList.toggle('collapsed')">show/hide abstract</button>
+          <button class="toggle-abs" data-action="toggleInboxAbstract" data-idx="${i}">show/hide abstract</button>
           <div class="card-tags" id="inbox-tags-${i}">
             ${(r.tags || []).map(t => `<span class="card-tag auto">${esc(t)}</span>`).join('')}
           </div>
           <div class="inbox-note">
-            <textarea placeholder="Add a quick note about this paper..." oninput="updateInboxNote(${i}, this.value)">${esc(r.note || '')}</textarea>
+            <textarea placeholder="Add a quick note about this paper..." data-input="updateInboxNote" data-idx="${i}">${esc(r.note || '')}</textarea>
           </div>
         </div>
         <div class="card-actions" style="flex-direction:column;gap:6px">
-          <button class="btn btn-sm btn-green" onclick="approveOne(${i})">Approve</button>
-          <button class="btn btn-sm btn-red" onclick="dismissOne(${i})">Dismiss</button>
+          <button class="btn btn-sm btn-green" data-action="approveOne" data-idx="${i}">Approve</button>
+          <button class="btn btn-sm btn-red" data-action="dismissOne" data-idx="${i}">Dismiss</button>
           <a href="${esc(r.url)}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none;text-align:center">&nearr;</a>
         </div>
       </div>
@@ -1271,8 +1271,8 @@ function quickRenderResults() {
       ? r.authors[0].split(' ').pop() + ' et al.'
       : r.authors.map(a => a.split(' ').pop()).join(', ');
     return `
-    <div class="quick-result-card ${quickSelected.has(i) ? 'selected' : ''}" onclick="quickToggleSelect(${i})">
-      <input type="checkbox" ${quickSelected.has(i) ? 'checked' : ''} onclick="event.stopPropagation(); quickToggleSelect(${i})">
+    <div class="quick-result-card ${quickSelected.has(i) ? 'selected' : ''}" data-action="quickToggleSelect" data-idx="${i}">
+      <input type="checkbox" ${quickSelected.has(i) ? 'checked' : ''} data-action="quickToggleSelectStop" data-idx="${i}">
       <div class="quick-result-info">
         <div class="quick-result-title">${esc(r.title)}</div>
         <div class="quick-result-meta">
@@ -1280,7 +1280,7 @@ function quickRenderResults() {
           ${esc(shortAuthors)} (${r.year})
         </div>
         <div class="quick-result-abstract collapsed" id="quick-abstract-${i}">${esc(r.summary)}</div>
-        <button class="quick-toggle-abstract" onclick="event.stopPropagation(); quickToggleAbstract(${i})">show/hide abstract</button>
+        <button class="quick-toggle-abstract" data-action="quickToggleAbstractStop" data-idx="${i}">show/hide abstract</button>
         <div class="quick-result-tags">
           ${r.categories.slice(0, 4).map(c => `<span class="quick-result-tag">${esc(c)}</span>`).join('')}
         </div>
@@ -1317,8 +1317,8 @@ function quickExportSelected() {
       </p>
       <pre id="quick-export-json">${esc(json)}</pre>
       <div class="actions">
-        <button onclick="navigator.clipboard.writeText(document.getElementById('quick-export-json').textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy JSON',1500)">Copy JSON</button>
-        <button onclick="quickDownloadExport()">Download JSON</button>
+        <button data-action="copyQuickExportJson">Copy JSON</button>
+        <button data-action="quickDownloadExport">Download JSON</button>
       </div>
     </div>`;
 }
@@ -1403,10 +1403,10 @@ function renderSavedQueries() {
     return;
   }
   container.innerHTML = savedQueries.map((q, i) => `
-    <div class="saved-query" onclick="runSavedQuery(${i})">
+    <div class="saved-query" data-action="runSavedQuery" data-idx="${i}">
       <span class="source-badge ${q.source}">${(CFG.sources[q.source] || {}).label || q.source.toUpperCase()}</span>
       <span class="q-text">${esc(q.query)}</span>
-      <span class="q-remove" onclick="event.stopPropagation();removeSavedQuery(${i})">&times;</span>
+      <span class="q-remove" data-action="removeSavedQueryStop" data-idx="${i}">&times;</span>
     </div>
   `).join('');
 }
@@ -1612,7 +1612,7 @@ function clearDateFilter() {
 function showStatusError(el, summary, details) {
   el.className = 'status error';
   const id = 'err-' + Date.now();
-  el.innerHTML = `${esc(summary)} <a href="#" onclick="event.preventDefault();document.getElementById('${id}').classList.toggle('open')" style="color:var(--accent);font-size:11px;margin-left:6px">show details</a>
+  el.innerHTML = `${esc(summary)} <a href="#" data-action="toggleErrorDetails" data-target="${id}" style="color:var(--accent);font-size:11px;margin-left:6px">show details</a>
     <div class="status-error-details" id="${id}">${esc(details || '')}</div>`;
 }
 

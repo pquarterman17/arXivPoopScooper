@@ -512,7 +512,7 @@ function renderReadingList() {
     <div class="paper-card" style="border:1.5px solid var(--border);border-radius:var(--radius);background:var(--bg2);padding:16px;margin-bottom:10px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="font-size:14px;font-weight:600;line-height:1.35;flex:1">${p.title}</div>
-        <div class="star-rating" onclick="event.stopPropagation()">${renderStars(p.id)}</div>
+        <div class="star-rating" data-action="stopPropagation">${renderStars(p.id)}</div>
       </div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${p.shortAuthors} — ${p.year}</div>
       <div class="paper-badges">
@@ -523,9 +523,9 @@ function renderReadingList() {
       <div style="font-size:13px;color:var(--text2);margin:8px 0">${p.summary}</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t => `<span class="tag-pill">${t}</span>`).join("")}</div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <button class="action-btn" style="border-color:var(--green);color:var(--green)" onclick="readingMarkRead('${p.id}')">&#10003; Mark as read</button>
+        <button class="action-btn" style="border-color:var(--green);color:var(--green)" data-action="readingMarkRead" data-id="${p.id}">&#10003; Mark as read</button>
         <a class="action-btn" href="https://arxiv.org/abs/${p.id}" target="_blank" style="text-decoration:none">arXiv &#8599;</a>
-        <button class="action-btn" onclick="switchMainTab('library'); expandedId='${p.id}'; render()">Full entry &#8599;</button>
+        <button class="action-btn" data-action="readingViewFullEntry" data-id="${p.id}">Full entry &#8599;</button>
       </div>
     </div>
   `).join("");
@@ -686,8 +686,8 @@ function renderCiteTab() {
 
   list.innerHTML = filtered.map(p => {
     const sel = citeSelected.has(p.id);
-    return `<div class="cite-paper-row ${sel ? 'selected' : ''}" onclick="citeToggleSelect('${p.id}')">
-      <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation(); citeToggleSelect('${p.id}')">
+    return `<div class="cite-paper-row ${sel ? 'selected' : ''}" data-action="citeToggleSelect" data-id="${p.id}">
+      <input type="checkbox" ${sel ? 'checked' : ''} data-action="citeToggleSelectStop" data-id="${p.id}">
       <div class="cite-paper-info">
         <div class="cite-paper-title">${p.title}</div>
         <div class="cite-paper-meta">
@@ -695,9 +695,9 @@ function renderCiteTab() {
           ${p.shortAuthors} &middot; ${p.year} &middot; ${p.group}
         </div>
       </div>
-      <div class="cite-quick-cite" onclick="event.stopPropagation()">
-        <button class="cite-qc-btn" onclick="citeQuickCopy('${p.id}', 'txt', this)">Word</button>
-        <button class="cite-qc-btn" onclick="citeQuickCopy('${p.id}', 'bib', this)">.bib</button>
+      <div class="cite-quick-cite" data-action="stopPropagation">
+        <button class="cite-qc-btn" data-action="citeQuickCopy" data-id="${p.id}" data-fmt="txt">Word</button>
+        <button class="cite-qc-btn" data-action="citeQuickCopy" data-id="${p.id}" data-fmt="bib">.bib</button>
       </div>
     </div>`;
   }).join("");
@@ -937,19 +937,19 @@ function renderInbox() {
         <div class="inbox-abstract ${note || tags.length > 0 ? '' : 'collapsed'}" id="inbox-abs-${idx}">
           ${escapeHtml((p.abstract || '').substring(0, 500))}${(p.abstract || '').length > 500 ? '...' : ''}
         </div>
-        ${(p.abstract || '').length > 500 ? `<span class="inbox-abstract-expand" onclick="toggleAbstract(${idx})">Show more</span>` : ''}
+        ${(p.abstract || '').length > 500 ? `<span class="inbox-abstract-expand" data-action="toggleAbstract" data-idx="${idx}">Show more</span>` : ''}
 
         <div class="inbox-tags">
           ${tags.map((tag, tidx) =>
             `<span class="inbox-tag" title="Click x to remove">
               ${escapeHtml(tag)}
-              <span class="inbox-tag-remove" onclick="inboxRemoveTag(${idx}, ${tidx})">×</span>
+              <span class="inbox-tag-remove" data-action="inboxRemoveTag" data-idx="${idx}" data-tidx="${tidx}">×</span>
             </span>`
           ).join('')}
           <input type="text" id="inbox-tag-input-${idx}" placeholder="Add tag..."
                  style="width:80px;padding:3px 6px;border:1px solid var(--border);border-radius:12px;
                  background:var(--bg);color:var(--text);font-size:11px;font-family:inherit;outline:none"
-                 onkeypress="inboxTagKeypress(event, ${idx})">
+                 data-action="inboxTagKeypressOnEnter" data-idx="${idx}">
         </div>
 
         <div class="inbox-priority">
@@ -957,7 +957,7 @@ function renderInbox() {
           <div class="inbox-priority-stars">
             ${[0, 1, 2, 3].map(i =>
               `<span class="inbox-star ${i < priority ? 'active' : ''}"
-                     onclick="inboxSetPriority(${idx}, ${i + 1})">★</span>`
+                     data-action="inboxSetPriority" data-idx="${idx}" data-rating="${i + 1}">★</span>`
             ).join('')}
           </div>
         </div>
@@ -968,8 +968,8 @@ function renderInbox() {
         </div>
 
         <div class="inbox-card-buttons">
-          <button class="inbox-btn" onclick="inboxImportOne(${idx})">Import</button>
-          <button class="inbox-btn danger" onclick="inboxSkipOne(${idx})">Skip</button>
+          <button class="inbox-btn" data-action="inboxImportOne" data-idx="${idx}">Import</button>
+          <button class="inbox-btn danger" data-action="inboxSkipOne" data-idx="${idx}">Skip</button>
         </div>
       </div>
     `;

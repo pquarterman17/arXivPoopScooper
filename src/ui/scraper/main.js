@@ -66,9 +66,82 @@ const ACTIONS = {
   // ─ Keyboard: Enter inside the DOI input box triggers lookup
   // (registered via the keydown delegate below, not the click delegate)
   doDoiLookupOnEnter: undefined,
+
+  // ─── Dynamic-template handlers ───
+  // Each render function in the boot block now emits `data-action` /
+  // `data-idx` attributes instead of inline `onclick="foo(${i})"`. The
+  // boot-block functions still live in the page; we trampoline through
+  // `window.<fn>?.()` until each tab gets its own module.
+  stopPropagation: (_el, e) => e.stopPropagation(),
+
+  // Search tab — empty-state preset, results card, etc.
+  usePreset: (el) => {
+    const input = document.getElementById('search-input');
+    if (input) input.value = el.dataset.query || '';
+    window.doSearch?.();
+  },
+  toggleSelect: (el) => window.toggleSelect?.(Number(el.dataset.idx)),
+  toggleSearchAbstract: (el, e) => {
+    e.stopPropagation();
+    document.getElementById(`abs-${el.dataset.idx}`)?.classList.toggle('collapsed');
+  },
+  stageOneStop: (el, e) => {
+    e.stopPropagation();
+    window.stageOne?.(Number(el.dataset.idx));
+  },
+
+  // DOI lookup tab
+  stageDoiPaper: () => window.stageDoiPaper?.(),
+
+  // Inbox tab
+  toggleInboxAbstract: (el) => {
+    document.getElementById(`inbox-abs-${el.dataset.idx}`)?.classList.toggle('collapsed');
+  },
+  approveOne: (el) => window.approveOne?.(Number(el.dataset.idx)),
+  dismissOne: (el) => window.dismissOne?.(Number(el.dataset.idx)),
+
+  // Quick Search tab
+  quickToggleSelect: (el) => window.quickToggleSelect?.(Number(el.dataset.idx)),
+  quickToggleSelectStop: (el, e) => {
+    e.stopPropagation();
+    window.quickToggleSelect?.(Number(el.dataset.idx));
+  },
+  quickToggleAbstractStop: (el, e) => {
+    e.stopPropagation();
+    window.quickToggleAbstract?.(Number(el.dataset.idx));
+  },
+  copyQuickExportJson: (el) => {
+    const json = document.getElementById('quick-export-json')?.textContent ?? '';
+    navigator.clipboard.writeText(json);
+    const original = el.textContent;
+    el.textContent = 'Copied!';
+    setTimeout(() => { el.textContent = original; }, 1500);
+  },
+  quickDownloadExport: () => window.quickDownloadExport?.(),
+
+  // Saved queries panel
+  runSavedQuery: (el) => window.runSavedQuery?.(Number(el.dataset.idx)),
+  removeSavedQueryStop: (el, e) => {
+    e.stopPropagation();
+    window.removeSavedQuery?.(Number(el.dataset.idx));
+  },
+
+  // Status error: collapsible details
+  toggleErrorDetails: (el, e) => {
+    e.preventDefault();
+    document.getElementById(el.dataset.target)?.classList.toggle('open');
+  },
 };
 
 const CHANGES = {};
+
+// `data-input` delegate — input-event variant of CHANGES (input fires per
+// keystroke; change fires on blur). Only used by the inbox-note textarea
+// for now: `data-input="updateInboxNote" data-idx="${i}"` calls
+// window.updateInboxNote(i, el.value) on every keystroke.
+const INPUTS = {
+  updateInboxNote: (el) => window.updateInboxNote?.(Number(el.dataset.idx), el.value),
+};
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
@@ -81,6 +154,13 @@ document.addEventListener('change', (e) => {
   const el = e.target.closest('[data-change]');
   if (!el) return;
   const fn = CHANGES[el.dataset.change];
+  if (fn) fn(el, e);
+});
+
+document.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-input]');
+  if (!el) return;
+  const fn = INPUTS[el.dataset.input];
   if (fn) fn(el, e);
 });
 
