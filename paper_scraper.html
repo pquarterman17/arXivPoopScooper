@@ -202,20 +202,20 @@
 
 const CFG = SCRAPER_CONFIG; // shorthand
 
-let searchResults = [];     // current search results
-let selectedIdxs = new Set();
-// `var inbox` (not `let`) so globalThis.inbox is the same binding —
-// scraper/inbox-persistence.js reads/writes it cross-module.
-var inbox = [];             // staged papers awaiting review
-let savedQueries = [];      // persisted queries
-let existingIds = new Set(); // paper IDs already in the DB
+// Cross-module state. All `var` (not `let`) so each binding is the same
+// slot as globalThis.<name> — modules in src/ui/scraper/ read+write
+// these without re-introducing the boot-block dependency. See
+// src/ui/scraper/state.js for the documented manifest.
+var searchResults = [];      // current search results
+var selectedIdxs = new Set();
+var inbox = [];              // staged papers awaiting review
+var savedQueries = [];       // persisted queries
+var existingIds = new Set(); // paper IDs already in the DB
 
-// Quick search state
-let quickResults = [];
-let quickSelected = new Set();
+var quickResults = [];
+var quickSelected = new Set();
 
-// Build activeSources from config defaults
-let activeSources = {};
+var activeSources = {};
 for (const [key, src] of Object.entries(CFG.sources)) {
   activeSources[key] = !!src.enabled;
 }

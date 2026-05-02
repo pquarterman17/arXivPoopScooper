@@ -2,8 +2,9 @@
 // so legacy boot-block call sites + the ACTIONS registry below resolve.
 // Keep this list alphabetised; it doubles as a manifest of what's been
 // extracted from the boot block under plan #9 Phase B.
-import './connection-test.js';   // imports cors-fetch.js transitively
+import './state.js';              // cross-module state manifest
 import './cors-fetch.js';
+import './connection-test.js';
 import './inbox-persistence.js';
 import './tabs.js';
 
