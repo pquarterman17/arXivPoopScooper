@@ -19,13 +19,13 @@ ScientificLitterScoop/
 ├── scq_data.js              SQLite DB as base64 (canonical data source)
 ├── db_utils.js              Shared sql.js utility layer
 ├── scraper_config.js        Domain config (presets, tags, sources)
-├── references.bib           BibTeX citations
-├── references.txt           Plain-text citations (Physical Review style)
-├── notes.json               Legacy state backup
-├── papers/                  PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
-├── figures/                 Extracted figures by arXiv ID
-│   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
-├── inbox/                   Staging area for _meta.json files
+├── papers/                  [junction] PDFs in SCQ Paper Library/papers/
+├── figures/                 [junction] Figures in SCQ Paper Library/figures/
+├── inbox/                   [junction] arXiv-fetch staging in SCQ Paper Library/inbox/
+│
+│ // All user data — DB, citations, digests — lives external in
+│ // <OneDrive>/Work and School Research/SCQ Paper Library/, mapped
+│ // via data/user_config/paths.toml. The repo only carries code.
 ├── tools/
 │   ├── fetch_arxiv.js       arXiv API + PDF download (Node.js)
 │   ├── fetch.bat             Windows wrapper

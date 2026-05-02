@@ -41,6 +41,7 @@ _DEFAULTS: dict[str, str] = {
     "figures_dir": "figures",
     "inbox_dir": "inbox",
     "exports_dir": "exports",
+    "digests_dir": "digests",
     "references_bib_path": "references.bib",
     "references_txt_path": "references.txt",
 }
@@ -52,6 +53,7 @@ _ENV_OVERRIDES: dict[str, str] = {
     "SCQ_FIGURES_DIR": "figures_dir",
     "SCQ_INBOX_DIR": "inbox_dir",
     "SCQ_EXPORTS_DIR": "exports_dir",
+    "SCQ_DIGESTS_DIR": "digests_dir",
     "SCQ_REFERENCES_BIB": "references_bib_path",
     "SCQ_REFERENCES_TXT": "references_txt_path",
 }
@@ -67,6 +69,7 @@ class Paths:
     figures_dir: Path
     inbox_dir: Path
     exports_dir: Path
+    digests_dir: Path
     references_bib_path: Path
     references_txt_path: Path
 

@@ -35,6 +35,7 @@ def test_defaults_resolve_under_repo_root(tmp_path):
     assert p.repo_root == tmp_path.resolve()
     assert p.db_path == (tmp_path / "data" / "scientific_litter_scoop.db").resolve()
     assert p.papers_dir == (tmp_path / "papers").resolve()
+    assert p.digests_dir == (tmp_path / "digests").resolve()
     assert p.references_bib_path == (tmp_path / "references.bib").resolve()
 
 

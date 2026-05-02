@@ -22,7 +22,7 @@ on:
           - '30'
 
 permissions:
-  contents: write  # Needed to commit digest HTML to repo
+  contents: read  # Digests are uploaded as artifacts only (no repo writes)
 
 jobs:
   digest:
@@ -61,20 +61,11 @@ jobs:
           echo "Looking back $DAYS day(s)"
           python tools/arxiv_digest.py --days $DAYS --max-results 1000 --smart-weekend
 
-      - name: Commit digest to repo
-        run: |
-          git config user.name "SCQ Digest Bot"
-          git config user.email "actions@github.com"
-          git add digests/
-          git add pending_papers.json || true
-          if git diff --staged --quiet; then
-            echo "No new digest to commit"
-          else
-            DATE=$(date +%Y-%m-%d)
-            git commit -m "Daily digest: $DATE"
-            git push
-          fi
-
+      # Note: digests are no longer committed to the repo (2026-05-01).
+      # They live as a 30-day workflow artifact (downloadable from the run
+      # page) and are also emailed to recipients by `tools/arxiv_digest.py`.
+      # Locally-generated digests go to `paths().digests_dir`, which the
+      # user's `data/user_config/paths.toml` can point at OneDrive.
       - name: Upload digest as artifact
         uses: actions/upload-artifact@v4
         with:

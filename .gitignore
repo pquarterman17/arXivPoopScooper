@@ -8,6 +8,16 @@ papers/*.pdf
 figures/
 inbox/
 
+# User research artifacts that live in OneDrive\SCQ Paper Library (per
+# the user_config/paths.toml override). Locally they may or may not
+# exist at these paths depending on each user's setup; either way
+# they're never committed.
+references.bib
+references.txt
+digests/digest_*.html
+digests/*.json
+weekly_digest.html
+
 # SQLite temp files
 *.db-journal
 *.db-wal

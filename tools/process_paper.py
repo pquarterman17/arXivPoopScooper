@@ -25,16 +25,29 @@ from datetime import date, datetime
 # ─── Paths ────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
-INBOX_DIR = PROJECT_DIR / "inbox"
-PAPERS_DIR = PROJECT_DIR / "papers"
-FIGURES_DIR = PROJECT_DIR / "figures"
-DB_PATH = PROJECT_DIR / "data" / "scientific_litter_scoop.db"
-BIB_PATH = PROJECT_DIR / "references.bib"
-TXT_PATH = PROJECT_DIR / "references.txt"
-EXTRACT_SCRIPT = SCRIPT_DIR / "extract_figures.py"
-
 # Make the scq package importable when running from tools/.
 sys.path.insert(0, str(PROJECT_DIR))
+
+# Resolve paths through scq.config.paths so user_config/paths.toml +
+# SCQ_* env vars can relocate any of these into OneDrive (or anywhere).
+# Falls back to repo-relative defaults if the package isn't installed.
+try:
+    from scq.config.paths import paths as _scq_paths  # type: ignore[import-not-found]
+    _P = _scq_paths()
+    INBOX_DIR = Path(_P.inbox_dir)
+    PAPERS_DIR = Path(_P.papers_dir)
+    FIGURES_DIR = Path(_P.figures_dir)
+    DB_PATH = Path(_P.db_path)
+    BIB_PATH = Path(_P.references_bib_path)
+    TXT_PATH = Path(_P.references_txt_path)
+except Exception:
+    INBOX_DIR = PROJECT_DIR / "inbox"
+    PAPERS_DIR = PROJECT_DIR / "papers"
+    FIGURES_DIR = PROJECT_DIR / "figures"
+    DB_PATH = PROJECT_DIR / "data" / "scientific_litter_scoop.db"
+    BIB_PATH = PROJECT_DIR / "references.bib"
+    TXT_PATH = PROJECT_DIR / "references.txt"
+EXTRACT_SCRIPT = SCRIPT_DIR / "extract_figures.py"
 
 
 # ─── Citation generators ──────────────────────────────────────────

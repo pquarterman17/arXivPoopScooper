@@ -92,8 +92,13 @@ The project is split between two OneDrive locations (paths shown below
 are examples — the actual values depend on your username and OneDrive
 mount). On macOS the equivalents live under
 `~/Library/CloudStorage/OneDrive-*` or wherever you sync OneDrive.
-- **Code repo:** `<OneDrive>\Coding\git\ScientificLitterScoop\`
-- **Paper data:** `<OneDrive>\Work and School Research\SCQ Paper Library\` — `papers/`, `figures/`, `inbox/` live here and are surfaced in the repo via Windows directory junctions.
+- **Code repo:** `<OneDrive>\Coding\git\ScientificLitterScoop\` — only code, configs, docs, and tests. No PDFs, no figures, no DB, no citations, no digests.
+- **Paper library (all user data):** `<OneDrive>\Work and School Research\SCQ Paper Library\`
+  - `papers/`, `figures/`, `inbox/` — surfaced in the repo via Windows directory junctions
+  - `database/scientific_litter_scoop.db` — the SQLite database (resolver: `paths.db_path`)
+  - `citations/references.bib`, `citations/references.txt` — BibTeX + plain-text citations (resolver: `paths.references_bib_path` / `references_txt_path`)
+  - `digests/digest_YYYY-MM-DD.html` — daily arXiv-digest reports (resolver: `paths.digests_dir`)
+- The repo's `data/user_config/paths.toml` (gitignored) maps each name above to its OneDrive absolute path. New machines copy `paths.toml.example`, edit, and the resolver picks up the override.
 
 ```
 ScientificLitterScoop/
@@ -103,8 +108,7 @@ ScientificLitterScoop/
 ├── paper_scraper.html       Legacy scraper (Search/Inbox/Quick Search)
 ├── db_utils.js              Legacy sql.js IIFE — superseded by src/core/db.js
 ├── scraper_config.js        Legacy giant config object — superseded by src/config/
-├── references.bib           BibTeX citations (appended by process_paper.py)
-├── references.txt           Plain-text citations (Physical Review style)
+├── (references.bib + .txt)  → SCQ Paper Library/citations/ (external; see paths.toml)
 ├── data/
 │   ├── scientific_litter_scoop.db    Canonical SQLite database (served via HTTP)
 │   ├── migrations/          Versioned schema (001_initial.sql, etc.)

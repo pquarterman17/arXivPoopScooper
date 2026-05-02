@@ -229,6 +229,7 @@ def _cmd_paths(args: argparse.Namespace) -> int:
         "figures_dir": str(p.figures_dir),
         "inbox_dir": str(p.inbox_dir),
         "exports_dir": str(p.exports_dir),
+        "digests_dir": str(p.digests_dir),
         "references_bib_path": str(p.references_bib_path),
         "references_txt_path": str(p.references_txt_path),
     }

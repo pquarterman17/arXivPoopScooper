@@ -116,7 +116,15 @@ KEYWORD_WEIGHTS = {
 
 # Base directory (project root)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIGEST_DIR = os.path.join(BASE_DIR, "digests")
+# Where finished digest HTMLs land. `paths().digests_dir` is the canonical
+# resolver and respects user_config/paths.toml + SCQ_DIGESTS_DIR. Falls back
+# to repo-relative `digests/` if the resolver isn't importable (e.g. when
+# this script runs as a one-off without `pip install .`).
+try:
+    from scq.config.paths import paths as _scq_paths  # type: ignore[import-not-found]
+    DIGEST_DIR = str(_scq_paths().digests_dir)
+except Exception:
+    DIGEST_DIR = os.path.join(BASE_DIR, "digests")
 PENDING_FILE = os.path.join(BASE_DIR, "pending_papers.json")
 
 # Email config.
