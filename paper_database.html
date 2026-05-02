@@ -224,28 +224,9 @@
 
 <script>
 
-// ─── arXiv fetch helper (local proxy when served via serve.py) ───
-function _isLocalhost() {
-  const h = window.location.hostname;
-  return h === 'localhost' || h === '127.0.0.1';
-}
-function _toLocalProxy(url) {
-  const m = url.match(/https?:\/\/(?:export\.)?arxiv\.org\/api\/query\?(.*)/);
-  if (m) return `/api/arxiv?${m[1]}`;
-  return null;
-}
-async function arxivFetch(url) {
-  if (_isLocalhost()) {
-    const local = _toLocalProxy(url);
-    if (local) {
-      try {
-        const resp = await fetch(local);
-        if (resp.ok) return resp;
-      } catch (e) { /* fall through */ }
-    }
-  }
-  return fetch(url);
-}
+// arXiv-fetch helpers extracted to src/ui/database/local-proxy.js
+// (arxivFetch / _isLocalhost / _toLocalProxy shimmed onto globalThis
+// at module-import time, before this script's first arxivFetch call).
 
 // ─── More menu ───
 // Migrated to src/ui/database/more-menu.js (plan #8). closeMoreMenu is

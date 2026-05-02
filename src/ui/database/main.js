@@ -27,6 +27,7 @@
  */
 
 import './escape-html.js';  // side-effect: shims globalThis.escapeHtml
+import './local-proxy.js';   // side-effect: shims globalThis.arxivFetch
 import { updateSyncIndicator } from './sync-indicator.js';
 import { getPdfPath } from './pdf-path.js';
 import { closeMoreMenu, installMoreMenuOutsideClick } from './more-menu.js';
