@@ -11,6 +11,7 @@ import './search-tab.js';
 import './doi-lookup.js';
 import './inbox-render.js';
 import './quick-search.js';
+import './saved-queries.js';
 
 /**
  * Entry point for the modular paper-scraper UI (plan #9 — companion to #8).
