@@ -1,6 +1,28 @@
 /**
  * Settings modal (plan #8 strangler-fig migration).
  *
+ * **DEPRECATED** — Settings v2 (`src/ui/settings/`) is the canonical
+ * settings UI. This legacy modal still ships because plan item #11
+ * ("retire the legacy settings-modal.js") hasn't landed yet. Until it
+ * does, both UIs can write to the same `settings` table keys and
+ * stomp each other. See B6 in the 2026-04-30 audit.
+ *
+ * **Stomp matrix (B6):**
+ *   Both this modal and `src/ui/settings/tabs/overleaf-tab.js` write
+ *   `SCQ.setSetting('overleafConfig', ...)`. Legacy modal saves on
+ *   explicit "Save" click (full-form snapshot); v2 tab autosaves on
+ *   every field change. If a user has both UIs open (two tabs, or v2
+ *   then legacy without refresh), the legacy modal's stale snapshot
+ *   can overwrite a v2 autosave on Save click. Same risk for
+ *   `sources`, `presets`, `emailRecipients`, `collaboration`.
+ *
+ * **Until #11 ships:**
+ *   - New features go into Settings v2 (`src/ui/settings/`), not here.
+ *   - `_saveSettings()` console.warns when fired so we can tell from a
+ *     user-reported "my settings got reverted" report whether they
+ *     used the legacy modal.
+ *   - Don't add new keys here.
+ *
  * Renders four editable subsystems plus collaboration / overleaf
  * read-only-ish forms. Uses inline onclick / onchange attributes that
  * reference the module's state arrays *by name* — so we mirror those
@@ -268,6 +290,20 @@ export function _exportRecipients() {
 }
 
 export function _saveSettings() {
+  // B6 (audit 2026-04-30): the legacy modal and Settings v2 both write
+  // to the same `settings` table keys (overleafConfig, sources, presets,
+  // emailRecipients, collaboration). Legacy = full-form snapshot on Save;
+  // v2 = autosave on field change. If both UIs are open, this snapshot
+  // can overwrite a v2 autosave. Warn so user reports of "settings got
+  // reverted" are diagnosable. Remove this when plan #11 retires the
+  // legacy modal.
+  console.warn(
+    '[settings-modal/legacy] _saveSettings() fired — this is the legacy ' +
+    'modal. Settings v2 is canonical (src/ui/settings/). If you have v2 ' +
+    'open in another tab, this Save will stomp its values for keys: ' +
+    'overleafConfig, sources, presets, emailRecipients, collaboration. ' +
+    'See plan item #11 + B6.'
+  );
   const SCQ = _scq();
   const presets = _settingsPresets.filter(p => p.label.trim() && p.query.trim());
   const recipients = _settingsRecipients.filter(r => r.email.trim());
