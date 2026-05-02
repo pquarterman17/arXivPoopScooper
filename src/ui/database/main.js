@@ -207,6 +207,121 @@ window._applySettingsToConfig = _applySettingsToConfig;
 window.render = render;
 window.renderSidebar = renderSidebar;
 
+// ─── Event delegation registries ───
+// Static markup in `paper_database.html` uses `data-action="..."` on
+// elements that need a click handler, and `data-change="..."` for change
+// events. The two delegated listeners installed below dispatch into the
+// registries, which in turn call the imported module function or — for
+// handlers still living in the legacy boot block — `window.<name>(...)`.
+//
+// Why this exists: until #8 fully closes (boot block + dynamic template
+// strings migrated), inline `onclick="foo()"` attributes in the static
+// HTML were the *only* reason some functions had to be on `window`.
+// Replacing them with data-action makes the static markup
+// framework-agnostic and clarifies which window shims remain because of
+// legacy *dynamic* HTML (rendered by template strings) versus static.
+//
+// Each handler receives `(el, event)` where `el` is the closest element
+// carrying the `data-action` / `data-change` attribute (NOT necessarily
+// `event.target`, which can be a child).
+//
+// Convention for arguments:
+//   - Single-value actions read from a typed data-attribute named after
+//     the parameter (e.g. `data-tab="library"` for switchMainTab).
+//   - Some attributes (data-readfilter, data-pf) are reused because
+//     CSS / JS already query them for styling.
+
+const ACTIONS = {
+  // ─ Top toolbar
+  showAddWebsiteModal: () => showAddWebsiteModal(),
+  showSettingsModal: () => showSettingsModal(),
+  toggleMoreMenu: (el) => el.nextElementSibling.classList.toggle('open'),
+  // ─ "More" menu items (each closes the menu after running)
+  menuSaveToDisk: () => {
+    saveToDisk().catch((e) => alert('Save failed: ' + e.message));
+    closeMoreMenu();
+  },
+  menuDownloadDb: () => { window.SCQ.saveToFile(); closeMoreMenu(); },
+  menuExportJson: () => { exportJSON(); closeMoreMenu(); },
+  menuImportDb: () => {
+    document.getElementById('import-db-file').click();
+    closeMoreMenu();
+  },
+  menuMergeDb: () => {
+    document.getElementById('merge-db-file').click();
+    closeMoreMenu();
+  },
+  menuShowAnalytics: () => { showAnalytics(); closeMoreMenu(); },
+  menuExportCollectionPackage: () => {
+    exportCollectionPackage(window.activeCollection || 'all');
+    closeMoreMenu();
+  },
+  menuImportPackage: () => {
+    document.getElementById('import-package-file').click();
+    closeMoreMenu();
+  },
+  menuOpenBatchImport: () => { window.openBatchImport?.(); closeMoreMenu(); },
+  closeMoreMenu: () => closeMoreMenu(),
+  // ─ Suggestions banner
+  toggleSuggestions: () => toggleSuggestions(),
+  dismissAllSuggestions: (_el, e) => {
+    e.stopPropagation();
+    dismissAllSuggestions();
+  },
+  // ─ Tabs
+  switchMainTab: (el) => window.switchMainTab?.(el.dataset.tab),
+  // ─ Filters (active-state styling reads existing data-readfilter / data-pf)
+  setReadFilter: (el) => setReadFilter(el.dataset.readfilter),
+  setPriorityFilter: (el) => setPriorityFilter(el.dataset.pf),
+  // ─ Cite tab
+  citeSetFormat: (el) => window.citeSetFormat?.(el.dataset.fmt),
+  citeClearSelection: () => window.citeClearSelection?.(),
+  citeCopySelected: () => window.citeCopySelected?.(),
+  // ─ Graph tab
+  renderGraph: () => window.renderGraph?.(),
+  // ─ Inbox tab
+  inboxImportFile: () => window.inboxImportFile?.(),
+  inboxImportAll: () => window.inboxImportAll?.(),
+  inboxImportStarred: () => window.inboxImportStarred?.(),
+  inboxClear: () => window.inboxClear?.(),
+  // ─ Overlays — close only when the backdrop itself is clicked
+  closeSettingsModalIfBackdrop: (el, e) => {
+    if (e.target === el) closeSettingsModal();
+  },
+  closeAnalyticsIfBackdrop: (el, e) => {
+    if (e.target === el) closeAnalytics();
+  },
+  closeAnalytics: () => closeAnalytics(),
+  closeLightbox: () => closeLightbox(),
+  closePdfViewer: () => closePdfViewer(),
+  // ─ Batch import modal
+  closeBatchImport: () => window.closeBatchImport?.(),
+  pickBatchFiles: () => window.pickBatchFiles?.(),
+  pickBatchFolder: () => window.pickBatchFolder?.(),
+};
+
+const CHANGES = {
+  importFile: (_el, e) => importFile(e),
+  mergeFile: (_el, e) => mergeFile(e),
+  togglePdfSearch: (el) => togglePdfSearch(el.checked),
+  inboxFileSelected: (_el, e) => window.inboxFileSelected?.(e),
+  handleBatchFiles: (el) => window.handleBatchFiles?.(el.files),
+};
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const fn = ACTIONS[el.dataset.action];
+  if (fn) fn(el, e);
+});
+
+document.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-change]');
+  if (!el) return;
+  const fn = CHANGES[el.dataset.change];
+  if (fn) fn(el, e);
+});
+
 // ─── One-time DOM wiring ───
 // Features that need a global listener at boot install it here, idempotently.
 installMoreMenuOutsideClick();
