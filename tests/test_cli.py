@@ -347,3 +347,15 @@ def test_mendeley_lazy_import_doesnt_crash():
     assert hasattr(mod, "main")
     # bibtexparser should still be None at this point (lazy)
     assert mod.bibtexparser is None
+
+
+def test_extract_lazy_import_doesnt_crash():
+    """Regression for #13-audit B2: importing scq.ingest.extract should NOT
+    sys.exit(1) at module load when PyMuPDF/Pillow are missing — that used
+    to break unrelated CLI commands via the lazy-passthrough dispatch."""
+    import importlib
+    mod = importlib.import_module("scq.ingest.extract")
+    assert hasattr(mod, "main")
+    # The optional deps should still be None at this point (lazy)
+    assert mod.fitz is None
+    assert mod.Image is None

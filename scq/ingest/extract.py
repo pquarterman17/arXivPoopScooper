@@ -22,17 +22,33 @@ Output:
 import sys, os, json, re, subprocess
 from pathlib import Path
 
-try:
-    import fitz  # PyMuPDF
-except ImportError:
-    print("ERROR: PyMuPDF not installed. Run: pip install PyMuPDF --break-system-packages")
-    sys.exit(1)
+# fitz (PyMuPDF) and PIL (Pillow) are optional runtime deps — only needed when
+# actually extracting figures. Defer the import-time check to main() so just
+# `from scq.ingest import extract` doesn't sys.exit(1) when the optional deps
+# are missing. Same pattern as scq/ingest/mendeley.py — important because the
+# CLI lazy-imports modules and a hard sys.exit at module-load time would crash
+# unrelated `scq` commands.
+fitz = None  # type: ignore[assignment]
+Image = None  # type: ignore[assignment]
 
-try:
-    from PIL import Image
-except ImportError:
-    print("ERROR: Pillow not installed. Run: pip install Pillow --break-system-packages")
-    sys.exit(1)
+
+def _require_imaging():
+    """Resolve fitz + Pillow on first use; emit a friendly error + exit if missing."""
+    global fitz, Image
+    if fitz is not None and Image is not None:
+        return
+    try:
+        import fitz as _fitz
+    except ImportError:
+        print("ERROR: PyMuPDF not installed. Run: pip install PyMuPDF --break-system-packages")
+        sys.exit(1)
+    try:
+        from PIL import Image as _Image
+    except ImportError:
+        print("ERROR: Pillow not installed. Run: pip install Pillow --break-system-packages")
+        sys.exit(1)
+    fitz = _fitz
+    Image = _Image
 
 
 def extract_captions(doc):
@@ -211,6 +227,9 @@ def main():
     if not os.path.exists(pdf_path):
         print(f"ERROR: File not found: {pdf_path}")
         sys.exit(1)
+
+    # Resolve fitz + Pillow at the point of first real use, after arg checks.
+    _require_imaging()
 
     os.makedirs(out_dir, exist_ok=True)
 

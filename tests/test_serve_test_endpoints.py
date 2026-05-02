@@ -137,43 +137,47 @@ def test_db_path_returns_error_for_non_sqlite_file(running_server):
     assert payload["ok"] is False
 
 
-# ─── /api/test/smtp (SMTP_SSL monkeypatched) ───
+# ─── /api/test/smtp (serve._smtp_connect monkeypatched) ───
+#
+# We mock at `serve._smtp_connect` rather than at `smtplib.SMTP_SSL`/`smtplib.SMTP`
+# because the helper now branches on transport (SSL vs STARTTLS). Mocking the
+# stdlib classes individually creates a coupling between tests and our
+# branch logic; mocking the helper isolates one boundary.
 
 
 class _FakeSMTP:
-    """Stand-in for smtplib.SMTP_SSL that records calls and never opens a socket."""
-    def __init__(self, *, raise_on_login=None, recorder=None):
-        self._raise = raise_on_login
+    """Stand-in for an authenticated SMTP client. Records send calls."""
+    def __init__(self, *, raise_on_send=None, recorder=None):
+        self._raise = raise_on_send
         self._rec = recorder if recorder is not None else []
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a):
-        return False
-
-    def login(self, user, password):
-        self._rec.append(("login", user, password))
-        if self._raise:
-            raise self._raise
 
     def send_message(self, msg):
         self._rec.append(("send", msg["To"], msg["Subject"]))
+        if self._raise:
+            raise self._raise
+
+    def quit(self):
+        self._rec.append(("quit",))
 
 
-def _patch_smtp_ssl(monkeypatch, recorder=None, raise_on_login=None):
-    import smtplib
-    def factory(host, port, *a, **kw):
-        rec = recorder if recorder is not None else []
-        rec.append(("connect", host, port))
-        return _FakeSMTP(raise_on_login=raise_on_login, recorder=rec)
-    monkeypatch.setattr(smtplib, "SMTP_SSL", factory)
+def _patch_smtp_connect(monkeypatch, recorder=None, raise_on_login=None):
+    """Patch `serve._smtp_connect` to a function that records its args + returns
+    a fake SMTP client (or raises). Tests can introspect the recorder list to
+    verify host/port/use_tls/from_addr were correctly forwarded.
+    """
+    rec = recorder if recorder is not None else []
+    def fake_connect(host, port, use_tls, from_addr, app_password, *, timeout=10):
+        rec.append(("connect", host, port, use_tls, from_addr, app_password))
+        if raise_on_login is not None:
+            raise raise_on_login
+        return _FakeSMTP(recorder=rec)
+    monkeypatch.setattr(serve, "_smtp_connect", fake_connect)
+    return rec
 
 
 def test_smtp_ok_with_credentials(running_server, monkeypatch):
     port, _ = running_server
-    rec = []
-    _patch_smtp_ssl(monkeypatch, recorder=rec)
+    rec = _patch_smtp_connect(monkeypatch)
     monkeypatch.setenv("SCQ_EMAIL_FROM", "me@example.com")
     monkeypatch.setenv("SCQ_EMAIL_APP_PASSWORD", "pw1234")
 
@@ -182,11 +186,48 @@ def test_smtp_ok_with_credentials(running_server, monkeypatch):
     assert status == 200
     assert payload["ok"] is True, payload
     assert payload["from"] == "me@example.com"
+    # Defaults from the email schema: host=smtp.gmail.com, port=587, useTls=true
     assert payload["host"] == "smtp.gmail.com"
+    assert payload["port"] == 587
+    # Recorder: ("connect", host, port, use_tls, from_addr, app_password)
+    assert any(
+        c[0] == "connect" and c[1] == "smtp.gmail.com" and c[2] == 587
+        and c[3] is True and c[4] == "me@example.com" and c[5] == "pw1234"
+        for c in rec
+    )
+
+
+def test_smtp_uses_camelcase_keys_from_user_config(running_server, monkeypatch):
+    """Regression for #13-audit B1: handler must read camelCase keys
+    (smtpHost / smtpPort / fromAddress / useTls), not snake_case. Pre-fix,
+    every lookup returned None and silently fell through to gmail-on-465."""
+    port, root = running_server
+    monkeypatch.setenv("SCQ_EMAIL_APP_PASSWORD", "pw1234")
+    monkeypatch.delenv("SCQ_EMAIL_FROM", raising=False)
+    # User-config sets a non-default host + port. If the code was still reading
+    # snake_case it would silently pick smtp.gmail.com:465 and the assertions
+    # below would fail.
+    (root / "data" / "user_config" / "email.json").write_text(json.dumps({
+        "smtpHost": "smtp.fastmail.com",
+        "smtpPort": 465,
+        "useTls": False,
+        "fromAddress": "me@fastmail.com",
+    }), encoding="utf-8")
+    rec = _patch_smtp_connect(monkeypatch)
+
+    status, body = _post(port, "/api/test/smtp")
+    payload = json.loads(body)
+    assert status == 200, payload
+    assert payload["ok"] is True, payload
+    assert payload["host"] == "smtp.fastmail.com"
     assert payload["port"] == 465
-    # Recorder shows the handler dialed connect + login
-    assert ("connect", "smtp.gmail.com", 465) in rec
-    assert any(c[0] == "login" and c[1] == "me@example.com" for c in rec)
+    assert payload["from"] == "me@fastmail.com"
+    # Recorder confirms the handler forwarded the user's host/port/useTls verbatim
+    assert any(
+        c[0] == "connect" and c[1] == "smtp.fastmail.com" and c[2] == 465
+        and c[3] is False
+        for c in rec
+    ), f"connect call not in recorder: {rec}"
 
 
 def test_smtp_missing_password_returns_error(running_server, monkeypatch):
@@ -212,7 +253,7 @@ def test_smtp_missing_from_returns_error(running_server, monkeypatch):
     payload = json.loads(body)
     assert status == 200
     assert payload["ok"] is False
-    assert "from_address" in payload["error"]
+    assert "fromAddress" in payload["error"]
 
 
 def test_smtp_auth_failure_surfaces_error(running_server, monkeypatch):
@@ -221,13 +262,49 @@ def test_smtp_auth_failure_surfaces_error(running_server, monkeypatch):
     monkeypatch.setenv("SCQ_EMAIL_FROM", "me@example.com")
     monkeypatch.setenv("SCQ_EMAIL_APP_PASSWORD", "wrong")
     err = smtplib.SMTPAuthenticationError(535, b"5.7.8 Username and Password not accepted")
-    _patch_smtp_ssl(monkeypatch, raise_on_login=err)
+    _patch_smtp_connect(monkeypatch, raise_on_login=err)
 
     status, body = _post(port, "/api/test/smtp")
     payload = json.loads(body)
     assert status == 200
     assert payload["ok"] is False
     assert "535" in payload["error"]
+
+
+def test_smtp_helper_branches_on_port(monkeypatch):
+    """Regression for #13-audit B3: _smtp_connect uses SMTP_SSL on 465 and
+    SMTP+starttls on 587. Pre-fix, both endpoints hardcoded SMTP_SSL."""
+    import smtplib
+    calls = []
+    class _Stub:
+        def __init__(self, host, port, *a, **kw):
+            calls.append(("init", type(self).__name__, host, port))
+        def login(self, *a):
+            calls.append(("login",))
+        def starttls(self, *a, **kw):
+            calls.append(("starttls",))
+        def quit(self):
+            pass
+    class _StubSSL(_Stub): pass
+    monkeypatch.setattr(smtplib, "SMTP", _Stub)
+    monkeypatch.setattr(smtplib, "SMTP_SSL", _StubSSL)
+
+    # Port 465 → SMTP_SSL, no starttls
+    serve._smtp_connect("h", 465, True, "f", "p")
+    assert ("init", "_StubSSL", "h", 465) in calls
+    assert not any(c[0] == "starttls" for c in calls)
+
+    calls.clear()
+    # Port 587 + use_tls=True → SMTP + starttls
+    serve._smtp_connect("h", 587, True, "f", "p")
+    assert ("init", "_Stub", "h", 587) in calls
+    assert ("starttls",) in calls
+
+    calls.clear()
+    # Port 587 + use_tls=False → SMTP, no starttls
+    serve._smtp_connect("h", 587, False, "f", "p")
+    assert ("init", "_Stub", "h", 587) in calls
+    assert not any(c[0] == "starttls" for c in calls)
 
 
 # ─── /api/test/digest ───
@@ -250,8 +327,7 @@ def test_digest_sends_to_recipients_when_configured(running_server, monkeypatch)
     (root / "data" / "user_config" / "digest.json").write_text(
         json.dumps(digest_cfg), encoding="utf-8"
     )
-    rec = []
-    _patch_smtp_ssl(monkeypatch, recorder=rec)
+    rec = _patch_smtp_connect(monkeypatch)
 
     status, body = _post(port, "/api/test/digest")
     payload = json.loads(body)
@@ -259,7 +335,8 @@ def test_digest_sends_to_recipients_when_configured(running_server, monkeypatch)
     assert payload["ok"] is True, payload
     # Only alice@x.com (active + deduped); bob@x.com excluded because inactive
     assert payload["recipients"] == ["alice@x.com"]
-    # The fake SMTP recorded a connect → login → send sequence
+    # The fake recorded a connect call + a send call
+    assert any(c[0] == "connect" for c in rec)
     assert any(c[0] == "send" for c in rec)
 
 

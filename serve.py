@@ -138,6 +138,30 @@ def _load_digest_config():
         return {}
 
 
+def _smtp_connect(host, port, use_tls, from_addr, app_password, *, timeout=10):
+    """Open an authenticated SMTP connection, branching on transport.
+
+    - port 465 → ``smtplib.SMTP_SSL`` (implicit TLS).
+    - port 587 (the default the schema ships with) → ``smtplib.SMTP``
+      + ``starttls()`` if ``use_tls`` is true; plaintext otherwise.
+
+    Both `_handle_test_smtp` and `_handle_test_digest` route through
+    this helper so the SMTP transport choice can't drift between them
+    (#13 audit found they used to hardcode SMTP_SSL).
+    """
+    import smtplib
+    import ssl
+    ctx = ssl.create_default_context()
+    if port == 465:
+        smtp = smtplib.SMTP_SSL(host, port, timeout=timeout, context=ctx)
+    else:
+        smtp = smtplib.SMTP(host, port, timeout=timeout)
+        if use_tls:
+            smtp.starttls(context=ctx)
+    smtp.login(from_addr, app_password)
+    return smtp
+
+
 def _normalize_recipients(raw):
     """Accept either a list of strings or a list of {email, active?} dicts.
     Returns a flat list of active email strings, deduplicated, order preserved."""
@@ -209,7 +233,7 @@ def open_tabs(port, which):
 # This avoids CORS issues and lets us set a proper User-Agent header.
 
 ARXIV_API_BASE = "https://arxiv.org/api/query"
-ARXIV_USER_AGENT = "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)"
+ARXIV_USER_AGENT = "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)"
 
 class SCQHandler(http.server.SimpleHTTPRequestHandler):
     """Serves static files + proxies arXiv API requests."""
@@ -325,7 +349,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
         target = f"https://api.crossref.org/works/{urllib.parse.quote(doi)}"
         req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
             "Accept": "application/json",
         })
 
@@ -368,7 +392,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
         target = f"https://api.crossref.org/works?{qs}"
         req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
             "Accept": "application/json",
         })
 
@@ -627,21 +651,27 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_test_smtp(self):
-        import smtplib, ssl
+        import smtplib
         try:
             email_cfg, app_password = _load_email_config()
-            host = email_cfg.get("smtp_host") or "smtp.gmail.com"
-            port = int(email_cfg.get("smtp_port") or 465)
-            from_addr = email_cfg.get("from_address") or os.environ.get("SCQ_EMAIL_FROM", "")
+            # Schema keys are camelCase (smtpHost / smtpPort / fromAddress /
+            # useTls). #13-audit fixed snake_case lookups that always returned
+            # None and silently fell through to gmail-on-465.
+            host = email_cfg.get("smtpHost") or "smtp.gmail.com"
+            port = int(email_cfg.get("smtpPort") or 587)
+            use_tls = email_cfg.get("useTls", True)
+            from_addr = email_cfg.get("fromAddress") or os.environ.get("SCQ_EMAIL_FROM", "")
             if not from_addr:
-                self._json_response(200, {"ok": False, "error": "No from_address set (data/user_config/email.json or SCQ_EMAIL_FROM)."})
+                self._json_response(200, {"ok": False, "error": "No fromAddress set (data/user_config/email.json or SCQ_EMAIL_FROM)."})
                 return
             if not app_password:
                 self._json_response(200, {"ok": False, "error": "No SMTP app password — `scq config set-secret email_app_password` or set SCQ_EMAIL_APP_PASSWORD."})
                 return
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, port, timeout=10, context=ctx) as smtp:
-                smtp.login(from_addr, app_password)
+            smtp = _smtp_connect(host, port, use_tls, from_addr, app_password, timeout=10)
+            try:
+                pass  # connection + login already verified
+            finally:
+                smtp.quit()
             self._json_response(200, {
                 "ok": True,
                 "host": host,
@@ -654,15 +684,16 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_test_digest(self):
-        import smtplib, ssl
         from email.message import EmailMessage
         from datetime import datetime, timezone
         try:
             email_cfg, app_password = _load_email_config()
             digest_cfg = _load_digest_config()
-            host = email_cfg.get("smtp_host") or "smtp.gmail.com"
-            port = int(email_cfg.get("smtp_port") or 465)
-            from_addr = email_cfg.get("from_address") or os.environ.get("SCQ_EMAIL_FROM", "")
+            # Schema keys are camelCase; same fix as _handle_test_smtp.
+            host = email_cfg.get("smtpHost") or "smtp.gmail.com"
+            port = int(email_cfg.get("smtpPort") or 587)
+            use_tls = email_cfg.get("useTls", True)
+            from_addr = email_cfg.get("fromAddress") or os.environ.get("SCQ_EMAIL_FROM", "")
             recipients = _normalize_recipients(digest_cfg.get("recipients", []))
             if not from_addr or not app_password:
                 self._json_response(200, {"ok": False, "error": "Missing email credentials — see Email tab."})
@@ -682,10 +713,11 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 "If you got this, your SMTP credentials and recipient list are "
                 "wired up correctly.\n"
             )
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, port, timeout=15, context=ctx) as smtp:
-                smtp.login(from_addr, app_password)
+            smtp = _smtp_connect(host, port, use_tls, from_addr, app_password, timeout=15)
+            try:
                 smtp.send_message(msg)
+            finally:
+                smtp.quit()
 
             self._json_response(200, {
                 "ok": True,

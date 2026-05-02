@@ -138,7 +138,7 @@ def lookup_doi(doi):
 
         url = f"https://api.crossref.org/works/{doi}"
         req = urllib.request.Request(url, headers={
-            "User-Agent": "SCQDatabase/1.0 (https://github.com; mailto:paige.e.quarterman@gmail.com)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
             "Accept": "application/json",
         })
 
