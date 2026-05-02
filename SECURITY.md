@@ -24,7 +24,7 @@ This tool is designed to be run **locally on a single user's machine**:
 
 - The HTTP server (`serve.py`, soon `scq serve`) binds to `127.0.0.1`. It
   is not designed to be exposed to the network.
-- The SQLite DB lives in `data/scq_papers.db` on the user's filesystem.
+- The SQLite DB lives in `data/scientific_litter_scoop.db` on the user's filesystem.
 - arXiv API access goes through a local proxy that adds a User-Agent;
   responses are XML parsed via `DOMParser`.
 - No authentication / authorization layer — single user.

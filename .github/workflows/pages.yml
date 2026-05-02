@@ -48,7 +48,7 @@ jobs:
           cp scraper_config.js db_utils.js _site/
           cp -r src _site/
           mkdir -p _site/data
-          cp data/scq_papers.db _site/data/ 2>/dev/null || echo "no DB checked in (Pages demo will start empty)"
+          cp data/scientific_litter_scoop.db _site/data/ 2>/dev/null || echo "no DB checked in (Pages demo will start empty)"
           cp references.bib references.txt _site/ 2>/dev/null || true
 
           # Add a small banner so visitors know this is a read-only demo.

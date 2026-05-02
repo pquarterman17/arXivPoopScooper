@@ -52,7 +52,7 @@ pip install -e .
 scq init             # create a fresh local database
 ```
 
-The database lives at `data/scq_papers.db` by default. Override with
+The database lives at `data/scientific_litter_scoop.db` by default. Override with
 `SCQ_DB_PATH` or `data/user_config/paths.toml`.
 
 ### Launch
@@ -89,7 +89,7 @@ That's it. Reload the database page to see the paper.
 ```
 ScientificLitterScoop/
 ├── data/
-│   ├── scq_papers.db            # canonical SQLite database (gitignored)
+│   ├── scientific_litter_scoop.db            # canonical SQLite database (gitignored)
 │   ├── migrations/              # versioned schema (NNN_*.sql)
 │   └── user_config/             # user overrides (gitignored, .example committed)
 ├── src/                         # frontend ES modules (no build step)

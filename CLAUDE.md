@@ -1,8 +1,8 @@
 # ScientificLitterScoop — Claude Session Guide
 
-This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (`data/scq_papers.db`, served directly via HTTP and loaded into the browser by sql.js).
+This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (`data/scientific_litter_scoop.db`, served directly via HTTP and loaded into the browser by sql.js).
 
-> Naming note: the project lives at `github.com/pquarterman17/ScientificLitterScoop`. User-facing branding says "ScientificLitterScoop"; internal docs and code may still say "SCQ" since the *research domain* (superconducting quantum computing) is unchanged. The Python package is `scq`, the database is `scq_papers.db`, the env-var prefix is `SCQ_`. Don't rename those.
+> Naming note: the project lives at `github.com/pquarterman17/ScientificLitterScoop`. User-facing branding says "ScientificLitterScoop"; internal docs and code may still say "SCQ" since the *research domain* (superconducting quantum computing) is unchanged. The Python package is `scq` and the env-var prefix is `SCQ_` — don't rename those. The database file was renamed from `scq_papers.db` to `scientific_litter_scoop.db` in 2026-05-01 to match the public-facing project name.
 
 > **Refactor in progress (2026-04-28+):** the codebase is being decomposed
 > from two monolithic HTML files into layered ES modules under `src/` plus a
@@ -73,7 +73,7 @@ PROJECT_ROOT=$(find /sessions -name "scq_data.js" -path "*/mnt/*" 2>/dev/null | 
 5. Inserts into SQLite: paper entry, figures, FTS index, read status
 6. Appends to `references.bib` and `references.txt` (with duplicate detection)
 
-The DB at `data/scq_papers.db` is the canonical store; the browser fetches
+The DB at `data/scientific_litter_scoop.db` is the canonical store; the browser fetches
 it directly via HTTP and reads it with sql.js. There is no re-export step.
 
 ### Enriching a Paper
@@ -84,7 +84,7 @@ See the **enrich-paper** skill for full instructions. In short:
 2. Write a 2-3 sentence summary focused on what was done and why it matters
 3. Extract 3-5 key results as a JSON array of strings
 4. Identify the research group (e.g., "de Leon (Princeton)", "Ali (TU Delft)")
-5. Update the DB at `data/scq_papers.db` (no re-export step needed)
+5. Update the DB at `data/scientific_litter_scoop.db` (no re-export step needed)
 
 ## File Structure
 
@@ -106,7 +106,7 @@ ScientificLitterScoop/
 ├── references.bib           BibTeX citations (appended by process_paper.py)
 ├── references.txt           Plain-text citations (Physical Review style)
 ├── data/
-│   ├── scq_papers.db        Canonical SQLite database (served via HTTP)
+│   ├── scientific_litter_scoop.db    Canonical SQLite database (served via HTTP)
 │   ├── migrations/          Versioned schema (001_initial.sql, etc.)
 │   └── user_config/         User overrides (gitignored) + .example starters
 ├── src/                     New layered frontend (no build step, ES modules)
@@ -140,7 +140,9 @@ ScientificLitterScoop/
 ├── SECURITY.md              Vulnerability disclosure policy
 ├── CLAUDE.md                This file
 ├── FEATURES.md              Full feature documentation
-└── README.txt               Quick overview
+├── README.md                Quick overview
+├── CODE_OF_CONDUCT.md       Contributor Covenant 2.1
+└── pyproject.toml           Python package config
 ```
 
 ## Database Schema (key tables)
@@ -153,14 +155,14 @@ ScientificLitterScoop/
 - **settings** — key, value (JSON) — stores user preferences like sources/presets
 - **papers_fts** — FTS5 full-text search index over papers
 
-The DB is `data/scq_papers.db`, a regular SQLite file. To work with it from Python:
+The DB is `data/scientific_litter_scoop.db`, a regular SQLite file. To work with it from Python:
 
 ```python
 import sqlite3, glob
 
 # Find the repo root dynamically (sandbox or local)
-matches = glob.glob("/sessions/*/mnt/*/data/scq_papers.db")
-DB = matches[0] if matches else "data/scq_papers.db"
+matches = glob.glob("/sessions/*/mnt/*/data/scientific_litter_scoop.db")
+DB = matches[0] if matches else "data/scientific_litter_scoop.db"
 
 conn = sqlite3.connect(DB)
 conn.execute("PRAGMA foreign_keys = ON")

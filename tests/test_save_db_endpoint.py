@@ -57,7 +57,7 @@ def _block_browser_and_console_relaunch(monkeypatch):
 def running_server(tmp_path, monkeypatch):
     """Start ThreadingHTTPServer with the real SCQHandler, pointing at an
     isolated tmp_path DB. Yields (port, db_path). Tears down cleanly."""
-    db_path = tmp_path / "scq_papers.db"
+    db_path = tmp_path / "scientific_litter_scoop.db"
     monkeypatch.setattr(serve, "DB_PATH", db_path)
 
     port = _free_port()
@@ -111,7 +111,7 @@ def test_response_is_well_formed_json(running_server):
     payload = json.loads(body)
     assert payload["ok"] is True
     assert payload["bytes"] > 0
-    assert payload["path"].endswith("scq_papers.db")
+    assert payload["path"].endswith("scientific_litter_scoop.db")
     assert payload["savedAt"].endswith("Z")
 
 

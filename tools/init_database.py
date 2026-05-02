@@ -2,7 +2,7 @@
 """
 Initialize the SQLite database for the SCQ paper reference system.
 
-Creates scq_papers.db with:
+Creates scientific_litter_scoop.db with:
   - papers: core metadata (title, authors, summary, citations, etc.)
   - figures: per-paper figure references (file paths + captions)
   - notes: user notes with edit timestamps
@@ -26,7 +26,7 @@ import os
 import sys
 import argparse
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "scq_papers.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "scientific_litter_scoop.db")
 
 SCHEMA = """
 -- Core paper metadata

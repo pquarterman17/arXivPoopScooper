@@ -10,7 +10,7 @@
 # All paths are resolved relative to the repo root unless absolute.
 
 # Canonical SQLite database file.
-db_path = "data/scq_papers.db"
+db_path = "data/scientific_litter_scoop.db"
 
 # Where downloaded paper PDFs live. On Windows this is a directory
 # junction → "OneDrive\Work and School Research\SCQ Paper Library\papers".

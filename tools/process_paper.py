@@ -28,7 +28,7 @@ PROJECT_DIR = SCRIPT_DIR.parent
 INBOX_DIR = PROJECT_DIR / "inbox"
 PAPERS_DIR = PROJECT_DIR / "papers"
 FIGURES_DIR = PROJECT_DIR / "figures"
-DB_PATH = PROJECT_DIR / "data" / "scq_papers.db"
+DB_PATH = PROJECT_DIR / "data" / "scientific_litter_scoop.db"
 BIB_PATH = PROJECT_DIR / "references.bib"
 TXT_PATH = PROJECT_DIR / "references.txt"
 EXTRACT_SCRIPT = SCRIPT_DIR / "extract_figures.py"
@@ -241,7 +241,7 @@ def extract_figures(pdf_path, arxiv_id, prefix):
 # ─── Database operations ──────────────────────────────────────────
 
 def load_db():
-    """Open the canonical SQLite DB at data/scq_papers.db, applying migrations."""
+    """Open the canonical SQLite DB at data/scientific_litter_scoop.db, applying migrations."""
     from scq.db.migrations import apply_pending
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)

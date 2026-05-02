@@ -75,7 +75,7 @@ export function installClickToSave() {
     const el = document.getElementById(INDICATOR_ID);
     if (!el) return false;
     el.style.cursor = 'pointer';
-    el.title = (el.title || '') + '\n(click to save to data/scq_papers.db)';
+    el.title = (el.title || '') + '\n(click to save to data/scientific_litter_scoop.db)';
     el.addEventListener('click', async (ev) => {
       ev.preventDefault();
       try {

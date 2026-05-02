@@ -96,7 +96,7 @@ def test_paths_emits_json(capsys):
     payload = json.loads(out)
     assert "db_path" in payload
     assert "papers_dir" in payload
-    assert payload["db_path"].endswith("scq_papers.db")
+    assert payload["db_path"].endswith("scientific_litter_scoop.db")
 
 
 def test_has_secret_returns_0_when_set(monkeypatch):
@@ -124,7 +124,7 @@ def test_set_secret_without_keyring_returns_2(monkeypatch, capsys):
 
 
 def test_init_creates_fresh_db(tmp_path, capsys):
-    db = tmp_path / "scq_papers.db"
+    db = tmp_path / "scientific_litter_scoop.db"
     rc = main(["init", "--db-path", str(db)])
     out = capsys.readouterr().out
     assert rc == 0
@@ -144,7 +144,7 @@ def test_init_creates_fresh_db(tmp_path, capsys):
 
 
 def test_init_idempotent_on_empty_db(tmp_path, capsys):
-    db = tmp_path / "scq_papers.db"
+    db = tmp_path / "scientific_litter_scoop.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()  # discard
     rc = main(["init", "--db-path", str(db)])
@@ -154,7 +154,7 @@ def test_init_idempotent_on_empty_db(tmp_path, capsys):
 
 
 def test_init_refuses_when_papers_present(tmp_path, capsys):
-    db = tmp_path / "scq_papers.db"
+    db = tmp_path / "scientific_litter_scoop.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()
     # Insert a paper row to simulate real user data.
@@ -182,7 +182,7 @@ def test_init_refuses_when_papers_present(tmp_path, capsys):
 
 
 def test_init_force_overwrites_populated_db(tmp_path, capsys):
-    db = tmp_path / "scq_papers.db"
+    db = tmp_path / "scientific_litter_scoop.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()
     import sqlite3
@@ -208,7 +208,7 @@ def test_init_force_overwrites_populated_db(tmp_path, capsys):
 
 
 def test_init_creates_parent_directory(tmp_path, capsys):
-    db = tmp_path / "nested" / "subdir" / "scq_papers.db"
+    db = tmp_path / "nested" / "subdir" / "scientific_litter_scoop.db"
     rc = main(["init", "--db-path", str(db)])
     capsys.readouterr()
     assert rc == 0

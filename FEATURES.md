@@ -113,7 +113,7 @@ ScientificLitterScoop/
 
 ### State Durability
 
-- All state stored in SQLite database (`scq_data.js` as base64, `scq_papers.db` as raw file)
+- All state stored in SQLite database (`scq_data.js` as base64, `scientific_litter_scoop.db` as raw file)
 - **Save database** button downloads the `.db` file
 - **Export JSON** button downloads full state as JSON backup
 - **Import** button restores from `.db` or `.json` file
@@ -241,7 +241,7 @@ The primary workflow for adding papers from arXiv. Two-step process: fetch (host
 
 **`tools/init_database.py`** — SQLite database initializer and migration tool
 
-- Creates `scq_papers.db` with full schema (papers, figures, notes, highlights, collections, links, FTS5)
+- Creates `scientific_litter_scoop.db` with full schema (papers, figures, notes, highlights, collections, links, FTS5)
 - `--migrate` mode: extracts data from `paper_database.html` PAPERS array + `notes.json` + `search_index.json` into the database
 - `--stats` mode: prints table counts and index statistics
 - Backs up existing `.db` file before overwriting
@@ -291,9 +291,9 @@ Keyword dictionary (18+ domain terms) for auto-suggesting tags when papers are a
 
 ### ~~Longer-term~~ SQLite backend (implemented)
 
-- ~~**SQLite backend via sql.js (WebAssembly)**~~ — All paper data, notes, highlights, collections, links, and read status stored in `scq_papers.db`. No more localStorage limits. Database loaded in browser via sql.js WASM (~1MB). "Save database" button downloads the full `.db` file. JSON export still available for backup/migration.
+- ~~**SQLite backend via sql.js (WebAssembly)**~~ — All paper data, notes, highlights, collections, links, and read status stored in `scientific_litter_scoop.db`. No more localStorage limits. Database loaded in browser via sql.js WASM (~1MB). "Save database" button downloads the full `.db` file. JSON export still available for backup/migration.
 - ~~**FTS5 full-text search**~~ — Paper metadata and PDF text indexed in SQLite FTS5 virtual tables with Porter stemming. Replaces the separate `search_index.json` file.
-- ~~**Data separated from presentation**~~ — Paper data no longer hardcoded in HTML files. All pages load from the shared `scq_papers.db` via `db_utils.js`. Adding papers only requires updating the database, not editing HTML.
+- ~~**Data separated from presentation**~~ — Paper data no longer hardcoded in HTML files. All pages load from the shared `scientific_litter_scoop.db` via `db_utils.js`. Adding papers only requires updating the database, not editing HTML.
 - ~~**Migration tooling**~~ — `tools/init_database.py --migrate` converts the old HTML PAPERS array + notes.json into the new SQLite database. Backs up existing `.db` before overwriting.
 
 ### ~~Web scraper~~ (implemented)

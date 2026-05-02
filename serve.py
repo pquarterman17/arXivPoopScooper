@@ -38,7 +38,7 @@ try:
     from scq.config.paths import paths as _scq_paths
     DB_PATH = _scq_paths().db_path
 except Exception:  # noqa: BLE001
-    DB_PATH = (Path(__file__).resolve().parent / "data" / "scq_papers.db").resolve()
+    DB_PATH = (Path(__file__).resolve().parent / "data" / "scientific_litter_scoop.db").resolve()
 
 # Cap on save-db payload size — defends against a runaway upload. SCQ paper
 # databases are typically <50 MB even for very large libraries; 200 MB is
@@ -292,7 +292,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(error_msg.encode())
 
     def _handle_save_db(self):
-        """Persist the in-memory sql.js DB back to data/scq_papers.db.
+        """Persist the in-memory sql.js DB back to data/scientific_litter_scoop.db.
 
         The browser POSTs the raw bytes of `db.export()`. We:
           1. Cap the size (defends against runaway uploads)

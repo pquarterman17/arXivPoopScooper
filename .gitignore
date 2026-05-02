@@ -1,6 +1,13 @@
 # PDFs (large binaries — keep locally, don't track in git)
 papers/*.pdf
 
+# Per-paper figures and arXiv-fetch staging — both are junctions on
+# Windows pointing into OneDrive\SCQ Paper Library. Treat the entire
+# trees as user-private data; they were removed from tracking in
+# `aba37e5` (2026-04-30).
+figures/
+inbox/
+
 # SQLite temp files
 *.db-journal
 *.db-wal
@@ -10,6 +17,8 @@ papers/*.pdf
 # Canonical paper database — user-private. Bootstrap a fresh DB with
 # `scq init` (plan #2 / #13). Path is configurable via SCQ_DB_PATH or
 # data/user_config/paths.toml.
+data/scientific_litter_scoop.db
+# Pre-rename name kept ignored during transition (renamed 2026-05-01).
 data/scq_papers.db
 
 # OS files
