@@ -344,3 +344,16 @@ def test_scq_digest_subcommand_dispatches(monkeypatch):
     rc = cli_main(["digest", "--test", "--no-email", "--days", "5"])
     assert rc == 0
     assert received[0] == ["--test", "--no-email", "--days", "5"]
+
+
+# ─── digest: --max-papers rejects zero/negative ───
+
+
+def test_max_papers_zero_rejected():
+    with pytest.raises(SystemExit):
+        digest_mod.main(["--test", "--no-email", "--max-papers", "0"])
+
+
+def test_max_papers_negative_rejected():
+    with pytest.raises(SystemExit):
+        digest_mod.main(["--test", "--no-email", "--max-papers", "-1"])

@@ -76,20 +76,23 @@ const EXPECTED_BRIDGE_KEYS = [
 
 /** Extract identifiers from the BRIDGE = {...} block by simple regex. */
 function extractBridgeKeys(src) {
-  const start = src.indexOf('const BRIDGE = {');
+  // Strip block comments before walking braces — a `/* } */` inside the
+  // BRIDGE body would throw off the depth counter.
+  const cleaned = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  const start = cleaned.indexOf('const BRIDGE = {');
   if (start < 0) throw new Error('BRIDGE declaration not found');
   // Walk to the matching close brace by counting depth.
   let depth = 0;
   let end = -1;
-  for (let i = start; i < src.length; i++) {
-    if (src[i] === '{') depth++;
-    else if (src[i] === '}') {
+  for (let i = start; i < cleaned.length; i++) {
+    if (cleaned[i] === '{') depth++;
+    else if (cleaned[i] === '}') {
       depth--;
       if (depth === 0) { end = i; break; }
     }
   }
   if (end < 0) throw new Error('BRIDGE close brace not found');
-  const body = src.slice(start, end);
+  const body = cleaned.slice(start, end);
   const keys = [];
   // Strip comments line-by-line, then split the joined body on commas
   // so multi-shorthand-per-line entries (e.g. `a, b, c,`) all count.
@@ -136,5 +139,17 @@ describe('database page BRIDGE — frozen list', () => {
   it('publishes via Object.assign + a debug handle', () => {
     expect(mainSrc).toMatch(/Object\.assign\s*\(\s*window\s*,\s*BRIDGE\s*\)/);
     expect(mainSrc).toMatch(/__SCQ_DATABASE_BRIDGE__/);
+  });
+
+  it('extractBridgeKeys survives block comments containing braces', () => {
+    const synthetic = [
+      'const BRIDGE = {',
+      '  /* toggle } visibility */',
+      '  alpha,',
+      '  beta: someFn,',
+      '};',
+    ].join('\n');
+    const keys = extractBridgeKeys(synthetic);
+    expect(keys).toEqual(['alpha', 'beta']);
   });
 });

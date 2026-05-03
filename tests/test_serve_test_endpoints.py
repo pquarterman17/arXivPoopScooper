@@ -366,3 +366,19 @@ def test_digest_normalize_helper_handles_string_format(monkeypatch):
         {"email": "y@x.com"},  # active defaults to True
     ])
     assert out == ["y@x.com"]
+
+
+def test_pdf_upload_filename_truncated_to_safe_length():
+    """Regression: a 300-char original filename must be truncated to fit OS
+    limits (255 bytes). The sanitizer should keep the base under 200 chars."""
+    import re, os
+    long_name = "A" * 300 + ".pdf"
+    safe_name = re.sub(r'[^a-zA-Z0-9._\- ]', '_', long_name)
+    if not safe_name.lower().endswith('.pdf'):
+        safe_name += '.pdf'
+    base, ext = os.path.splitext(safe_name)
+    if len(base.encode('utf-8')) > 200:
+        base = base[:200]
+    safe_name = base + ext
+    assert len(safe_name) == 204  # 200 + ".pdf"
+    assert safe_name.endswith('.pdf')

@@ -948,6 +948,10 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             safe_name = re.sub(r'[^a-zA-Z0-9._\- ]', '_', original_filename)
             if not safe_name.lower().endswith('.pdf'):
                 safe_name += '.pdf'
+            base, ext = os.path.splitext(safe_name)
+            if len(base.encode('utf-8')) > 200:
+                base = base[:200]
+            safe_name = base + ext
 
             # Ensure papers directory exists (resolved via paths()).
             papers_dir = _scq_paths().papers_dir

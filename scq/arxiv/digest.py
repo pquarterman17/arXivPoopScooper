@@ -181,6 +181,13 @@ def compute_effective_days_back(days_back):
 
 # ─── Main ───
 
+def _positive_int(value):
+    n = int(value)
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {n}")
+    return n
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="SCQ arXiv Daily Digest")
     # Config-backed flags use sentinel `None` so we can distinguish "not
@@ -190,7 +197,7 @@ def main(argv=None):
     parser.add_argument("--no-email", action="store_true", help="Skip email, generate HTML only")
     parser.add_argument("--test", action="store_true", help="Use mock data (no network)")
     parser.add_argument("--max-results", type=int, default=500, help="Max papers per category at fetch time")
-    parser.add_argument("--max-papers", type=int, default=None,
+    parser.add_argument("--max-papers", type=_positive_int, default=None,
                         help="Cap on papers in the digest after ranking. Defaults to digest.maxPapers.")
     parser.add_argument("--min-score", type=int, default=None,
                         help="Drop papers below this relevance score. Defaults to digest.minRelevanceScore.")
