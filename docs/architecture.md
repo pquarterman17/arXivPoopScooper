@@ -59,6 +59,12 @@ In practice the legacy boot blocks still mutate global state via `globalThis.<na
 - **shared vectors** in `tests/vectors/` are JSON fixtures that both vitest and pytest consume — see `tests/vectors/README.md`. Adding a vector adds a parametrized case to both suites automatically; this catches JS/Python parity bugs.
 - **e2e smoke** (`.github/workflows/test.yml` → `e2e-smoke` job) spins up `scq serve` and hits a representative slice of endpoints. Catches regressions the unit tests can't see (proxy, no-cache headers, chdir-to-repo-root).
 
+## Dev harness
+
+`dev.html` at the repo root is a Storybook-style harness for iterating on UI modules against fixture state. Visit `http://localhost:8080/dev.html` after `python -m scq serve`. Stories live in `src/dev/stories/*.js`; each is `{id, title, description, render(stage, setState)}`. The active story is in `location.hash` so reloading keeps you put.
+
+Currently focused on the `schema-form` renderer (the most-shapeful UI we have). Add stories for any UI module that's awkward to test inline in the full page.
+
 ## Where the boundary cracks show
 
 A few load-bearing seams are documented separately:
