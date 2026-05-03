@@ -12,6 +12,15 @@ This is a scientific literature management system for superconducting quantum co
 > #8 / #9 land — don't extend them with new features. Add new functionality
 > to `src/services/*` (DOM-free) or `src/ui/*` (DOM-coupled) instead.
 
+## Architecture Documentation
+
+Deep-dive docs live in `docs/`. Read these before extending subsystems you haven't touched before:
+
+- [`docs/architecture.md`](docs/architecture.md) — the layered structure (`core/` / `services/` / `ui/` / `scq/`) and the three rules that keep a future Vue 3 port viable.
+- [`docs/configuration.md`](docs/configuration.md) — the four-layer config model, `x-mergeKey` semantics, the JS/Python parity story.
+- [`docs/adding-a-search-source.md`](docs/adding-a-search-source.md) — step-by-step for new journals.
+- [`docs/adding-a-config-key.md`](docs/adding-a-config-key.md) — schema → defaults → loader → JS service → Python loader → Settings UI.
+
 ## Custom Skills
 
 Four project-specific skills are available in `.claude/skills/`. Use them instead of working from scratch:
