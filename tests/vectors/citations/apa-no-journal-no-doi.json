@@ -1,0 +1,12 @@
+{
+  "name": "APA: paper with no journal, no DOI, not arXiv (e.g. local note)",
+  "paper": {
+    "id": "note-1",
+    "title": "A note",
+    "authors": "A. Dev",
+    "shortAuthors": "Dev",
+    "year": 2024
+  },
+  "style": "apa",
+  "expectedTxt": "A. Dev (2024). A note."
+}

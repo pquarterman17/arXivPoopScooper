@@ -1,0 +1,15 @@
+{
+  "name": "APA: arXiv preprint, no journal, no DOI",
+  "paper": {
+    "id": "2403.99999",
+    "arxivId": "2403.99999",
+    "title": "A solo paper",
+    "authors": "Anna Adams",
+    "shortAuthors": "Adams",
+    "year": 2024,
+    "source": "arxiv",
+    "url": "https://arxiv.org/abs/2403.99999"
+  },
+  "style": "apa",
+  "expectedTxt": "Anna Adams (2024). A solo paper. arXiv:2403.99999."
+}

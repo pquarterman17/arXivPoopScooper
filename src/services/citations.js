@@ -112,10 +112,19 @@ function _formatAPA(paper, config) {
   const includeDoi = config.includeDoi !== false;
   const authors = paper.authors || '';
   let cite = `${authors} (${year}). ${paper.title || ''}.`;
-  if (paper.journal) cite += ` ${paper.journal}`;
-  if (paper.volume) cite += `, ${paper.volume}`;
-  if (paper.pages) cite += `, ${paper.pages}`;
-  cite += '.';
+  // Journal-published path: journal[, volume[, pages]] + sentence-final period.
+  // Only emit the trailing period when at least the journal is present —
+  // otherwise the always-`cite += '.'` produced "<title>.." for arXiv-only
+  // citations (one of the two #24 formatter bugs).
+  if (paper.journal) {
+    cite += ` ${paper.journal}`;
+    if (paper.volume) cite += `, ${paper.volume}`;
+    if (paper.pages) cite += `, ${paper.pages}`;
+    cite += '.';
+  } else if (paper.source === 'arxiv' || paper.arxivId || paper.arxiv_id) {
+    const aid = paper.arxivId || paper.arxiv_id || paper.id;
+    cite += ` arXiv:${aid}.`;
+  }
   if (includeDoi && paper.doi) cite += ` https://doi.org/${paper.doi}`;
   return cite;
 }
@@ -124,10 +133,20 @@ function _formatIEEE(paper, config) {
   const year = paper.year || new Date().getFullYear();
   const includeDoi = config.includeDoi !== false;
   let cite = `${paper.authors || ''}, "${paper.title || ''},"`;
-  if (paper.journal) cite += ` ${paper.journal}`;
-  if (paper.volume) cite += `, vol. ${paper.volume}`;
-  if (paper.pages) cite += `, pp. ${paper.pages}`;
-  cite += `, ${year}`;
+  if (paper.journal) {
+    cite += ` ${paper.journal}`;
+    if (paper.volume) cite += `, vol. ${paper.volume}`;
+    if (paper.pages) cite += `, pp. ${paper.pages}`;
+    cite += `, ${year}`;
+  } else if (paper.source === 'arxiv' || paper.arxivId || paper.arxiv_id) {
+    // Without a journal, the legacy code produced "...,\" , 2024." (the
+    // ',", ' substring listed in #24). Mirror PRL's arXiv path so the
+    // year sits naturally next to the arXiv id.
+    const aid = paper.arxivId || paper.arxiv_id || paper.id;
+    cite += ` arXiv:${aid}, ${year}`;
+  } else {
+    cite += ` ${year}`;
+  }
   if (includeDoi && paper.doi) cite += `. doi: ${paper.doi}`;
   cite += '.';
   return cite;
