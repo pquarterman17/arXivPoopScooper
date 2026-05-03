@@ -172,10 +172,10 @@ def compute_effective_days_back(days_back):
     note = ""
     if weekday == 0:  # Monday
         days_back = max(days_back, 4)
-        note = f"Monday — extending lookback to {days_back} days to cover Fri+Sat+Sun"
+        note = f"Monday - extending lookback to {days_back} days to cover Fri+Sat+Sun"
     elif weekday == 6:  # Sunday
         days_back = max(days_back, 3)
-        note = f"Sunday — extending lookback to {days_back} days"
+        note = f"Sunday - extending lookback to {days_back} days"
     return days_back, note
 
 
@@ -230,10 +230,10 @@ def main(argv=None):
     if args.smart_weekend:
         days_back, note = compute_effective_days_back(days_back)
         if note:
-            print(f"  ⚠  {note}")
+            print(f"  [!] {note}")
 
     digest_date = datetime.now().strftime("%Y-%m-%d")
-    print(f"SCQ arXiv Digest — {digest_date}")
+    print(f"SCQ arXiv Digest - {digest_date}")
     print(f"  Categories: {', '.join(categories)}")
     print(f"  Looking back: {days_back} day(s)")
     if max_papers:
@@ -254,7 +254,7 @@ def main(argv=None):
         )
 
     if not papers:
-        print("\nNo new papers found — sending empty digest so the run is visible.")
+        print("\nNo new papers found - sending empty digest so the run is visible.")
         papers = []
     else:
         print(f"\nRanking {len(papers)} papers...")
