@@ -13,6 +13,45 @@ There are *four* kinds of "config" in this app, each with its own home and editi
 
 Why split this way: bootstrap config can't depend on the DB (chicken-and-egg). Domain config benefits from being a plain file the user can version-control, share between machines, or back up. Session prefs are too noisy to commit and naturally belong with the DB they refer to. Secrets need OS-level protection.
 
+## Domain config vs. user reference data
+
+The four-layer table above frames everything in `data/user_config/` as
+"domain config" (settings). Two of the nine shipped domains —
+`auto-tag-rules.json` and `watchlist.json` — don't really fit that
+framing. They aren't *settings* (host, port, theme, cadence). They're
+**curated reference data**: tag → keyword lookups, author/group
+watchlists, future-likely things like ORCID → short-name mappings or
+known-bad-DOI deny lists.
+
+Why they live alongside the settings domains today: the schema-driven
+loader is the only mechanism we have for "user-editable JSON files
+validated against a schema." When `auto-tag-rules.json` was first
+needed, it was easier to add a ninth domain than to introduce a second
+storage tier. Same story for `watchlist.json`.
+
+When does this become a problem? When a third reference-data file
+shows up — at that point we'd have:
+
+  - 7 true settings domains (digest, citations, ui, ingest, email,
+    privacy, search-sources, paths)
+  - 3+ reference-data files in the same directory (auto-tag-rules,
+    watchlist, …)
+  - "user_config" as a name no longer accurately describing the
+    contents
+
+That's the trigger. Likely fix at that point:
+
+  - Move reference data to `data/user_data/` (sibling of `user_config/`)
+  - Or store it in the SQLite DB (alongside `notes`, `read_status`,
+    `collections`) since most reference data is naturally tabular
+  - Or build a tag-management UI that mediates the auto-tag rules
+    instead of expecting hand-edits — at which point the JSON file
+    becomes an export format, not the canonical store
+
+Don't act on this yet. The current shape works. But when you find
+yourself adding `data/user_config/orcid_aliases.json` because the
+loader is convenient, that's the moment to revisit.
+
 ## The 9 domains
 
 Domain configs live at `src/config/defaults/<domain>.json` (shipped) and optionally `data/user_config/<domain>.json` (user override). The loader merges defaults + override; missing user files just mean "use defaults."
