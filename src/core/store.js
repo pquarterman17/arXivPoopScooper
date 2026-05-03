@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tiny observable store with a Pinia-shaped API.
  *

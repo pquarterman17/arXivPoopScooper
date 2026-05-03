@@ -1,7 +1,8 @@
+// @ts-check
 /**
  * Bridges the new config loader (`getConfig('search-sources')`) to the
  * legacy `SCRAPER_CONFIG` global that the boot blocks of paper_database.html
- * and paper_scraper.html — plus every extracted scraper module — still read
+ * and paper_scraper.html - plus every extracted scraper module — still read
  * from. Closes plan #9's last bullet ("all sources / categories / presets
  * reads come from getConfig").
  *
@@ -17,7 +18,7 @@
  * After this runs, `data/user_config/search-sources.json` overrides flow
  * through the standard loader path. The legacy boot-block helper
  * `_applySettingsToConfig()` (which copied DB-saved sources/presets onto
- * SCRAPER_CONFIG) is now redundant — Settings v2 writes user_config files
+ * SCRAPER_CONFIG) is now redundant - Settings v2 writes user_config files
  * directly via POST /api/config/search-sources.
  */
 
@@ -25,12 +26,12 @@ import { initConfig, getConfig } from './config.js';
 
 /**
  * Apply the merged search-sources config to globalThis.SCRAPER_CONFIG.
- * Pure function (sync) — call after initConfig() resolves.
+ * Pure function (sync) - call after initConfig() resolves.
  *
  * Exported for tests; production callers should use bootstrapSearchConfig().
  *
- * @param {object} target  — usually globalThis.SCRAPER_CONFIG
- * @param {object} merged  — value from getConfig('search-sources')
+ * @param {object} target  - usually globalThis.SCRAPER_CONFIG
+ * @param {object} merged  - value from getConfig('search-sources')
  */
 export function applySearchConfig(target, merged) {
   if (!target || !merged) return;
@@ -60,17 +61,16 @@ export function applySearchConfig(target, merged) {
 
 /**
  * Initialize the config loader and bridge merged search-sources values onto
- * globalThis.SCRAPER_CONFIG. On failure, leaves SCRAPER_CONFIG untouched —
- * the static defaults from scraper_config.js remain in effect.
+ * globalThis.SCRAPER_CONFIG. On failure, leaves SCRAPER_CONFIG untouched -  * the static defaults from scraper_config.js remain in effect.
  *
  * Idempotent at call-time (re-runs initConfig + re-applies, which just
- * redoes the fetch + write — fine for the single-user local app).
+ * redoes the fetch + write - fine for the single-user local app).
  *
- * @param {function[]} [onReady]  — callbacks fired after the bridge applies,
+ * @param {function[]} [onReady]  - callbacks fired after the bridge applies,
  *                                  useful for re-rendering UI that was drawn
  *                                  against the static defaults before the
  *                                  fetch resolved
- * @param {object}     [opts]     — forwarded to initConfig (loader options:
+ * @param {object}     [opts]     - forwarded to initConfig (loader options:
  *                                  fetch, defaultsBase, overridesBase,
  *                                  schemaBase). Tests inject these; production
  *                                  callers omit them and use the loader's

@@ -9,7 +9,7 @@
  *   5. validates the merged result against the schema
  *   6. returns { data, source, errors }
  *
- * Validation uses a minimal in-house JSON Schema checker — it covers exactly
+ * Validation uses a minimal in-house JSON Schema checker - it covers exactly
  * the Draft 2020-12 features used by our schemas (type, properties, required,
  * enum, pattern, min/max, items, uniqueItems, additionalProperties, format=email,
  * anyOf, const). If we ever need $ref, oneOf, allOf, etc., swap for ajv at the
@@ -37,12 +37,12 @@ const DEFAULT_SCHEMA_BASE = '/src/config/schema/';
 /**
  * Load and validate one config domain.
  *
- * @param {string} domain  — one of MANIFEST
+ * @param {string} domain  - one of MANIFEST
  * @param {object} [opts]
- * @param {function} [opts.fetch]          — fetch impl (default: globalThis.fetch)
- * @param {string}   [opts.defaultsBase]   — URL prefix for defaults files
- * @param {string}   [opts.overridesBase]  — URL prefix for user_config files
- * @param {string}   [opts.schemaBase]     — URL prefix for schema files
+ * @param {function} [opts.fetch]          - fetch impl (default: globalThis.fetch)
+ * @param {string}   [opts.defaultsBase]   - URL prefix for defaults files
+ * @param {string}   [opts.overridesBase]  - URL prefix for user_config files
+ * @param {string}   [opts.schemaBase]     - URL prefix for schema files
  * @returns {Promise<{ data: object, source: 'defaults'|'merged', errors: string[] }>}
  */
 export async function loadConfig(domain, opts = {}) {
@@ -83,7 +83,7 @@ export async function loadAll(opts = {}) {
 
 /**
  * Recursive merge. Plain objects are merged key-by-key; arrays and scalars
- * in `b` replace whatever was in `a`. Returns a new object — `a` and `b`
+ * in `b` replace whatever was in `a`. Returns a new object - `a` and `b`
  * are not mutated.
  */
 export function deepMerge(a, b) {

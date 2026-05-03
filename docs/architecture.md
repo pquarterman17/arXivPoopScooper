@@ -52,6 +52,14 @@ In practice the legacy boot blocks still mutate global state via `globalThis.<na
 - **`scraper_config.js`** is shipping defaults plus a few legacy fields the JS apps still read directly (`entryTypes`, `tags` for the auto-tagger). It's not a layer — it's a static input that the loader merges with user_config. Don't add new logic to it.
 - **`db_utils.js`** is the legacy IIFE that wraps sql.js. New code should import from `src/core/db.js` instead. The IIFE stays around because the boot blocks and `services/database-merge.js` still rely on it.
 
+## TypeScript checking via JSDoc
+
+The repo has no build step but runs `tsc --noEmit` over a curated set of files in CI. Files opt in by putting `// @ts-check` on the first line; their JSDoc `@param` / `@returns` annotations get full TypeScript-grade checking.
+
+Currently checked: `src/core/**/*.js` and `src/dev/**/*.js`. Add `// @ts-check` to a file and update the `include` glob in `tsconfig.json` to extend coverage. JSDoc convention: ASCII hyphen (`-`) before descriptions, never em-dash (`—`) — TS's parser rejects em-dashes after parameter names with a TS1127.
+
+Local: `npm run typecheck`. CI: runs as a step in the `vitest (frontend)` job.
+
 ## Testing topology
 
 - **vitest** under jsdom drives `src/core/`, `src/services/`, and (where they're testable) `src/ui/`. Tests live in `src/tests/` mirroring the source layout.

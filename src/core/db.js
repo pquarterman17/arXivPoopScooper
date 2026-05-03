@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Low-level sql.js layer (ES module).
  *
@@ -12,7 +13,7 @@
  * Persistence model:
  *  - The canonical DB file is `data/scientific_litter_scoop.db`, served by serve.py and
  *    rewritten by the Python tools in `scq/`.
- *  - In the browser the DB is loaded into memory via sql.js — writes here
+ *  - In the browser the DB is loaded into memory via sql.js - writes here
  *    are cache-only (localStorage) until the Settings UI (plan item #11)
  *    adds a write-back endpoint.
  *  - `exportBytes()` returns the raw Uint8Array for any layer that needs to
@@ -39,11 +40,11 @@ let _cacheTimer = null;
  * Initialize sql.js and load the database.
  *
  * @param {object} [opts]
- * @param {function} [opts.initSqlJs] — sql.js loader. Defaults to globalThis.initSqlJs.
- * @param {string}   [opts.dbPath]    — relative path to the .db file. Defaults to 'data/scientific_litter_scoop.db'.
- * @param {string}   [opts.wasmBaseUrl] — where sql.js can fetch the .wasm. Defaults to a CDN.
- * @param {function} [opts.fetch]     — fetch impl, defaults to globalThis.fetch.
- * @param {object}   [opts.storage]   — localStorage-shaped object for cache; default is globalThis.localStorage.
+ * @param {function} [opts.initSqlJs] - sql.js loader. Defaults to globalThis.initSqlJs.
+ * @param {string}   [opts.dbPath]    - relative path to the .db file. Defaults to 'data/scientific_litter_scoop.db'.
+ * @param {string}   [opts.wasmBaseUrl] - where sql.js can fetch the .wasm. Defaults to a CDN.
+ * @param {function} [opts.fetch]     - fetch impl, defaults to globalThis.fetch.
+ * @param {object}   [opts.storage]   - localStorage-shaped object for cache; default is globalThis.localStorage.
  * @returns {Promise<object>} the underlying sql.js Database
  */
 export async function init(opts = {}) {

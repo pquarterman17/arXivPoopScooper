@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Runtime config API — the read side of the configuration system.
  *

@@ -31,6 +31,9 @@ jobs:
       - name: Run vitest suite
         run: npm test
 
+      - name: Typecheck (tsc --noEmit on @ts-check files, plan #17)
+        run: npm run typecheck
+
   pytest:
     name: pytest (scq)
     runs-on: ubuntu-latest

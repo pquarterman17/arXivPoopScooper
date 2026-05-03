@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Tiny pub/sub bus. Use for cross-module messages that don't fit the store
  * (e.g. "config:search:changed", "paper:imported").

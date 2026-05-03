@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Dev harness entry (plan #20). A single-page Storybook-style runner
  * for iterating on UI modules against fixture state without booting the
@@ -40,8 +41,11 @@ function activateFromHash() {
   if (!id) return;
   const story = stories.find((s) => s.id === id);
   if (!story) return;
-  // Active button highlight
-  for (const btn of document.querySelectorAll('aside button')) {
+  // Active button highlight. querySelectorAll over `button` returns
+  // HTMLButtonElement (which has dataset); annotate the cast for tsc.
+  for (const btn of /** @type {NodeListOf<HTMLButtonElement>} */ (
+    document.querySelectorAll('aside button')
+  )) {
     btn.classList.toggle('active', btn.dataset.id === id);
   }
   document.getElementById('story-title').textContent = story.title;
