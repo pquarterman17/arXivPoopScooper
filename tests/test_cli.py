@@ -113,7 +113,8 @@ def test_get_extracts_a_key(capsys):
     rc = main(["config", "get", "digest", "maxPapers"])
     out = capsys.readouterr().out
     assert rc == 0
-    assert json.loads(out) >= 1  # the default is 25
+    val = json.loads(out)
+    assert val is None or val >= 1  # null = no cap, or positive int
 
 
 def test_get_nested_key(capsys):

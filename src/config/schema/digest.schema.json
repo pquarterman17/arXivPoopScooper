@@ -23,10 +23,10 @@
       "description": "HH:MM in 24-hour UTC."
     },
     "maxPapers": {
-      "type": "integer",
+      "type": ["integer", "null"],
       "minimum": 1,
       "maximum": 200,
-      "description": "Cap on how many papers appear in one digest, after relevance ranking."
+      "description": "Cap on how many papers appear in one digest, after relevance ranking. Null means no cap."
     },
     "lookbackDays": {
       "type": "integer",
@@ -72,5 +72,5 @@
       "maxLength": 40
     }
   },
-  "required": ["cadence", "maxPapers", "lookbackDays"]
+  "required": ["cadence", "lookbackDays"]
 }

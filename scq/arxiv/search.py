@@ -40,73 +40,126 @@ ARXIV_CATEGORIES = [
 ]
 
 # Keywords grouped by topic with weights (higher = more relevant).
+# Negative weights penalize off-topic papers that share generic keywords.
 # Tuned for superconducting-quantum-computing materials research.
 KEYWORD_WEIGHTS = {
-    # Materials & fabrication (primary interest)
+    # ── Materials & fabrication (primary focus) ──
     "superconducting qubit":        10,
-    "transmon":                      9,
-    "fluxonium":                     9,
     "loss tangent":                 10,
-    "two-level system":              8,
-    "TLS":                           7,
-    "surface oxide":                 9,
-    "substrate":                     6,
-    "tantalum":                      9,
-    "niobium":                       7,
-    "aluminum oxide":                7,
-    "josephson junction":            8,
-    "thin film":                     6,
-    "fabrication":                   5,
-    "surface treatment":             8,
+    "dielectric loss":              10,
     "materials loss":                9,
-    "dielectric loss":               9,
-    "quality factor":                8,
+    "surface oxide":                 9,
+    "surface treatment":             9,
     "internal quality":              9,
-    "microwave resonator":           7,
+    "tantalum":                      9,
+    "niobium":                       8,
+    "aluminum oxide":                8,
+    "sapphire":                      7,
+    "silicon substrate":             7,
+    "high-resistivity silicon":      8,
+    "TiN":                           8,
+    "NbTiN":                         8,
+    "josephson junction":            8,
+    "quality factor":                8,
+    "thin film":                     7,
     "coplanar waveguide":            8,
     "CPW":                           7,
+    "microwave resonator":           8,
     "kinetic inductance":            7,
     "superinductor":                 8,
+    "fabrication":                   5,
+    "substrate":                     5,
 
-    # Qubit coherence & design
+    # ── Qubit coherence & design (close second) ──
+    "transmon":                      9,
+    "fluxonium":                     9,
     "coherence":                     8,
-    "T1":                            7,
-    "T2":                            7,
+    "T1":                            8,
+    "T2":                            8,
+    "two-level system":              8,
+    "TLS":                           7,
     "decoherence":                   7,
-    "relaxation":                    5,
-    "dephasing":                     6,
+    "dephasing":                     7,
     "quasiparticle":                 7,
-    "noise":                         4,
     "charge noise":                  7,
     "flux noise":                    7,
     "energy relaxation":             7,
     "purcell":                       6,
+    "relaxation":                    5,
+    "noise":                         3,
 
-    # Readout & amplification
+    # ── Characterization techniques ──
+    "XPS":                           7,
+    "x-ray photoelectron":           7,
+    "ARXPS":                         8,
+    "EELS":                          7,
+    "electron energy loss":          7,
+    "TEM":                           5,
+    "STEM":                          6,
+    "AFM":                           5,
+    "STM":                           5,
+    "ellipsometry":                  7,
+    "x-ray reflectivity":            7,
+    "XRR":                           7,
+    "SIMS":                          7,
+    "secondary ion mass":            7,
+    "transport measurement":         6,
+    "sheet resistance":              6,
+    "residual resistivity ratio":    7,
+    "RRR":                           6,
+
+    # ── Growth & deposition ──
+    "sputtering":                    7,
+    "magnetron sputtering":          8,
+    "molecular beam epitaxy":        8,
+    "MBE":                           7,
+    "epitaxial":                     6,
+    "atomic layer deposition":       7,
+    "ALD":                           6,
+    "evaporation":                   4,
+    "e-beam evaporation":            7,
+    "Dolan bridge":                  8,
+
+    # ── Readout & amplification ──
     "parametric amplif":             7,
     "JPA":                           7,
     "TWPA":                          7,
     "dispersive readout":            7,
     "quantum-limited":               6,
 
-    # Gates & control
+    # ── Gates & control ──
     "gate fidelity":                 7,
     "optimal control":               6,
     "DRAG":                          6,
-    "leakage":                       6,
+    "leakage":                       5,
     "cross-resonance":               6,
 
-    # Resonators
+    # ── Resonators ──
     "superconducting resonator":     8,
     "microwave cavity":              6,
-    "3D cavity":                     6,
+    "3D cavity":                     7,
 
-    # General SCQ
+    # ── General SCQ ──
     "superconducting circuit":       8,
     "circuit QED":                   7,
     "cQED":                          7,
-    "quantum processor":             5,
-    "quantum computing":             4,
+    "quantum processor":             4,
+    "quantum computing":             2,
+
+    # ── Negative: quantum algorithms (not hardware) ──
+    "variational quantum eigensolver": -6,
+    "VQE":                          -5,
+    "QAOA":                         -6,
+    "quantum approximate optimization": -6,
+    "Grover":                       -4,
+    "quantum advantage":            -5,
+    "quantum supremacy":            -5,
+    "quantum machine learning":     -5,
+    "quantum neural network":       -5,
+    "quantum chemistry":            -4,
+    "quantum simulation":           -3,
+    "variational ansatz":           -5,
+    "barren plateau":               -5,
 }
 
 ARXIV_API = "http://arxiv.org/api/query"
@@ -349,15 +402,15 @@ def score_paper(paper):
 
     for keyword, weight in KEYWORD_WEIGHTS.items():
         kw_lower = keyword.lower()
-        # Count occurrences (title matches count double)
         title_hits = paper["title"].lower().count(kw_lower)
         abstract_hits = text.count(kw_lower) - title_hits
         if title_hits > 0 or abstract_hits > 0:
             kw_score = (title_hits * 2 + abstract_hits) * weight
             score += kw_score
-            matched_keywords.append(keyword)
+            if weight > 0:
+                matched_keywords.append(keyword)
 
-    paper["relevance_score"] = score
+    paper["relevance_score"] = max(score, 0)
     paper["matched_keywords"] = matched_keywords
     return score
 

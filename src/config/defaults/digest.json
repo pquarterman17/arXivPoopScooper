@@ -3,7 +3,7 @@
   "cadence": "daily",
   "dayOfWeek": "mon",
   "timeOfDay": "07:00",
-  "maxPapers": 25,
+  "maxPapers": null,
   "lookbackDays": 1,
   "minRelevanceScore": 5,
   "includeSources": ["arxiv"],
