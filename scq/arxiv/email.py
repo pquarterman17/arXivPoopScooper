@@ -36,12 +36,13 @@ from scq.arxiv.search import ARXIV_CATEGORIES
 #   legacy file are present; recipients are otherwise loaded by
 #   load_email_recipients(). No hardcoded address here so a fresh checkout
 #   never ships a real email back to the previous maintainer.
-EMAIL_FROM = os.environ.get("SCQ_EMAIL_FROM", "")
 EMAIL_TO = os.environ.get("SCQ_EMAIL_TO", "")
 try:
     from scq.config import secrets as _secrets  # type: ignore[import-not-found]
+    EMAIL_FROM = _secrets.get("email_from") or ""
     EMAIL_APP_PASSWORD = _secrets.get("email_app_password") or ""
 except ImportError:
+    EMAIL_FROM = os.environ.get("SCQ_EMAIL_FROM", "")
     EMAIL_APP_PASSWORD = os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
 
 # Repo root used by the legacy email_recipients.json fallback.
