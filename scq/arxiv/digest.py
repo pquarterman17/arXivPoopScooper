@@ -27,6 +27,68 @@ from scq.arxiv.search import (
 )
 from scq.arxiv.email import send_email_digest
 
+
+# ─── Config loaders (plan #6 Python pass) ───
+#
+# digest.py historically took every behavior knob via CLI flags. The
+# user_config-backed loader is now the canonical source of truth shared
+# with the JS frontend; CLI flags stay supported and override the config
+# when supplied. When the loader fails (missing schema, malformed file,
+# fresh checkout without the config system), we fall back to the same
+# constants the legacy code path used.
+
+_DIGEST_DEFAULTS = {
+    "maxPapers": None,           # None = no cap (matches legacy behavior)
+    "lookbackDays": 3,           # legacy --days default
+    "minRelevanceScore": 0,      # 0 = no filtering (legacy "send everything ranked")
+    "includeSources": [],        # empty = all enabled (matches schema description)
+}
+
+
+def _load_digest_config():
+    """Return the merged digest config or defaults if the loader fails."""
+    try:
+        from scq.config.user import load_config
+        result = load_config("digest")
+        data = result.data or {}
+        return {
+            "maxPapers": data.get("maxPapers", _DIGEST_DEFAULTS["maxPapers"]),
+            "lookbackDays": data.get("lookbackDays", _DIGEST_DEFAULTS["lookbackDays"]),
+            "minRelevanceScore": data.get("minRelevanceScore", _DIGEST_DEFAULTS["minRelevanceScore"]),
+            "includeSources": data.get("includeSources", _DIGEST_DEFAULTS["includeSources"]),
+        }
+    except Exception as e:  # noqa: BLE001 — keep the workflow robust
+        print(f"  [config] digest config unreadable, using defaults: {e}")
+        return dict(_DIGEST_DEFAULTS)
+
+
+def _load_search_categories():
+    """Return arxivCategories from search-sources config, fallback to constants."""
+    try:
+        from scq.config.user import load_config
+        result = load_config("search-sources")
+        cats = (result.data or {}).get("arxivCategories")
+        if isinstance(cats, list) and cats:
+            return list(cats)
+    except Exception as e:  # noqa: BLE001
+        print(f"  [config] search-sources config unreadable, using defaults: {e}")
+    return list(ARXIV_CATEGORIES)
+
+
+def _apply_digest_filters(papers, *, min_score, max_count):
+    """Drop low-relevance papers, then cap to ``max_count`` (None = no cap).
+
+    Papers must already carry a ``relevance_score`` from
+    :func:`scq.arxiv.search.rank_papers`. Sort order is preserved for
+    ties — the caller has already ranked.
+    """
+    if not papers:
+        return papers
+    filtered = [p for p in papers if p.get("relevance_score", 0) >= min_score]
+    if max_count is not None and max_count > 0:
+        filtered = filtered[:max_count]
+    return filtered
+
 # Where finished digest HTMLs land. `paths().digests_dir` is the canonical
 # resolver and respects user_config/paths.toml + SCQ_DIGESTS_DIR. Falls back
 # to repo-relative `digests/` for source-checkout invocations before
@@ -106,10 +168,17 @@ def compute_effective_days_back(days_back):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="SCQ arXiv Daily Digest")
-    parser.add_argument("--days", type=int, default=3, help="Days to look back (default: 3)")
+    # Config-backed flags use sentinel `None` so we can distinguish "not
+    # specified" (→ fall back to digest config) from "explicitly set to N".
+    parser.add_argument("--days", type=int, default=None,
+                        help="Days to look back. Defaults to digest.lookbackDays.")
     parser.add_argument("--no-email", action="store_true", help="Skip email, generate HTML only")
     parser.add_argument("--test", action="store_true", help="Use mock data (no network)")
-    parser.add_argument("--max-results", type=int, default=500, help="Max papers per category")
+    parser.add_argument("--max-results", type=int, default=500, help="Max papers per category at fetch time")
+    parser.add_argument("--max-papers", type=int, default=None,
+                        help="Cap on papers in the digest after ranking. Defaults to digest.maxPapers.")
+    parser.add_argument("--min-score", type=int, default=None,
+                        help="Drop papers below this relevance score. Defaults to digest.minRelevanceScore.")
     parser.add_argument(
         "--smart-weekend", action="store_true",
         help="Auto-extend lookback on weekends so Friday's papers are not missed"
@@ -121,13 +190,19 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
+    digest_cfg = _load_digest_config()
+    categories = _load_search_categories()
+
+    # CLI overrides config; config overrides hardcoded defaults.
+    days_back = args.days if args.days is not None else digest_cfg["lookbackDays"]
+    max_papers = args.max_papers if args.max_papers is not None else digest_cfg["maxPapers"]
+    min_score = args.min_score if args.min_score is not None else digest_cfg["minRelevanceScore"]
+
     # Set the network deadline. Anything in _arxiv_get that would push past
     # this aborts cleanly with a logged warning. 0/negative disables.
     if args.budget_seconds > 0:
         _search.set_budget(args.budget_seconds)
         print(f"  Network budget: {args.budget_seconds}s")
-
-    days_back = args.days
 
     # Apply weekend adjustment when requested
     if args.smart_weekend:
@@ -137,8 +212,12 @@ def main(argv=None):
 
     digest_date = datetime.now().strftime("%Y-%m-%d")
     print(f"SCQ arXiv Digest — {digest_date}")
-    print(f"  Categories: {', '.join(ARXIV_CATEGORIES)}")
+    print(f"  Categories: {', '.join(categories)}")
     print(f"  Looking back: {days_back} day(s)")
+    if max_papers:
+        print(f"  Cap: {max_papers} papers (post-rank)")
+    if min_score:
+        print(f"  Min relevance: {min_score}")
 
     # Fetch papers
     if args.test:
@@ -147,7 +226,7 @@ def main(argv=None):
     else:
         print("\nFetching from arXiv API...")
         papers = fetch_arxiv_papers(
-            ARXIV_CATEGORIES,
+            categories,
             days_back=days_back,
             max_results=args.max_results,
         )
@@ -158,6 +237,12 @@ def main(argv=None):
     else:
         print(f"\nRanking {len(papers)} papers...")
         papers = rank_papers(papers)
+
+    # Apply digest filters (plan #6) — config-driven floor + cap.
+    pre_filter = len(papers)
+    papers = _apply_digest_filters(papers, min_score=min_score, max_count=max_papers)
+    if pre_filter != len(papers):
+        print(f"  Filters dropped {pre_filter - len(papers)} of {pre_filter} ranked papers")
 
     relevant = sum(1 for p in papers if p["relevance_score"] >= 5)
     print(f"  {relevant} papers match SCQ keywords")

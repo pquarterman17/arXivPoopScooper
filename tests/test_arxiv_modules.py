@@ -194,6 +194,121 @@ def test_load_email_recipients_returns_empty_when_nothing_configured(isolated_re
     assert recipients == []
 
 
+# ─── digest config consumption (plan #6) ───
+
+
+def test_apply_digest_filters_drops_below_min_score():
+    papers = [
+        {"id": "a", "relevance_score": 9},
+        {"id": "b", "relevance_score": 4},
+        {"id": "c", "relevance_score": 5},
+    ]
+    out = digest_mod._apply_digest_filters(papers, min_score=5, max_count=None)
+    assert [p["id"] for p in out] == ["a", "c"]
+
+
+def test_apply_digest_filters_caps_after_filter():
+    papers = [
+        {"id": "a", "relevance_score": 10},
+        {"id": "b", "relevance_score": 8},
+        {"id": "c", "relevance_score": 6},
+    ]
+    out = digest_mod._apply_digest_filters(papers, min_score=0, max_count=2)
+    assert [p["id"] for p in out] == ["a", "b"]
+
+
+def test_apply_digest_filters_handles_none_cap():
+    papers = [{"id": str(i), "relevance_score": 10} for i in range(5)]
+    out = digest_mod._apply_digest_filters(papers, min_score=0, max_count=None)
+    assert len(out) == 5
+
+
+def test_apply_digest_filters_handles_zero_cap_as_no_cap():
+    """maxPapers=0 in config should not silently drop everything; treat as no cap."""
+    papers = [{"id": "a", "relevance_score": 10}]
+    out = digest_mod._apply_digest_filters(papers, min_score=0, max_count=0)
+    assert out == papers
+
+
+def test_apply_digest_filters_empty_input():
+    assert digest_mod._apply_digest_filters([], min_score=5, max_count=10) == []
+
+
+def test_apply_digest_filters_missing_score_treated_as_zero():
+    papers = [{"id": "a"}, {"id": "b", "relevance_score": 5}]
+    out = digest_mod._apply_digest_filters(papers, min_score=3, max_count=None)
+    assert [p["id"] for p in out] == ["b"]
+
+
+def test_load_digest_config_falls_back_when_loader_throws(monkeypatch):
+    def boom(_domain):
+        raise RuntimeError("config unreadable")
+    monkeypatch.setattr("scq.config.user.load_config", boom)
+    cfg = digest_mod._load_digest_config()
+    assert cfg["lookbackDays"] == digest_mod._DIGEST_DEFAULTS["lookbackDays"]
+    assert cfg["maxPapers"] is None
+
+
+def test_load_digest_config_pulls_from_loader(monkeypatch):
+    class FakeResult:
+        data = {"lookbackDays": 7, "maxPapers": 25, "minRelevanceScore": 5,
+                "includeSources": ["arxiv", "prl"]}
+    monkeypatch.setattr("scq.config.user.load_config", lambda _d: FakeResult())
+    cfg = digest_mod._load_digest_config()
+    assert cfg == {
+        "lookbackDays": 7, "maxPapers": 25, "minRelevanceScore": 5,
+        "includeSources": ["arxiv", "prl"],
+    }
+
+
+def test_load_search_categories_uses_loader_result(monkeypatch):
+    class FakeResult:
+        data = {"arxivCategories": ["quant-ph", "cond-mat.supr-con"]}
+    monkeypatch.setattr("scq.config.user.load_config", lambda _d: FakeResult())
+    cats = digest_mod._load_search_categories()
+    assert cats == ["quant-ph", "cond-mat.supr-con"]
+
+
+def test_load_search_categories_falls_back_when_empty(monkeypatch):
+    class FakeResult:
+        data = {"arxivCategories": []}  # empty list = use defaults
+    monkeypatch.setattr("scq.config.user.load_config", lambda _d: FakeResult())
+    cats = digest_mod._load_search_categories()
+    assert cats == list(search_mod.ARXIV_CATEGORIES)
+
+
+def test_load_search_categories_falls_back_when_loader_throws(monkeypatch):
+    def boom(_domain):
+        raise RuntimeError("config unreadable")
+    monkeypatch.setattr("scq.config.user.load_config", boom)
+    cats = digest_mod._load_search_categories()
+    assert cats == list(search_mod.ARXIV_CATEGORIES)
+
+
+def test_main_uses_config_categories_when_cli_omits_flags(monkeypatch, tmp_path, isolated_repo_root):
+    """Sanity-check that main() actually plumbs config values into fetch_arxiv_papers
+    when the CLI does not specify --days. Uses --test so no network fires."""
+    captured = {}
+
+    class FakeResult:
+        data = {"lookbackDays": 5, "maxPapers": 1, "minRelevanceScore": 0,
+                "includeSources": [], "arxivCategories": ["quant-ph"]}
+    monkeypatch.setattr("scq.config.user.load_config", lambda _d: FakeResult())
+    monkeypatch.setattr(digest_mod, "send_email_digest", lambda *_a, **_k: None)
+    real_apply = digest_mod._apply_digest_filters
+    def spy_apply(papers, *, min_score, max_count):
+        captured["min_score"] = min_score
+        captured["max_count"] = max_count
+        return real_apply(papers, min_score=min_score, max_count=max_count)
+    monkeypatch.setattr(digest_mod, "_apply_digest_filters", spy_apply)
+    monkeypatch.setattr(digest_mod, "DIGEST_DIR", str(tmp_path))
+
+    digest_mod.main(["--test", "--no-email"])
+
+    assert captured["max_count"] == 1
+    assert captured["min_score"] == 0
+
+
 # ─── cli passthrough ───
 
 
