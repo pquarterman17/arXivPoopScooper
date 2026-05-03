@@ -281,6 +281,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_test_smtp()
         elif self.path == "/api/test/digest":
             self._handle_test_digest()
+        elif self.path == "/api/secret":
+            self._handle_secret_post()
         else:
             self.send_error(404)
 
@@ -610,6 +612,63 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
+
+    # ── Secrets endpoint (plan #11) ──
+    #
+    # POST /api/secret  body: {name: str, value: str}
+    #   Writes a secret to the OS keyring via scq.config.secrets.set.
+    #   Validates the name against a small allowlist so a misconfigured
+    #   page can't pollute the keyring with arbitrary entries.
+    #
+    # No GET endpoint by design — secret values must never be served back
+    # to the browser. Use `has(name)` semantics through `/api/secret` (POST
+    # with empty value? no — clients should ask the user to re-enter).
+    # Deletion stays on the CLI (`scq config delete-secret <name>`); the
+    # browser can clear a value by setting it to "" if `value` is omitted.
+    SECRET_NAME_ALLOWLIST = frozenset({
+        "email_app_password",   # SMTP App Password (Gmail or generic)
+    })
+
+    def _handle_secret_post(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length <= 0:
+                self._json_response(400, {"ok": False, "error": "Empty body"})
+                return
+            if content_length > 4096:
+                self._json_response(413, {"ok": False, "error": "Body too large"})
+                return
+            body = self.rfile.read(content_length)
+            try:
+                payload = json.loads(body.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                self._json_response(400, {"ok": False, "error": f"Invalid JSON: {e}"})
+                return
+
+            name = payload.get("name")
+            value = payload.get("value")
+            if not isinstance(name, str) or not name:
+                self._json_response(400, {"ok": False, "error": "Missing or invalid 'name'"})
+                return
+            if name not in self.SECRET_NAME_ALLOWLIST:
+                self._json_response(400, {
+                    "ok": False,
+                    "error": f"Secret name not in allowlist. Allowed: {sorted(self.SECRET_NAME_ALLOWLIST)}",
+                })
+                return
+            if not isinstance(value, str):
+                self._json_response(400, {"ok": False, "error": "Missing or invalid 'value' (must be string)"})
+                return
+
+            from scq.config import secrets as _secrets_mod
+            try:
+                _secrets_mod.set(name, value)
+            except _secrets_mod.KeyringUnavailable as e:
+                self._json_response(503, {"ok": False, "error": str(e)})
+                return
+            self._json_response(200, {"ok": True, "name": name})
+        except Exception as e:  # noqa: BLE001
+            self._json_response(500, {"ok": False, "error": str(e)})
 
     # ── Test-button endpoints (plan #11) ──
     #
