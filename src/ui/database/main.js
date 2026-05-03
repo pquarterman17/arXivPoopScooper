@@ -101,90 +101,66 @@ import { bootstrapSearchConfig } from '../../core/search-config-bridge.js';
 // reads pick up user customisations the same way the scraper page does.
 bootstrapSearchConfig();
 
-// ─── Legacy globals shim ───
-// Exactly what was inlined before, just re-exposed from a module so callers
-// can be migrated piecemeal. When a caller is ported to a module, it should
-// import the named export directly instead of going through window.
-window.updateSyncIndicator = updateSyncIndicator;
-window.getPdfPath = getPdfPath;
-window.closeMoreMenu = closeMoreMenu;
-window.saveToDisk = saveToDisk;  // for the More menu button + bare callers
-window.toggleSort = toggleSort;
-window.sortPapers = sortPapers;
-window.sortArrow = sortArrow;
-window.sortedClass = sortedClass;
-window.copyForWord = copyForWord;
-window.copyAllForWord = copyAllForWord;
-window.openPdfViewer = openPdfViewer;
-window.closePdfViewer = closePdfViewer;
-window.openPdfExternal = openPdfExternal;
-window.addHighlight = addHighlight;
-window.removeHighlightById = removeHighlightById;
-window.renderHighlights = renderHighlights;
-window.showAnalytics = showAnalytics;
-window.closeAnalytics = closeAnalytics;
-window.exportJSON = exportJSON;
-window.importFile = importFile;
-window.mergeFile = mergeFile;
-window.exportCollectionAsDB = exportCollectionAsDB;
-window.exportCollectionBib = exportCollectionBib;
-window.exportCollectionPackage = exportCollectionPackage;
-window.showAddWebsiteModal = showAddWebsiteModal;
-window.fetchWebsiteMeta = fetchWebsiteMeta;
-window.submitAddWebsite = submitAddWebsite;
-window.findArxivId = findArxivId;
-window.findDOI = findDOI;
-window.getRelatedPapers = getRelatedPapers;
-window.getCollectionNames = getCollectionNames;
-window.isPaperInCollection = isPaperInCollection;
-window.togglePaperCollection = togglePaperCollection;
-window.setActiveCollection = setActiveCollection;
-window.showNewCollectionModal = showNewCollectionModal;
-window.createCollection = createCollection;
-window.deleteCollectionUI = deleteCollectionUI;
-window.closeModal = closeModal;
-window.toggleCollectionDropdown = toggleCollectionDropdown;
-window.renderCollectionDropdown = renderCollectionDropdown;
-window.showLinkPaperModal = showLinkPaperModal;
-window.toggleManualLink = toggleManualLink;
-window.toggleReadStatus = toggleReadStatus;
-window.setStarRating = setStarRating;
-window.renderStars = renderStars;
-window.setReadFilter = setReadFilter;
-window.setPriorityFilter = setPriorityFilter;
-window.setTypeFilter = setTypeFilter;
-window.getAllTags = getAllTags;
-window.getFiltered = getFiltered;
-window.togglePdfSearch = togglePdfSearch;
-window.copyText = copyText;
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-window.showTagManagerModal = showTagManagerModal;
-window.promptRenameTag = promptRenameTag;
-window.promptMergeTag = promptMergeTag;
-window.doDeleteTag = doDeleteTag;
-// Suggestions banner — boot helpers used by legacy loadPapersFromDB,
-// plus inline onclick callers in the banner markup.
-window.loadSuggestions = loadSuggestions;
-window.renderSuggestions = renderSuggestions;
-window.autoFetchOnLoad = autoFetchOnLoad;
-window.toggleSuggestions = toggleSuggestions;
-window.sugAdd = sugAdd;
-window.sugIgnore = sugIgnore;
-window.dismissAllSuggestions = dismissAllSuggestions;
-window.loadPapersFromDB = loadPapersFromDB;
-window.togglePaper = togglePaper;
-window.toggleTag = toggleTag;
-window.clearTags = clearTags;
-window.updateNotes = updateNotes;
-// Settings v2 Collaboration tab + the hidden <input type="file"> for
-// "Merge from Shared" reach these via window.
-window._syncToSharedFolder = syncToSharedFolder;
-window.mergeSharedFile = mergeSharedFile;
-// Library view rendering — every other module's mutators call window.render()
-// to redraw, and the boot block's SCQ.init().then() also reaches it here.
-window.render = render;
-window.renderSidebar = renderSidebar;
+// ─── Page bridge ───
+//
+// `BRIDGE` is the public surface this page exposes via `window.<name>` —
+// it's the contract between the still-inline boot block in
+// paper_database.html (which calls these as bare globals) and the
+// module-extracted implementations.
+//
+// Adding a new module function that the boot block needs to reach? Add
+// the entry here. Removing one? Same. The frozen-list test at
+// `src/tests/ui/database/bridge.test.js` will fail if you skip a step.
+//
+// Asymmetric name note: legacy markup calls `_syncToSharedFolder` with a
+// leading underscore, but the module exports `syncToSharedFolder`
+// without one. The bridge translates.
+const BRIDGE = {
+  // Sync indicator + paths
+  updateSyncIndicator, getPdfPath, closeMoreMenu, saveToDisk,
+  // Sort + Cite-tab clipboard helpers
+  toggleSort, sortPapers, sortArrow, sortedClass, copyForWord, copyAllForWord,
+  // PDF viewer
+  openPdfViewer, closePdfViewer, openPdfExternal,
+  // Annotations
+  addHighlight, removeHighlightById, renderHighlights,
+  // Analytics overlay
+  showAnalytics, closeAnalytics,
+  // Export / import / merge
+  exportJSON, importFile, mergeFile,
+  exportCollectionAsDB, exportCollectionBib, exportCollectionPackage,
+  // Add-website modal
+  showAddWebsiteModal, fetchWebsiteMeta, submitAddWebsite, findArxivId, findDOI,
+  // Related-paper finder
+  getRelatedPapers,
+  // Collections
+  getCollectionNames, isPaperInCollection, togglePaperCollection,
+  setActiveCollection, showNewCollectionModal, createCollection,
+  deleteCollectionUI, closeModal, toggleCollectionDropdown, renderCollectionDropdown,
+  // Manual paper-paper linking
+  showLinkPaperModal, toggleManualLink,
+  // Read-status / priority
+  toggleReadStatus, setStarRating, renderStars,
+  setReadFilter, setPriorityFilter, setTypeFilter,
+  // Library-table helpers
+  getAllTags, getFiltered, togglePdfSearch, copyText,
+  openLightbox, closeLightbox,
+  // Tag manager
+  showTagManagerModal, promptRenameTag, promptMergeTag, doDeleteTag,
+  // Suggestions banner — used by loadPapersFromDB + inline onclicks
+  loadSuggestions, renderSuggestions, autoFetchOnLoad,
+  toggleSuggestions, sugAdd, sugIgnore, dismissAllSuggestions,
+  // Library load + per-row events
+  loadPapersFromDB, togglePaper, toggleTag, clearTags, updateNotes,
+  // Library-view rendering — boot block calls render() / renderSidebar()
+  render, renderSidebar,
+  // Collaboration helpers — note the legacy `_syncToSharedFolder` alias
+  _syncToSharedFolder: syncToSharedFolder,
+  mergeSharedFile,
+};
+Object.assign(window, BRIDGE);
+// Exposed for the bridge-test spec to introspect at runtime.
+window.__SCQ_DATABASE_BRIDGE__ = BRIDGE;
 
 // ─── Event delegation registries ───
 // Static markup in `paper_database.html` uses `data-action="..."` on

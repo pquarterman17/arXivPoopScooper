@@ -73,10 +73,27 @@ Local: `npm run typecheck`. CI: runs as a step in the `vitest (frontend)` job.
 
 Currently focused on the `schema-form` renderer (the most-shapeful UI we have). Add stories for any UI module that's awkward to test inline in the full page.
 
+## The page bridge
+
+The boot block in each HTML page calls extracted module functions as bare globals (e.g. `togglePaper(id)` from inside an inline `onclick` template string). The two pages handle this seam differently but the contract is the same.
+
+**Database page** (`src/ui/database/main.js`): one centralized `BRIDGE = {...}` object lists every public function the boot block needs to reach, then `Object.assign(window, BRIDGE)` publishes them. The bridge also exposes `window.__SCQ_DATABASE_BRIDGE__` so a debugger can introspect the surface at runtime.
+
+**Scraper page** (`src/ui/scraper/<module>.js`): each module appends `globalThis.<name> = <name>` at its bottom, exporting its own surface. The page's bridge is the union across all modules.
+
+Two frozen-list specs lock the contracts:
+
+- `src/tests/ui/database/bridge.test.js` — parses the `BRIDGE = {...}` block in main.js and asserts the keys match the checked-in `EXPECTED_BRIDGE_KEYS`.
+- `src/tests/ui/scraper/bridge.test.js` — walks every scraper module, collects every `globalThis.<name> =` assignment, and asserts the union matches `EXPECTED_SCRAPER_BRIDGE`.
+
+When you add a new bridge entry, update the corresponding `EXPECTED_*` list in the same commit. The spec gives a clear "Added without updating list / Removed but still in list" diff; that's the forced choice.
+
+When you remove one, the spec still passes only after you also remove it from the list — that's also the forced choice. This is the **only** mechanism that catches "added a function but forgot to bridge it" or "renamed a function but missed a boot-block call site" — there's no other tooling that can observe the seam.
+
 ## Where the boundary cracks show
 
 A few load-bearing seams are documented separately:
 
-- **`globalThis` shimming** in `src/ui/database/main.js` and `src/ui/scraper/main.js` — the legacy boot blocks reach extracted module functions via `window.<name>?.()` until the boot block itself is migrated. See those `main.js` files' header comments.
+- **The page bridge** described above — the legacy boot blocks reach extracted module functions via `window.<name>?.()`. The bridge tests are the contract.
 - **`SCRAPER_CONFIG` ↔ `getConfig('search-sources')`** is bridged by `src/core/search-config-bridge.js`. Array→map adapter at the boundary so the legacy id-keyed map callers keep working while user_config overrides flow through the loader.
 - **`scq.config.paths` submodule shadow** — see [the dedicated note](configuration.md#scq.config.paths-submodule-shadow).
