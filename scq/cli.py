@@ -291,6 +291,19 @@ def _build_parser() -> argparse.ArgumentParser:
     p_del.add_argument("name")
     p_del.set_defaults(func=_cmd_delete_secret)
 
+    # #22: portable bundle of data/user_config/* (no secrets, no DB).
+    p_exp = config_sub.add_parser("export", help="bundle user_config/* into a zip for transfer")
+    p_exp.add_argument("path", help="destination .zip path")
+    p_exp.add_argument("--include-paths", action="store_true",
+                       help="also bundle paths.toml (off by default; paths are machine-specific)")
+    p_exp.set_defaults(func=_cmd_config_export)
+
+    p_imp = config_sub.add_parser("import", help="extract a config bundle into user_config/")
+    p_imp.add_argument("path", help="source .zip path")
+    p_imp.add_argument("--overwrite", action="store_true",
+                       help="replace existing user_config files (default: skip)")
+    p_imp.set_defaults(func=_cmd_config_import)
+
     return parser
 
 
@@ -445,6 +458,38 @@ def _cmd_delete_secret(args: argparse.Namespace) -> int:
         return 0
     print(f"no secret '{args.name}' found in keyring (env-var-only secrets cannot be deleted here)")
     return 1
+
+
+def _cmd_config_export(args: argparse.Namespace) -> int:
+    from .config.portable import export_config
+    target = Path(args.path).expanduser().resolve()
+    try:
+        manifest = export_config(target, include_paths=args.include_paths)
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    n = len(manifest["contents"])
+    print(f"wrote {target} ({n} file{'s' if n != 1 else ''}, paths={'yes' if args.include_paths else 'no'})")
+    return 0
+
+
+def _cmd_config_import(args: argparse.Namespace) -> int:
+    from .config.portable import import_config
+    source = Path(args.path).expanduser().resolve()
+    try:
+        result = import_config(source, overwrite=args.overwrite)
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if result["written"]:
+        print(f"installed {len(result['written'])} file(s): {', '.join(result['written'])}")
+    if result["skipped"]:
+        print(f"skipped {len(result['skipped'])} existing file(s) (use --overwrite to replace): "
+              f"{', '.join(result['skipped'])}")
+    return 0
 
 
 # ─── helpers ───
