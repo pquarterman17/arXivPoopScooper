@@ -6,11 +6,13 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "vite build --config vite.build.config.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",
     "sql.js": "^1.10.0",
+    "vite": "^5.4.0",
     "vitest": "^4.1.5"
   }
 }

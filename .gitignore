@@ -42,6 +42,8 @@ __pycache__/
 
 # Node
 node_modules/
+# Vite production-bundle output (plan #18). Build artifacts; not tracked.
+dist/
 
 # Auto-memory (Cowork session state)
 .auto-memory/
