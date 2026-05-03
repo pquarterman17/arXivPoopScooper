@@ -22,6 +22,8 @@ import { renderForm } from './schema-form.js';
 import { renderCollaborationTab } from './tabs/collaboration-tab.js';
 import { renderOverleafTab } from './tabs/overleaf-tab.js';
 import { mountStorageExtras, mountDigestExtras, mountEmailExtras } from './tabs/test-buttons.js';
+import { reload as reloadConfig } from '../../core/config.js';
+import { MANIFEST as CONFIG_MANIFEST } from '../../config/loader.js';
 
 /**
  * Tab definitions. `kind` decides how the tab body is filled:
@@ -256,6 +258,19 @@ async function saveActiveTab() {
     delete _pending[_activeTab];
     markDirty(_activeTab, false);
     setStatus('Saved.', 'ok');
+    // Architect finding #2: activate the dormant config-subscribe seam.
+    // After a successful save, refresh the in-memory config cache so any
+    // already-subscribed UI surface reacts. Without this, getConfig()
+    // returns stale values until the next page reload.
+    // `paths` is the bootstrap domain and isn't in the loader manifest,
+    // so skip it (Settings v2 saves it via a different code path on the
+    // server side, and no JS subscriber consumes it today).
+    if (CONFIG_MANIFEST.includes(_activeTab)) {
+      reloadConfig(_activeTab).catch((e) => {
+        // Reload is best-effort — a failure here doesn't undo the save.
+        console.warn(`[settings] config reload after save failed: ${e?.message || e}`);
+      });
+    }
   } catch (e) {
     setStatus(`Save failed: ${e.message}`, 'error');
   }

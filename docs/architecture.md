@@ -52,6 +52,40 @@ In practice the legacy boot blocks still mutate global state via `globalThis.<na
 - **`scraper_config.js`** is shipping defaults plus a few legacy fields the JS apps still read directly (`entryTypes`, `tags` for the auto-tagger). It's not a layer — it's a static input that the loader merges with user_config. Don't add new logic to it.
 - **`db_utils.js`** is the legacy IIFE that wraps sql.js. New code should import from `src/core/db.js` instead. The IIFE stays around because the boot blocks and `services/database-merge.js` still rely on it.
 
+## Config-subscribe rule
+
+Any UI surface that reads merged config (via `getConfig` or via the
+mutated `globalThis.SCRAPER_CONFIG` global) must follow one of these
+patterns. No third option.
+
+1. **Lazy-read on every render.** Most modules under `src/ui/scraper/`
+   read `CFG.sources[key]` (or similar) inside their render function,
+   so they pick up bridge mutations automatically. If your code reads
+   the config every time it draws, you don't need to subscribe.
+
+2. **Re-fire on bridge ready.** If your code captures derived state at
+   boot (e.g. `activeSources` derived from `CFG.sources`, or DOM
+   constructed from `CFG.presets`), expose a named idempotent rebuild
+   function on `globalThis` and pass it to `bootstrapSearchConfig`'s
+   `onReady` callback list in `src/ui/scraper/main.js`. Idempotent =
+   clear-and-rebuild semantics so a second call replaces, not duplicates.
+
+3. **Subscribe to `config:<domain>:changed`.** For surfaces inside
+   modules that don't go through the SCRAPER_CONFIG bridge (e.g. a
+   future view that consumes `getConfig('citations')` directly), import
+   `subscribe` from `core/config.js` and re-render on the callback.
+   Settings v2 calls `reload(domain)` after a successful save, which
+   emits this event — so live updates after edits are free.
+
+4. **Boot-time snapshot, requires reload.** If neither (1)–(3) is
+   appropriate (e.g. the cost of re-rendering is high and the data
+   rarely changes), document it in a comment at the read site.
+
+The forced-choice rule exists because the bridge mutates SCRAPER_CONFIG
+asynchronously: the boot block has already run by the time user_config
+overrides arrive. Surfaces that don't follow one of the patterns
+silently ignore user edits until the next page reload.
+
 ## TypeScript checking via JSDoc
 
 The repo has no build step but runs `tsc --noEmit` over a curated set of files in CI. Files opt in by putting `// @ts-check` on the first line; their JSDoc `@param` / `@returns` annotations get full TypeScript-grade checking.

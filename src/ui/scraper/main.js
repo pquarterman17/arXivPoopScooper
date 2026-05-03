@@ -193,16 +193,25 @@ document.addEventListener('keydown', (e) => {
   if (typeof fn === 'function') fn();
 });
 
-// Plan #9 last bullet: bridge user_config/search-sources.json overrides
-// onto SCRAPER_CONFIG. Replaces the legacy boot-block `_applySettingsToConfig`
-// (which copied DB-saved sources/presets) — Settings v2 writes user_config
-// files directly, so the loader is now the single override path.
+// Plan #9 last bullet + architect-finding-#2: bridge user_config search
+// overrides onto SCRAPER_CONFIG, then re-fire every UI surface that
+// captured config at boot.
 //
-// onReady callback rebuilds the boot block's `activeSources` map after
-// the bridge mutates SCRAPER_CONFIG.sources — without it, a user_config
-// override that disables a source is silently ignored until the user
-// manually toggles (B3 follow-up). The toggle DOM still doesn't redraw
-// — that's a separate UX polish item.
+// The contract (per docs/architecture.md "Config-subscribe rule"):
+// any UI surface that reads merged config either re-renders on
+// `config:<domain>:changed` (or via a bridge onReady), or is documented
+// as a boot-time snapshot that requires reload.
+//
+// These four onReady callbacks satisfy the rule for the scraper page:
+//   rebuildActiveSources  — derived state from CFG.sources
+//   injectSourceStyles    — CSS injected for per-source badge colors
+//   initSourceToggles     — DOM toggle buttons for each source
+//   initPresetsSearch     — DOM preset buttons (uses CFG.presets)
+// All four are idempotent — clear-and-rebuild — so re-running on bridge
+// resolution is safe.
 bootstrapSearchConfig([
   () => globalThis.rebuildActiveSources?.(),
+  () => globalThis.injectSourceStyles?.(),
+  () => globalThis.initSourceToggles?.(),
+  () => globalThis.initPresetsSearch?.(),
 ]);
