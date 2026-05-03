@@ -93,6 +93,13 @@ import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
 import { syncToSharedFolder, mergeSharedFile } from './collaboration.js';
 import { render, renderSidebar } from './library-table.js';
 import { showSettings as showSettingsV2, closeSettings as closeSettingsV2 } from '../settings/main.js';
+import { bootstrapSearchConfig } from '../../core/search-config-bridge.js';
+
+// Plan #9 last bullet: apply user_config/search-sources.json overrides to
+// the legacy SCRAPER_CONFIG global so the database page's suggestions
+// banner, library-table source badges, and add-website-modal entry-type
+// reads pick up user customisations the same way the scraper page does.
+bootstrapSearchConfig();
 
 // ─── Legacy globals shim ───
 // Exactly what was inlined before, just re-exposed from a module so callers

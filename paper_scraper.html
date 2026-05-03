@@ -335,8 +335,9 @@ function init() {
 async function initDatabase() {
   try {
     await SCQ.init();
-    // Apply saved settings from DB to live config
-    _applySettingsToConfig();
+    // user_config/search-sources.json overrides are applied by
+    // bootstrapSearchConfig() in src/ui/scraper/main.js — no DB-settings
+    // override path remains (was retired with the legacy settings modal).
     dbReady = true;
     const papers = SCQ.getAllPapers();
     papers.forEach(p => existingIds.add(p.id));
@@ -344,29 +345,6 @@ async function initDatabase() {
   } catch (err) {
     console.error('Failed to initialize database:', err);
     dbReady = false;
-  }
-}
-
-function _applySettingsToConfig() {
-  try {
-    const savedSources = SCQ.getSetting("sources");
-    const savedPresets = SCQ.getSetting("presets");
-    if (savedSources) {
-      const newSources = {};
-      savedSources.forEach(s => {
-        newSources[s.key] = {
-          label: s.label, color: s.color, enabled: s.enabled,
-          type: s.type, journalRef: s.journalRef, journalName: s.journalName,
-          issn: s.issn
-        };
-      });
-      SCRAPER_CONFIG.sources = newSources;
-    }
-    if (savedPresets) {
-      SCRAPER_CONFIG.presets = savedPresets;
-    }
-  } catch (e) {
-    console.warn("[SCQ] Failed to load settings:", e.message);
   }
 }
 

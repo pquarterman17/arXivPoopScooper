@@ -12,6 +12,7 @@ import './doi-lookup.js';
 import './inbox-render.js';
 import './quick-search.js';
 import './saved-queries.js';
+import { bootstrapSearchConfig } from '../../core/search-config-bridge.js';
 
 /**
  * Entry point for the modular paper-scraper UI (plan #9 — companion to #8).
@@ -191,3 +192,16 @@ document.addEventListener('keydown', (e) => {
   const fn = window[fnName];
   if (typeof fn === 'function') fn();
 });
+
+// Plan #9 last bullet: bridge user_config/search-sources.json overrides
+// onto SCRAPER_CONFIG. Replaces the legacy boot-block `_applySettingsToConfig`
+// (which copied DB-saved sources/presets) — Settings v2 writes user_config
+// files directly, so the loader is now the single override path.
+//
+// Mutates SCRAPER_CONFIG asynchronously (after the boot-block IIFEs have
+// already rendered toggles + presets with defaults). Subsequent searches
+// + saved-query operations see the merged values; existing toggle DOM
+// stays at defaults until the user reloads — same UX as the legacy
+// `_applySettingsToConfig` it replaces. A re-render pass is a separate
+// follow-up.
+bootstrapSearchConfig();
