@@ -137,6 +137,8 @@ _PASSTHROUGH_COMMANDS = {
     "serve":        _passthrough_module("scq.server",            supports_argv=True),
     # #13 (2026-05-03): rewrite the digest workflow's cron line.
     "schedule":     _passthrough_module("scq.schedule",          supports_argv=True),
+    # #23 (2026-05-03): convert legacy scraper_config.js → user_config/*.json.
+    "migrate-from-legacy": _passthrough_module("scq.migrate",    supports_argv=True),
 }
 
 
@@ -155,6 +157,7 @@ _PASSTHROUGH_MODULES = {
     "build-index": "scq.search.index",
     "serve":       "scq.server",
     "schedule":    "scq.schedule",
+    "migrate-from-legacy": "scq.migrate",
 }
 
 
