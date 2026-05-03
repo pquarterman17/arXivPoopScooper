@@ -135,6 +135,8 @@ _PASSTHROUGH_COMMANDS = {
     "build-index":  _passthrough_module("scq.search.index",      supports_argv=True),
     # #12 final move (2026-05-03): serve.py → scq/server.py.
     "serve":        _passthrough_module("scq.server",            supports_argv=True),
+    # #13 (2026-05-03): rewrite the digest workflow's cron line.
+    "schedule":     _passthrough_module("scq.schedule",          supports_argv=True),
 }
 
 
@@ -152,6 +154,7 @@ _PASSTHROUGH_MODULES = {
     "overleaf":    "scq.overleaf.sync",
     "build-index": "scq.search.index",
     "serve":       "scq.server",
+    "schedule":    "scq.schedule",
 }
 
 
