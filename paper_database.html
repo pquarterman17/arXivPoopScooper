@@ -19,7 +19,7 @@
     <span id="sync-indicator" style="font-size:10px;font-weight:600;color:var(--green)">synced</span>
     <button data-action="showAddWebsiteModal" style="border-color:var(--green);color:var(--green)">+ Add link</button>
     <a href="paper_scraper.html" class="toolbar-link" style="border-color:var(--orange);color:var(--orange);text-decoration:none;display:inline-block">Paper scraper</a>
-    <button data-action="showSettingsModal" class="settings-gear-btn" title="Settings">
+    <button data-action="showSettingsV2" class="settings-gear-btn" title="Settings">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
     <div class="toolbar-divider"></div>
@@ -195,7 +195,6 @@
 </div>
 
 <div id="modal-root"></div>
-<div id="settings-overlay" class="settings-overlay" style="display:none" data-action="closeSettingsModalIfBackdrop"></div>
 <div class="analytics-overlay" id="analytics-overlay" style="display:none" data-action="closeAnalyticsIfBackdrop">
   <div class="analytics-panel">
     <div class="analytics-header">
@@ -277,7 +276,6 @@ var openDropdownId = null;
 // ─── Init: load database then render ───
 SCQ.init().then(() => {
   window._scqOnDirty = function(dirty) { updateSyncIndicator(!dirty); };
-  _applySettingsToConfig();
   loadPapersFromDB();
   render();
   updateSyncIndicator(true);
@@ -512,20 +510,11 @@ function readingMarkRead(paperId) {
   renderReadingList();
 }
 
-/* ═══════════════════════════════════════════════════════════ */
-/* Settings Modal                                             */
-/* ═══════════════════════════════════════════════════════════ */
-// Migrated to src/ui/database/settings-modal.js (plan #8). 14 functions
-// + 3 module-local state arrays. main.js shims everything onto window
-// so the legacy SCQ.init().then() boot block (which calls
-// _applySettingsToConfig) and the modal's inline onclick handlers (which
-// reference _settings* arrays by name) keep working.
-
-
 // ─── Collaboration helpers ───
-// Migrated to src/ui/database/collaboration.js (plan #8). _syncToSharedFolder
-// + mergeSharedFile are shimmed onto window from main.js for the inline
-// onclick / onchange callers in the Settings modal Collaboration section.
+// Migrated to src/ui/database/collaboration.js (plan #8). Settings v2's
+// Collaboration tab (`src/ui/settings/tabs/collaboration-tab.js`) is the
+// canonical caller; shims remain on window because mergeSharedFile is
+// hooked from a hidden <input type="file"> that other code may trigger.
 
 document.addEventListener('DOMContentLoaded', function() {
   const searchInput = document.getElementById("reading-search-input");

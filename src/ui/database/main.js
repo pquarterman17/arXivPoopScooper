@@ -92,22 +92,6 @@ import { loadPapersFromDB } from './init.js';
 import { togglePaper, toggleTag, clearTags, updateNotes } from './events.js';
 import { syncToSharedFolder, mergeSharedFile } from './collaboration.js';
 import { render, renderSidebar } from './library-table.js';
-import {
-  showSettingsModal,
-  closeSettingsModal,
-  _renderSettingsModal,
-  _toggleSource,
-  _delSource,
-  _addSource,
-  _delPreset,
-  _addPreset,
-  _toggleRecipient,
-  _delRecipient,
-  _addRecipient,
-  _exportRecipients,
-  _saveSettings,
-  _applySettingsToConfig,
-} from './settings-modal.js';
 import { showSettings as showSettingsV2, closeSettings as closeSettingsV2 } from '../settings/main.js';
 
 // ─── Legacy globals shim ───
@@ -186,25 +170,10 @@ window.togglePaper = togglePaper;
 window.toggleTag = toggleTag;
 window.clearTags = clearTags;
 window.updateNotes = updateNotes;
-// Settings modal "Collaboration" section uses these names verbatim in its
-// inline onclick / onchange attributes; preserve them.
+// Settings v2 Collaboration tab + the hidden <input type="file"> for
+// "Merge from Shared" reach these via window.
 window._syncToSharedFolder = syncToSharedFolder;
 window.mergeSharedFile = mergeSharedFile;
-// Settings modal — modal HTML uses inline onclick referring to these names.
-window.showSettingsModal = showSettingsModal;
-window.closeSettingsModal = closeSettingsModal;
-window._renderSettingsModal = _renderSettingsModal;
-window._toggleSource = _toggleSource;
-window._delSource = _delSource;
-window._addSource = _addSource;
-window._delPreset = _delPreset;
-window._addPreset = _addPreset;
-window._toggleRecipient = _toggleRecipient;
-window._delRecipient = _delRecipient;
-window._addRecipient = _addRecipient;
-window._exportRecipients = _exportRecipients;
-window._saveSettings = _saveSettings;
-window._applySettingsToConfig = _applySettingsToConfig;
 // Library view rendering — every other module's mutators call window.render()
 // to redraw, and the boot block's SCQ.init().then() also reaches it here.
 window.render = render;
@@ -237,7 +206,6 @@ window.renderSidebar = renderSidebar;
 const ACTIONS = {
   // ─ Top toolbar
   showAddWebsiteModal: () => showAddWebsiteModal(),
-  showSettingsModal: () => showSettingsModal(),
   showSettingsV2: () => showSettingsV2(),
   closeSettingsV2: () => closeSettingsV2(),
   closeSettingsV2IfBackdrop: (el, e) => {
@@ -294,9 +262,6 @@ const ACTIONS = {
   inboxImportStarred: () => window.inboxImportStarred?.(),
   inboxClear: () => window.inboxClear?.(),
   // ─ Overlays — close only when the backdrop itself is clicked
-  closeSettingsModalIfBackdrop: (el, e) => {
-    if (e.target === el) closeSettingsModal();
-  },
   closeAnalyticsIfBackdrop: (el, e) => {
     if (e.target === el) closeAnalytics();
   },
