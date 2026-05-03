@@ -22,7 +22,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import serve  # noqa: E402
+from scq import server as serve  # noqa: E402
 from scq.config import secrets as secrets_mod  # noqa: E402
 
 

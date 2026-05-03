@@ -8,7 +8,7 @@ name: Deploy to GitHub Pages
 #     `needs:` and the workflow_run gate below).
 #   - Uploads the static assets the browser needs (HTML, modules, the
 #     SQLite DB, the legacy globals) to GitHub Pages.
-#   - The arXiv API proxy in serve.py is NOT available on Pages (no
+#   - The arXiv API proxy in scq/server.py is NOT available on Pages (no
 #     Python). The HTML auto-detects this and falls back to public CORS
 #     proxies; the "browse the existing DB" path works fully, but
 #     "fetch new papers" is best-effort on the demo.

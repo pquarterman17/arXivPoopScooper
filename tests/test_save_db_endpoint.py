@@ -22,7 +22,7 @@ import pytest
 # Make the repo root importable so we can pull in serve directly
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import serve  # noqa: E402
+from scq import server as serve  # noqa: E402
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
 

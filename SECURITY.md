@@ -25,7 +25,7 @@ plausible reports. The repo is single-maintainer best-effort — no SLA.
 
 This tool is designed to be run **locally on a single user's machine**:
 
-- The HTTP server (`serve.py`, soon `scq serve`) binds to `127.0.0.1`. It
+- The HTTP server (`scq/server.py`, launched via `python -m scq serve`) binds to `127.0.0.1`. It
   is not designed to be exposed to the network.
 - The SQLite DB lives in `data/scientific_litter_scoop.db` on the user's filesystem.
 - arXiv API access goes through a local proxy that adds a User-Agent;
@@ -38,7 +38,7 @@ Out of scope for security reports:
 - Social-engineering attacks against the user
 
 In scope:
-- Path traversal in `serve.py` or any future HTTP endpoint
+- Path traversal in `scq/server.py` or any future HTTP endpoint
 - XML / JSON parser issues that allow remote code in the browser
 - Injection in SQL helpers (`run`, `query`, etc.) — services should use
   parameterized queries everywhere

@@ -133,6 +133,8 @@ _PASSTHROUGH_COMMANDS = {
     "watch":        _passthrough_module("scq.ingest.watch",      supports_argv=False),
     "overleaf":     _passthrough_module("scq.overleaf.sync",     supports_argv=False),
     "build-index":  _passthrough_module("scq.search.index",      supports_argv=True),
+    # #12 final move (2026-05-03): serve.py → scq/server.py.
+    "serve":        _passthrough_module("scq.server",            supports_argv=True),
 }
 
 
@@ -149,6 +151,7 @@ _PASSTHROUGH_MODULES = {
     "watch":       "scq.ingest.watch",
     "overleaf":    "scq.overleaf.sync",
     "build-index": "scq.search.index",
+    "serve":       "scq.server",
 }
 
 

@@ -2,17 +2,19 @@
 """
 ScientificLitterScoop — Local Server Launcher
 
-Double-click this file or run from a terminal to:
+Double-click START.bat / START.command or run from a terminal to:
   1. Start an HTTP server on localhost
   2. Open all app pages as browser tabs
 
 Usage:
-  python serve.py              Open everything (database + scraper)
-  python serve.py database     Open just the database
-  python serve.py scraper      Open just the scraper
+  python -m scq serve              Open everything (database + scraper)
+  python -m scq serve database     Open just the database
+  python -m scq serve scraper      Open just the scraper
 
 Works on Windows, macOS, and Linux. No extra dependencies.
 Press Ctrl+C (or close the terminal window) to stop.
+
+(Moved from repo-root ``serve.py`` to ``scq/server.py`` in plan #12.)
 """
 
 import http.server
@@ -32,13 +34,12 @@ from pathlib import Path
 
 PORT = 8080
 
-# Resolve the canonical DB path. If scq is on sys.path, honor any
-# user_config/paths.toml override; otherwise fall back to the default.
-try:
-    from scq.config.paths import paths as _scq_paths
-    DB_PATH = _scq_paths().db_path
-except Exception:  # noqa: BLE001
-    DB_PATH = (Path(__file__).resolve().parent / "data" / "scientific_litter_scoop.db").resolve()
+# Resolve the canonical DB path via paths(). The package layout means
+# there's no "fall back to relative-to-script" any more — everything goes
+# through the resolver, which honors data/user_config/paths.toml + env vars
+# and walks up to find the repo root from anywhere on disk.
+from scq.config.paths import paths as _scq_paths
+DB_PATH = _scq_paths().db_path
 
 # Cap on save-db payload size — defends against a runaway upload. SCQ paper
 # databases are typically <50 MB even for very large libraries; 200 MB is
@@ -69,11 +70,12 @@ def _ensure_console():
     except Exception:
         return
 
-    # No console — relaunch in one
+    # No console — relaunch in one. Use `python -m scq serve` so the
+    # invocation works regardless of where scq is installed (editable
+    # checkout, pip install, frozen path).
     import subprocess
-    script = os.path.abspath(__file__)
     args = " ".join(f'"{a}"' for a in sys.argv[1:])
-    cmd = f'start "ScientificLitterScoop" /WAIT python "{script}" {args}'.strip()
+    cmd = f'start "ScientificLitterScoop" /WAIT python -m scq serve {args}'.strip()
     subprocess.Popen(cmd, shell=True)
     sys.exit(0)
 
@@ -808,14 +810,15 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(content_length)
             payload = json.loads(body.decode('utf-8'))
 
-            # Create inbox directory if needed
-            inbox_dir = os.path.join(os.path.dirname(__file__), "inbox")
-            os.makedirs(inbox_dir, exist_ok=True)
+            # Create inbox directory if needed (resolved via paths() so the
+            # user's user_config/paths.toml override is honored).
+            inbox_dir = _scq_paths().inbox_dir
+            inbox_dir.mkdir(parents=True, exist_ok=True)
 
             # Save to timestamped JSON file
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"bookmarklet_{timestamp}.json"
-            filepath = os.path.join(inbox_dir, filename)
+            filepath = inbox_dir / filename
 
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(payload, f, indent=2, ensure_ascii=False)
@@ -930,30 +933,30 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             if not safe_name.lower().endswith('.pdf'):
                 safe_name += '.pdf'
 
-            # Ensure papers directory exists
-            papers_dir = os.path.join(os.path.dirname(__file__), "papers")
-            os.makedirs(papers_dir, exist_ok=True)
+            # Ensure papers directory exists (resolved via paths()).
+            papers_dir = _scq_paths().papers_dir
+            papers_dir.mkdir(parents=True, exist_ok=True)
 
             # Check for duplicate filename
-            filepath = os.path.join(papers_dir, safe_name)
+            filepath = papers_dir / safe_name
             counter = 1
             base_name, ext = os.path.splitext(safe_name)
-            while os.path.exists(filepath):
+            while filepath.exists():
                 safe_name = f"{base_name}_{counter}{ext}"
-                filepath = os.path.join(papers_dir, safe_name)
+                filepath = papers_dir / safe_name
                 counter += 1
 
             # Save the PDF
             with open(filepath, 'wb') as f:
                 f.write(pdf_data)
 
-            # Create metadata entry in inbox
-            inbox_dir = os.path.join(os.path.dirname(__file__), "inbox")
-            os.makedirs(inbox_dir, exist_ok=True)
+            # Create metadata entry in inbox (resolved via paths()).
+            inbox_dir = _scq_paths().inbox_dir
+            inbox_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")[:-3]
             meta_filename = f"upload_{timestamp}.json"
-            meta_filepath = os.path.join(inbox_dir, meta_filename)
+            meta_filepath = inbox_dir / meta_filename
 
             metadata = {
                 "original_filename": original_filename,
@@ -989,11 +992,19 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             error = {"error": f"Upload failed: {str(e)}"}
             self.wfile.write(json.dumps(error).encode('utf-8'))
 
-def main():
-    """CLI entry point. Pulls argv, finds a port, binds + serves until Ctrl+C."""
+def main(argv=None):
+    """CLI entry point. Pulls argv, finds a port, binds + serves until Ctrl+C.
+
+    The server static-files everything relative to the *repo root* (paper_*.html,
+    src/, data/), not relative to the package install location. Resolve via
+    paths().repo_root and chdir there.
+    """
     _ensure_console()
-    # Serve from the directory this script lives in
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    if argv is not None:
+        # Reset sys.argv so the existing arg-parsing block sees the passed
+        # values. Keeps argv[0] meaningful for any consumers that read it.
+        sys.argv = ["scq serve", *argv]
+    os.chdir(_scq_paths().repo_root)
 
     # Determine which pages to open
     arg = sys.argv[1].lower() if len(sys.argv) > 1 else "all"

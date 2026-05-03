@@ -1,6 +1,6 @@
 # ScientificLitterScoop — Claude Session Guide
 
-This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`serve.py`, launched with `START.bat`), backed by a SQLite database (`data/scientific_litter_scoop.db`, served directly via HTTP and loaded into the browser by sql.js).
+This is a scientific literature management system for superconducting quantum computing (SCQ) research. It runs as two HTML pages served via a local Python server (`scq/server.py`, launched via `python -m scq serve` or by double-clicking `START.bat`), backed by a SQLite database (`data/scientific_litter_scoop.db`, served directly via HTTP and loaded into the browser by sql.js).
 
 > Naming note: the project lives at `github.com/pquarterman17/ScientificLitterScoop`. User-facing branding says "ScientificLitterScoop"; internal docs and code may still say "SCQ" since the *research domain* (superconducting quantum computing) is unchanged. The Python package is `scq` and the env-var prefix is `SCQ_` — don't rename those. The database file was renamed from `scq_papers.db` to `scientific_litter_scoop.db` in 2026-05-01 to match the public-facing project name.
 
@@ -103,7 +103,7 @@ mount). On macOS the equivalents live under
 ```
 ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
-├── serve.py                 Local server + arXiv API proxy + no-cache headers
+├── scq/server.py            Local server + arXiv API proxy + no-cache headers (renamed from serve.py 2026-05-03)
 ├── paper_database.html      Legacy main app (Library/Reading List/Cite/Settings)
 ├── paper_scraper.html       Legacy scraper (Search/Inbox/Quick Search)
 ├── db_utils.js              Legacy sql.js IIFE — superseded by src/core/db.js
@@ -191,9 +191,9 @@ The `scq.db.connection` helper (in `scq/db/connection.py`) does this for you and
 ## arXiv API Connectivity
 
 The browser-based scraper/database need to reach the arXiv API. This is handled via a
-local proxy in `serve.py` that avoids CORS and sets a proper User-Agent header:
+local proxy in `scq/server.py` that avoids CORS and sets a proper User-Agent header:
 
-- **serve.py** exposes `/api/arxiv?<query>` which forwards to `https://arxiv.org/api/query?<query>`
+- **scq/server.py** exposes `/api/arxiv?<query>` which forwards to `https://arxiv.org/api/query?<query>`
 - Both `paper_scraper.html` and `paper_database.html` auto-detect localhost and route
   through the proxy. Falls back to CORS proxies (allorigins, corsproxy.io) then direct fetch.
 - `export.arxiv.org` is **unreachable** from the user's network (Fastly CDN routing issue).

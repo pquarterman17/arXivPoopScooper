@@ -5,7 +5,7 @@ description: "Perform maintenance operations on the SCQ paper database — delet
 
 # Database Maintenance
 
-This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is the SQLite file at `data/scientific_litter_scoop.db` (served directly via HTTP by `serve.py`).
+This skill covers all direct database operations not handled by add-paper (ingestion) or enrich-paper (summary/results). The database is the SQLite file at `data/scientific_litter_scoop.db` (served directly via HTTP by `scq/server.py`, launched via `python -m scq serve`).
 
 ## Connecting to the Database
 

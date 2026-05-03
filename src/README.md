@@ -1,6 +1,6 @@
 # `src/` — frontend source
 
-All browser-side code lives here. No build step: served as plain ES modules by `serve.py`.
+All browser-side code lives here. No build step: served as plain ES modules by `scq/server.py`.
 
 ## Layout
 

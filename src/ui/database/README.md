@@ -77,7 +77,7 @@ For each feature:
    called from inline `onclick=` or unmigrated legacy code.
 5. **Delete** the inline definition in `paper_database.html`.
 6. **Smoke-test** the page: open `paper_database.html` in a browser
-   served by `serve.py` (file:// won't work for ES modules), exercise
+   served by `python -m scq serve` (file:// won't work for ES modules), exercise
    the migrated feature, watch the console for errors.
 7. **Commit** with `feat(ui/database): migrate <feature>`.
 

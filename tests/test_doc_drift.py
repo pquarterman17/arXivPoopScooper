@@ -32,6 +32,7 @@ RETIRED_SYMBOLS = [
     ("/.scq_tmp.db",         "retired 2026-04-28; the canonical .db replaces the tmp roundtrip"),
     ("email_recipients.json","retired 2026-04-28 (commit 7089d55); use data/user_config/digest.json"),
     ("scq_papers.db",        "retired 2026-05-01 (commit c9ed78b); renamed to scientific_litter_scoop.db"),
+    ("serve.py",             "renamed 2026-05-03; moved to scq/server.py — invoke via `python -m scq serve`"),
 ]
 
 

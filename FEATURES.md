@@ -6,14 +6,14 @@ A lightweight, browser-based literature management system for superconducting qu
 
 ## Architecture
 
-Two HTML pages served via a lightweight local server (`serve.py`), backed by a SQLite database compiled to WebAssembly via sql.js. Launch with `START.bat` (Windows) or `python serve.py` (macOS/Linux). The server also provides an arXiv API proxy to avoid CORS issues. Python scripts handle PDF processing and imports.
+Two HTML pages served via a lightweight local server (`scq/server.py`), backed by a SQLite database compiled to WebAssembly via sql.js. Launch with `START.bat` (Windows), `START.command` (macOS), or `python -m scq serve`. The server also provides an arXiv API proxy to avoid CORS issues. Python scripts handle PDF processing and imports.
 
 ### File Structure
 
 ```
 ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
-├── serve.py                 Local server + arXiv API proxy
+├── scq/server.py            Local server + arXiv API proxy (renamed from serve.py in plan #12)
 ├── paper_database.html      Main app (Library + Reading List + Cite tabs)
 ├── paper_scraper.html       Paper discovery (Search + Inbox + Quick Search tabs)
 ├── data/scientific_litter_scoop.db   SQLite database (canonical data source, served via HTTP)
@@ -339,7 +339,7 @@ Keyword dictionary (18+ domain terms) for auto-suggesting tags when papers are a
 
 - HTML/CSS/JavaScript (vanilla, no frameworks)
 - **sql.js 1.8.0** (SQLite compiled to WebAssembly) for in-browser database
-- `serve.py` — lightweight local server with arXiv API proxy
+- `scq/server.py` — lightweight local server with arXiv API proxy (renamed from `serve.py` in plan #12)
 - `db_utils.js` — shared database access layer used by all HTML pages
 - IBM Plex Sans font, dark theme (#0e1117 background, #58a6ff accent)
 - Python 3 + PyMuPDF + bibtexparser for tooling

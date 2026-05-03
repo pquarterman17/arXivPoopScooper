@@ -63,7 +63,7 @@ START.bat
 
 **macOS / Linux:**
 ```bash
-python -m scq.server   # or: python serve.py
+python -m scq serve     # or double-click START.command
 ```
 
 Then open <http://localhost:8000/paper_database.html>.
