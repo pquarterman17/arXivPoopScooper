@@ -49,3 +49,96 @@ jobs:
 
       - name: Run pytest suite
         run: pytest tests/ -v
+
+  e2e-smoke:
+    # Plan #19: spin up the real server and hit a representative slice of
+    # endpoints to catch regressions in the proxy + DB-serving + config
+    # paths that unit tests can miss (404 routes, mime types, the chdir
+    # to repo_root, the SCQ_NO_BROWSER opt-out, etc.).
+    name: e2e smoke (scq serve)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: pytest
+    env:
+      SCQ_NO_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Initialize a fresh DB
+        run: python -m scq init-db
+
+      - name: Start server in background
+        # Bind to a non-default port to avoid collisions with anything on
+        # 8080. The serve module finds an open port automatically; we set
+        # SCQ_PORT explicitly so curl knows where to look.
+        run: |
+          python -m scq serve >/tmp/scq-server.log 2>&1 &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+        # Note: the server defaults to port 8080. find_open_port() picks
+        # the next free one, so we read the actual bound port from the log.
+
+      - name: Wait for server to be reachable
+        run: |
+          set -e
+          for i in $(seq 1 30); do
+            PORT=$(grep -oE 'serving at http://localhost:[0-9]+' /tmp/scq-server.log | grep -oE '[0-9]+$' || true)
+            if [ -n "$PORT" ] && curl -fsS "http://127.0.0.1:$PORT/paper_database.html" >/dev/null; then
+              echo "Server up on port $PORT"
+              echo "PORT=$PORT" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "::error::Server never became reachable"
+          cat /tmp/scq-server.log
+          exit 1
+
+      - name: GET / (paper_database.html) returns 200
+        run: |
+          curl -fsS -o /tmp/db.html "http://127.0.0.1:$PORT/paper_database.html"
+          test "$(wc -c </tmp/db.html)" -gt 1000
+
+      - name: GET /data/scientific_litter_scoop.db returns binary
+        run: |
+          curl -fsS -o /tmp/db.bytes "http://127.0.0.1:$PORT/data/scientific_litter_scoop.db"
+          # SQLite files start with the literal "SQLite format 3" header
+          head -c 16 /tmp/db.bytes | grep -q "SQLite format 3"
+
+      - name: GET /api/config/search-sources returns JSON
+        run: |
+          curl -fsS -o /tmp/cfg.json "http://127.0.0.1:$PORT/api/config/search-sources"
+          python -c "import json,sys; d=json.load(open('/tmp/cfg.json')); assert 'sources' in d, d"
+
+      - name: GET /api/arxiv?... reaches the proxy
+        # The proxy returns whatever arXiv returns. Don't assert on body
+        # contents (network-flaky); just assert HTTP 200 + non-empty body.
+        run: |
+          curl -fsS -o /tmp/arxiv.xml "http://127.0.0.1:$PORT/api/arxiv?search_query=cat:quant-ph&max_results=1"
+          test "$(wc -c </tmp/arxiv.xml)" -gt 100 || (echo "::warning::arXiv proxy returned empty/short body"; head -c 500 /tmp/arxiv.xml)
+        continue-on-error: true
+
+      - name: GET /api/config/not-a-domain returns 404
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/config/not-a-domain")
+          test "$status" = "404"
+
+      - name: Stop the server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then kill "$SERVER_PID" 2>/dev/null || true; fi
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scq-server-log
+          path: /tmp/scq-server.log

@@ -1008,7 +1008,11 @@ def main(argv=None):
 
     # Determine which pages to open
     arg = sys.argv[1].lower() if len(sys.argv) > 1 else "all"
-    if arg in PAGES:
+    # SCQ_NO_BROWSER=1 makes the server start without opening any tabs.
+    # Used by the e2e smoke workflow and useful for headless dev.
+    if os.environ.get("SCQ_NO_BROWSER"):
+        to_open = []
+    elif arg in PAGES:
         to_open = [arg]
     elif arg == "all":
         to_open = list(PAGES.keys())
