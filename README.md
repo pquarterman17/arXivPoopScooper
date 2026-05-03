@@ -8,10 +8,10 @@ It runs as two HTML pages served by a small Python script, backed by a
 SQLite database. No build step, no cloud account, no telemetry — just a
 folder you can back up with `cp -r`.
 
-> **Status:** the codebase is mid-refactor from two monolithic HTML
-> files into layered ES modules + a Python package. Production still
-> runs on the legacy entry points; new work goes into `src/services/`
-> and `src/ui/`. See `plans/architecture-refactor.md`.
+> **Status:** the layered architecture is in place. Frontend is split
+> into `src/core/` (DOM-free), `src/services/` (DOM-free), and
+> `src/ui/<page>/` (DOM-coupled); Python tooling lives under the `scq/`
+> package. Architecture deep-dives in [`docs/`](docs/README.md).
 
 ---
 
@@ -66,7 +66,7 @@ START.bat
 python -m scq serve     # or double-click START.command
 ```
 
-Then open <http://localhost:8000/paper_database.html>.
+Then open <http://localhost:8080/paper_database.html>.
 
 ### Add a paper
 
@@ -76,7 +76,7 @@ bash tools/fetch.sh 2401.12345          # macOS / Linux
 tools\fetch.bat 2401.12345              # Windows
 
 # Step 2 — process into the database
-python tools/process_paper.py 2401.12345
+scq process 2401.12345
 ```
 
 That's it. Reload the database page to see the paper.
@@ -96,16 +96,22 @@ ScientificLitterScoop/
 │   ├── services/                # DOM-free domain logic
 │   ├── config/                  # ship-defaults + JSON schemas
 │   ├── ui/                      # DOM-coupled rendering
+│   ├── dev/                     # storybook-style harness for ui/ modules
 │   └── tests/                   # vitest specs
-├── scq/                         # Python package (CLI, config, db, ingest)
-├── tools/                       # legacy Python scripts (moving into scq/)
+├── scq/                         # Python package — server, cli, config,
+│                                #   db, arxiv, ingest, overleaf, search,
+│                                #   schedule, migrate
+├── tools/                       # thin compat shims that delegate to scq/
 ├── tests/                       # pytest suite
+├── docs/                        # architecture + how-to deep dives
 ├── papers/                      # PDFs (gitignored — local cache)
 ├── figures/                     # extracted figures (gitignored)
 └── inbox/                       # arXiv fetch staging (gitignored)
 ```
 
-For full architecture detail, see `CLAUDE.md` and `FEATURES.md`.
+For deeper detail, start with [`docs/architecture.md`](docs/architecture.md). The
+[GitHub wiki](https://github.com/pquarterman17/ScientificLitterScoop/wiki) has
+project-level guidance for new contributors.
 
 ---
 
@@ -138,16 +144,23 @@ Starter `.example` files for each domain ship in `data/user_config/`.
 ```bash
 # Python
 pip install -e ".[dev]"
-pytest
+pytest                   # 325 specs as of 2026-05-03
 ruff check scq/
 
 # Frontend
 npm install
-npm test                 # vitest
+npm test                 # vitest — 595 specs
+npm run typecheck        # tsc --noEmit on @ts-check-opted-in files
+npm run build            # vite production bundle (optional, dist/)
 ```
 
-CI runs `pytest` + `vitest` on every push to `main` and every PR (see
-`.github/workflows/test.yml`).
+CI runs vitest + pytest + typecheck + an end-to-end smoke job that
+spins up `scq serve` and hits a representative slice of endpoints — see
+`.github/workflows/test.yml`.
+
+For iterating on individual UI modules without booting the full app,
+visit `http://localhost:8080/dev.html` after starting the server. Stories
+live in `src/dev/stories/`.
 
 ---
 

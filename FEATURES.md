@@ -26,16 +26,35 @@ ScientificLitterScoop/
 │ // All user data — DB, citations, digests — lives external in
 │ // <OneDrive>/Work and School Research/SCQ Paper Library/, mapped
 │ // via data/user_config/paths.toml. The repo only carries code.
-├── tools/
+├── src/                     Frontend ES modules (no build step)
+│   ├── core/                  db, store, events, config, search-config-bridge
+│   ├── services/              papers, citations, search, exports, settings, ...
+│   ├── config/                JSON Schemas + ship-defaults
+│   ├── ui/                    database/, scraper/, settings/ — DOM-coupled
+│   └── dev/                   Storybook-style harness for ui/ modules
+├── scq/                     Python package — invoke via `scq <subcommand>`
+│   ├── server.py              HTTP server (renamed from serve.py)
+│   ├── cli.py                 subcommand dispatcher
+│   ├── config/                paths, user, secrets, portable (export/import)
+│   ├── db/                    init, migrations, merge
+│   ├── arxiv/                 search, render, email, digest
+│   ├── ingest/                process, extract, inbox, mendeley, watch
+│   ├── overleaf/sync.py       references.bib → Overleaf project
+│   ├── search/index.py        full-text index builder (legacy)
+│   ├── schedule.py            digest cron-line manager
+│   └── migrate.py             scraper_config.js → user_config converter
+├── tools/                   Thin compat shims (each delegates to its scq.* counterpart)
 │   ├── fetch_arxiv.js       arXiv API + PDF download (Node.js)
-│   ├── fetch.bat             Windows wrapper
-│   ├── fetch.sh              macOS/Linux wrapper
-│   ├── process_paper.py      Full ingestion pipeline (Python)
-│   ├── extract_figures.py    PyMuPDF figure + caption extractor
-│   ├── process_inbox.py      Batch PDF inbox processor
-│   ├── import_mendeley.py    .bib file importer
-│   ├── init_database.py      DB schema creator / migration tool
-│   └── merge_database.py     DB merge utility
+│   ├── fetch.bat / fetch.sh Windows / macOS-Linux wrappers
+│   └── *.py                 shim files: process_paper, extract_figures, process_inbox,
+│                              import_mendeley, init_database, merge_database — all
+│                              equivalent to `scq <subcommand>` (kept so legacy docs
+│                              and skill scripts continue to work unchanged)
+├── docs/                    Architecture + configuration deep dives
+│   ├── architecture.md      Layered structure, page bridge, config-subscribe rule
+│   ├── configuration.md     Four-layer config model, x-mergeKey, JS/Python parity
+│   ├── adding-a-search-source.md
+│   └── adding-a-config-key.md
 ├── CLAUDE.md                Claude session guide
 ├── FEATURES.md              This file
 └── README.md                Project overview
@@ -197,14 +216,15 @@ The primary workflow for adding papers from arXiv. Two-step process: fetch (host
 - Cross-platform: use `fetch.bat` (Windows) or `fetch.sh` (macOS/Linux)
 - Handles redirects, duplicate detection, versioned papers
 
-**`tools/process_paper.py`** — Full database ingestion pipeline (Python, runs in sandbox)
+**`scq process` / `tools/process_paper.py`** — Full database ingestion pipeline (Python, runs in sandbox)
 
 - Reads `_meta.json` from inbox, extracts figures, generates citations
 - Auto-tags from arXiv categories + keyword detection (18+ SCQ domain terms)
 - Inserts into SQLite: paper, figures, FTS index, read status, optional notes
 - Appends to `references.bib` and `references.txt` with duplicate detection
 - Writes directly to `data/scientific_litter_scoop.db` (no re-export step — the canonical store is the .db file itself)
-- Usage: `python3 tools/process_paper.py <arxiv_id> [--note "..."]`
+- Usage: `scq process <arxiv_id> [--note "..."]` (canonical) or
+  `python3 tools/process_paper.py <arxiv_id>` (compat shim)
 
 ### Python Tools
 

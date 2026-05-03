@@ -4,20 +4,21 @@ This is a scientific literature management system for superconducting quantum co
 
 > Naming note: the project lives at `github.com/pquarterman17/ScientificLitterScoop`. User-facing branding says "ScientificLitterScoop"; internal docs and code may still say "SCQ" since the *research domain* (superconducting quantum computing) is unchanged. The Python package is `scq` and the env-var prefix is `SCQ_` — don't rename those. The database file was renamed from `scq_papers.db` to `scientific_litter_scoop.db` in 2026-05-01 to match the public-facing project name.
 
-> **Refactor in progress (2026-04-28+):** the codebase is being decomposed
-> from two monolithic HTML files into layered ES modules under `src/` plus a
-> Python package under `scq/`. See `plans/architecture-refactor.md` for the
-> tier list. The legacy `paper_database.html`, `paper_scraper.html`,
-> `db_utils.js`, and `scraper_config.js` still drive production until items
-> #8 / #9 land — don't extend them with new features. Add new functionality
-> to `src/services/*` (DOM-free) or `src/ui/*` (DOM-coupled) instead.
+> **Refactor complete (2026-05-03):** the layered architecture target
+> is reached. Frontend lives under `src/{core,services,ui,config,dev}/`,
+> Python under `scq/`. Both halves share JSON Schemas + test vectors.
+> The full plan archive is at `plans/archive/architecture-refactor.md`.
+> The two HTML pages still have inline boot blocks that import from the
+> module layer via the page-bridge pattern (see `docs/architecture.md`);
+> don't extend the boot blocks with new features. New functionality goes
+> in `src/services/*` (DOM-free) or `src/ui/*` (DOM-coupled).
 
 ## Architecture Documentation
 
 Deep-dive docs live in `docs/`. Read these before extending subsystems you haven't touched before:
 
-- [`docs/architecture.md`](docs/architecture.md) — the layered structure (`core/` / `services/` / `ui/` / `scq/`) and the three rules that keep a future Vue 3 port viable.
-- [`docs/configuration.md`](docs/configuration.md) — the four-layer config model, `x-mergeKey` semantics, the JS/Python parity story.
+- [`docs/architecture.md`](docs/architecture.md) — the layered structure (`core/` / `services/` / `ui/` / `scq/`), the three rules that keep a future Vue 3 port viable, the **page bridge** pattern with frozen-list specs, the **config-subscribe rule** for surfaces that read merged config, the dev harness, and TypeScript-via-JSDoc setup.
+- [`docs/configuration.md`](docs/configuration.md) — the four-layer config model, `x-mergeKey` semantics, the JS/Python parity story, the **domain-config vs. user reference data** distinction.
 - [`docs/adding-a-search-source.md`](docs/adding-a-search-source.md) — step-by-step for new journals.
 - [`docs/adding-a-config-key.md`](docs/adding-a-config-key.md) — schema → defaults → loader → JS service → Python loader → Settings UI.
 
@@ -66,7 +67,9 @@ bash tools/fetch.sh <arxiv_id>
 
 ```bash
 cd "$PROJECT_ROOT"
-python3 tools/process_paper.py <arxiv_id> --note "optional note"
+scq process <arxiv_id> --note "optional note"
+# or, equivalent: python3 tools/process_paper.py <arxiv_id> --note "..."
+# (the tools/ wrappers are thin compat shims that delegate to scq.ingest.process)
 ```
 
 Find `PROJECT_ROOT` dynamically:
@@ -76,7 +79,7 @@ PROJECT_ROOT=$(find /sessions -name "scientific_litter_scoop.db" -path "*/mnt/*/
 
 **What it does (all automatic):**
 1. Reads `inbox/<arxiv_id>_meta.json`
-2. Extracts figures + captions from the PDF via `tools/extract_figures.py`
+2. Extracts figures + captions from the PDF via `scq.ingest.extract` (`tools/extract_figures.py` is a shim)
 3. Generates BibTeX and plain-text (Physical Review style) citations
 4. Auto-tags based on arXiv categories + keyword matching
 5. Inserts into SQLite: paper entry, figures, FTS index, read status
@@ -113,37 +116,44 @@ mount). On macOS the equivalents live under
 ScientificLitterScoop/
 ├── START.bat                Double-click to launch (Windows)
 ├── scq/server.py            Local server + arXiv API proxy + no-cache headers (renamed from serve.py 2026-05-03)
-├── paper_database.html      Legacy main app (Library/Reading List/Cite/Settings)
-├── paper_scraper.html       Legacy scraper (Search/Inbox/Quick Search)
-├── db_utils.js              Legacy sql.js IIFE — superseded by src/core/db.js
-├── scraper_config.js        Legacy giant config object — superseded by src/config/
+├── paper_database.html      Main app (Library / Reading List / Cite / Settings)
+├── paper_scraper.html       Scraper (Search / Inbox / Quick Search)
+├── dev.html                 Storybook-style dev harness for UI modules
+├── db_utils.js              sql.js IIFE used by the inline boot blocks; new code uses src/core/db.js
+├── scraper_config.js        Ship-default scraper config; user overrides flow through src/config/ + the search-config-bridge
 ├── (references.bib + .txt)  → SCQ Paper Library/citations/ (external; see paths.toml)
 ├── data/
 │   ├── scientific_litter_scoop.db    Canonical SQLite database (served via HTTP)
 │   ├── migrations/          Versioned schema (001_initial.sql, etc.)
 │   └── user_config/         User overrides (gitignored) + .example starters
-├── src/                     New layered frontend (no build step, ES modules)
-│   ├── core/                  db, store, events, config — DOM-free
-│   ├── services/              papers/notes/tags/citations/arxiv/etc — DOM-free
+├── src/                     Layered frontend (no build step, ES modules)
+│   ├── core/                  db, store, events, config, search-config-bridge — DOM-free
+│   ├── services/              papers/notes/tags/citations/arxiv/exports/etc — DOM-free
 │   ├── config/                schemas + ship-defaults
-│   ├── ui/                    DOM-coupled (filling in via items #8 / #9)
+│   ├── ui/                    DOM-coupled (database/, scraper/, settings/)
+│   ├── dev/                   Storybook-style harness — stories under stories/
 │   └── tests/                 vitest specs (run with `npm test`)
-├── scq/                     Python package (paths.py/migrations etc.)
+├── scq/                     Python package
+│   ├── server.py              HTTP server + arXiv proxy (renamed from repo-root serve.py 2026-05-03)
+│   ├── cli.py                 `scq <subcommand>` dispatcher
+│   ├── __main__.py            `python -m scq <subcommand>` entry
+│   ├── config/                paths, user, secrets, portable (export/import)
+│   ├── db/                    init, migrations, merge
+│   ├── arxiv/                 search, render, email, digest
+│   ├── ingest/                process, extract, inbox, mendeley, watch
+│   ├── overleaf/              sync (references.bib → Overleaf project)
+│   ├── search/                build-index
+│   ├── schedule.py            `scq schedule show/update` for the digest cron line
+│   └── migrate.py             `scq migrate-from-legacy` — scraper_config.js → user_config
 ├── papers/                  [Junction → SCQ Paper Library\papers] PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
 ├── figures/                 [Junction → SCQ Paper Library\figures] Extracted figures by arXiv ID
 │   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
 ├── inbox/                   [Junction → SCQ Paper Library\inbox] Staging area for _meta.json files
-├── tools/                   Python tools (will move into scq/ via plan item #12)
-│   ├── fetch_arxiv.js       Node.js: arXiv API + PDF download (host machine)
-│   ├── fetch.bat            Windows wrapper for fetch_arxiv.js
-│   ├── fetch.sh             macOS/Linux wrapper for fetch_arxiv.js
-│   ├── process_paper.py     Full step-2 pipeline (sandbox)
-│   ├── extract_figures.py   PyMuPDF figure + caption extractor
-│   ├── process_inbox.py     Batch PDF inbox processor
-│   ├── import_mendeley.py   .bib file importer
-│   ├── init_database.py     DB schema creator (legacy; use scq.db.migrations)
-│   └── merge_database.py    DB merge utility
-├── plans/                   Local-only working plans (gitignored)
+├── tools/                   Thin compat shims that delegate to scq.* (kept so existing
+│                              docs and skill scripts keep working unchanged)
+├── docs/                    Architecture deep-dives (README, architecture, configuration,
+│                              adding-a-search-source, adding-a-config-key)
+├── plans/archive/           Archived plans from completed refactors (gitignored)
 ├── .claude/skills/          Project-specific Claude skills
 │   ├── add-paper/           Full arXiv → DB pipeline
 │   ├── enrich-paper/        PDF → summary/results/group
