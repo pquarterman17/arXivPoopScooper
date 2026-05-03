@@ -216,9 +216,18 @@ var quickResults = [];
 var quickSelected = new Set();
 
 var activeSources = {};
-for (const [key, src] of Object.entries(CFG.sources)) {
-  activeSources[key] = !!src.enabled;
+// Named so the search-config-bridge can call us back via its onReady
+// callback once user_config overrides land on SCRAPER_CONFIG. Without
+// the rebuild, a user override that sets `enabled: false` on a source
+// is silently ignored on the initial page load (B3 follow-up).
+function rebuildActiveSources() {
+  activeSources = {};
+  for (const [key, src] of Object.entries(CFG.sources)) {
+    activeSources[key] = !!src.enabled;
+  }
+  globalThis.activeSources = activeSources;
 }
+rebuildActiveSources();
 
 // `var` (not `let`) so globalThis.{dbReady,lastFetchTime} are the same
 // bindings — scraper/tabs.js reads them cross-module.

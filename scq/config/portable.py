@@ -40,6 +40,17 @@ PORTABLE_DOMAINS = (
 )
 
 
+def _is_symlink_entry(info: zipfile.ZipInfo) -> bool:
+    """Detect a Unix symlink entry by inspecting external_attr.
+
+    Zip entries created by Unix tools encode the file mode in the upper
+    16 bits of ``external_attr``. Mode 0o120000 (S_IFLNK) means symlink.
+    Windows-created bundles never have this bit set; we're defensive
+    against bundles authored on Unix that import on either platform.
+    """
+    return ((info.external_attr >> 16) & 0o170000) == 0o120000
+
+
 def export_config(zip_path: Path | str, *, include_paths: bool = False) -> dict:
     """Bundle the user_config directory into ``zip_path``.
 
@@ -127,6 +138,12 @@ def import_config(zip_path: Path | str, *, overwrite: bool = False) -> dict:
             rel = Path(name)
             if rel.is_absolute() or ".." in rel.parts:
                 raise ValueError(f"refusing unsafe path in bundle: {name}")
+            # Reject symlink entries — zipfile happily extracts them as
+            # links pointing wherever the bundle author specified, which
+            # could redirect a user_config write to an arbitrary path.
+            info = zf.getinfo(name)
+            if _is_symlink_entry(info):
+                raise ValueError(f"refusing symlink entry in bundle: {name}")
             target = user_dir / rel.name  # flatten one level
             if target.exists() and not overwrite:
                 skipped.append(rel.name)

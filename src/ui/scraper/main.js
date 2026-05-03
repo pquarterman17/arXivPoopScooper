@@ -198,10 +198,11 @@ document.addEventListener('keydown', (e) => {
 // (which copied DB-saved sources/presets) — Settings v2 writes user_config
 // files directly, so the loader is now the single override path.
 //
-// Mutates SCRAPER_CONFIG asynchronously (after the boot-block IIFEs have
-// already rendered toggles + presets with defaults). Subsequent searches
-// + saved-query operations see the merged values; existing toggle DOM
-// stays at defaults until the user reloads — same UX as the legacy
-// `_applySettingsToConfig` it replaces. A re-render pass is a separate
-// follow-up.
-bootstrapSearchConfig();
+// onReady callback rebuilds the boot block's `activeSources` map after
+// the bridge mutates SCRAPER_CONFIG.sources — without it, a user_config
+// override that disables a source is silently ignored until the user
+// manually toggles (B3 follow-up). The toggle DOM still doesn't redraw
+// — that's a separate UX polish item.
+bootstrapSearchConfig([
+  () => globalThis.rebuildActiveSources?.(),
+]);

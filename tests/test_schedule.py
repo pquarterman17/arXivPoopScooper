@@ -173,6 +173,73 @@ def test_read_current_raises_when_workflow_missing(monkeypatch, tmp_path):
         _paths_refresh()
 
 
+def test_write_cron_refuses_when_workflow_has_multiple_cron_lines(monkeypatch, tmp_path):
+    """Bug-hunter #4: silently rewriting the first of multiple cron lines
+    would corrupt unrelated schedules. Refuse instead."""
+    workflow = tmp_path / ".github" / "workflows" / "arxiv_digest.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "on:\n  schedule:\n"
+        "    - cron: '0 7 * * *'\n"
+        "    - cron: '30 18 * * 5'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SCQ_REPO_ROOT", str(tmp_path))
+    from scq.config.paths import refresh as _paths_refresh
+    _paths_refresh()
+    try:
+        with pytest.raises(schedule.ScheduleError, match="2 cron lines"):
+            schedule.write_cron("0 12 * * *")
+        # Original file untouched
+        text = workflow.read_text()
+        assert "0 7 * * *" in text
+        assert "30 18 * * 5" in text
+    finally:
+        _paths_refresh()
+
+
+def test_read_current_flags_multiple_cron_lines(monkeypatch, tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "arxiv_digest.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "on:\n  schedule:\n"
+        "    - cron: '0 7 * * *'\n"
+        "    - cron: '30 18 * * 5'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SCQ_REPO_ROOT", str(tmp_path))
+    from scq.config.paths import refresh as _paths_refresh
+    _paths_refresh()
+    try:
+        info = schedule.read_current()
+        assert info.get("multiple") is True
+        assert info["all_exprs"] == ["0 7 * * *", "30 18 * * 5"]
+    finally:
+        _paths_refresh()
+
+
+def test_cli_show_warns_on_multiple_cron_lines(monkeypatch, tmp_path, capsys):
+    workflow = tmp_path / ".github" / "workflows" / "arxiv_digest.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "on:\n  schedule:\n"
+        "    - cron: '0 7 * * *'\n"
+        "    - cron: '30 18 * * 5'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SCQ_REPO_ROOT", str(tmp_path))
+    from scq.config.paths import refresh as _paths_refresh
+    _paths_refresh()
+    try:
+        schedule.main(["show"])
+        out = capsys.readouterr().out
+        assert "warning" in out.lower()
+        assert "2 cron lines" in out
+        assert "refuse" in out.lower()
+    finally:
+        _paths_refresh()
+
+
 def test_write_cron_raises_when_no_cron_line(monkeypatch, tmp_path):
     workflow = tmp_path / ".github" / "workflows" / "arxiv_digest.yml"
     workflow.parent.mkdir(parents=True)

@@ -168,6 +168,26 @@ def test_get_secret_returns_404(running_server):
     assert status == 404
 
 
+def test_env_truthy_handles_falsy_strings():
+    """Bug-hunter #2: SCQ_NO_BROWSER=false must NOT suppress the browser.
+    Plain `if os.environ.get(...)` would have flipped that into 'skip'."""
+    truthy = serve._env_truthy
+    assert truthy(None) is False
+    assert truthy("") is False
+    assert truthy("   ") is False
+    # Falsy strings — the bug case
+    assert truthy("0") is False
+    assert truthy("false") is False
+    assert truthy("FALSE") is False
+    assert truthy("no") is False
+    assert truthy("Off") is False
+    # Truthy strings
+    assert truthy("1") is True
+    assert truthy("true") is True
+    assert truthy("yes") is True
+    assert truthy("anything-else") is True
+
+
 def test_unknown_post_path_still_returns_404(running_server):
     """Sanity: the new endpoint didn't accidentally swallow the catch-all 404."""
     port, _ = running_server

@@ -218,6 +218,22 @@ def find_open_port(start=8080, end=8099):
     return start
 
 
+def _env_truthy(value):
+    """Treat conventional falsy strings as ``False`` rather than truthy.
+
+    Python's bare ``if os.environ.get(...)`` is truthy for any non-empty
+    string, which means ``SCQ_NO_BROWSER=false`` would still suppress
+    the browser — the opposite of what a sysadmin reading the var name
+    would expect. Recognise the standard set of false-y strings instead.
+    """
+    if value is None:
+        return False
+    s = str(value).strip().lower()
+    if not s:
+        return False
+    return s not in ("0", "false", "no", "off")
+
+
 def open_tabs(port, which):
     """Open requested pages as browser tabs with a small stagger."""
     time.sleep(0.5)  # let server bind first
@@ -1009,8 +1025,10 @@ def main(argv=None):
     # Determine which pages to open
     arg = sys.argv[1].lower() if len(sys.argv) > 1 else "all"
     # SCQ_NO_BROWSER=1 makes the server start without opening any tabs.
-    # Used by the e2e smoke workflow and useful for headless dev.
-    if os.environ.get("SCQ_NO_BROWSER"):
+    # Used by the e2e smoke workflow and useful for headless dev. Goes
+    # through _env_truthy so `SCQ_NO_BROWSER=false` is honored as "still
+    # open" rather than getting swallowed by Python's bare truthiness.
+    if _env_truthy(os.environ.get("SCQ_NO_BROWSER")):
         to_open = []
     elif arg in PAGES:
         to_open = [arg]

@@ -240,6 +240,28 @@ def test_apply_digest_filters_missing_score_treated_as_zero():
     assert [p["id"] for p in out] == ["b"]
 
 
+def test_apply_digest_filters_handles_min_score_none():
+    """Bug-hunter #1: min_score=None must not crash on the >= comparison.
+    Treat None as 'no floor' rather than TypeError."""
+    papers = [{"id": "a", "relevance_score": 10}, {"id": "b", "relevance_score": 0}]
+    out = digest_mod._apply_digest_filters(papers, min_score=None, max_count=None)
+    assert [p["id"] for p in out] == ["a", "b"]
+
+
+def test_load_digest_config_treats_null_in_user_json_as_default(monkeypatch):
+    """Bug-hunter #1 (root cause): a hand-edited user_config with null
+    values must fall back to defaults rather than passing None through."""
+    class FakeResult:
+        data = {"minRelevanceScore": None, "maxPapers": None,
+                "lookbackDays": None, "includeSources": None}
+    monkeypatch.setattr("scq.config.user.load_config", lambda _d: FakeResult())
+    cfg = digest_mod._load_digest_config()
+    assert cfg["minRelevanceScore"] == digest_mod._DIGEST_DEFAULTS["minRelevanceScore"]
+    assert cfg["lookbackDays"] == digest_mod._DIGEST_DEFAULTS["lookbackDays"]
+    assert cfg["includeSources"] == digest_mod._DIGEST_DEFAULTS["includeSources"]
+    assert cfg["maxPapers"] is None  # default IS None — preserved
+
+
 def test_load_digest_config_falls_back_when_loader_throws(monkeypatch):
     def boom(_domain):
         raise RuntimeError("config unreadable")

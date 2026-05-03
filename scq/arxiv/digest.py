@@ -46,16 +46,26 @@ _DIGEST_DEFAULTS = {
 
 
 def _load_digest_config():
-    """Return the merged digest config or defaults if the loader fails."""
+    """Return the merged digest config or defaults if the loader fails.
+
+    Treats ``null`` in user_config the same as a missing key: a
+    hand-edited ``digest.json`` with ``"minRelevanceScore": null`` would
+    otherwise flow ``None`` into the filter and crash on ``>=``. The
+    schema rejects null at validation time, but ``load_config`` collects
+    errors rather than raising, so the bad value still reaches us.
+    """
     try:
         from scq.config.user import load_config
         result = load_config("digest")
         data = result.data or {}
+        def _coerce(key):
+            value = data.get(key)
+            return value if value is not None else _DIGEST_DEFAULTS[key]
         return {
-            "maxPapers": data.get("maxPapers", _DIGEST_DEFAULTS["maxPapers"]),
-            "lookbackDays": data.get("lookbackDays", _DIGEST_DEFAULTS["lookbackDays"]),
-            "minRelevanceScore": data.get("minRelevanceScore", _DIGEST_DEFAULTS["minRelevanceScore"]),
-            "includeSources": data.get("includeSources", _DIGEST_DEFAULTS["includeSources"]),
+            "maxPapers":         _coerce("maxPapers"),
+            "lookbackDays":      _coerce("lookbackDays"),
+            "minRelevanceScore": _coerce("minRelevanceScore"),
+            "includeSources":    _coerce("includeSources"),
         }
     except Exception as e:  # noqa: BLE001 — keep the workflow robust
         print(f"  [config] digest config unreadable, using defaults: {e}")
@@ -84,6 +94,11 @@ def _apply_digest_filters(papers, *, min_score, max_count):
     """
     if not papers:
         return papers
+    # Defensive: if a caller (or a hand-edited config that slipped past
+    # the loader's coerce-null pass) supplies ``None`` for the floor,
+    # treat as "no filter" rather than crashing on the >= comparison.
+    if min_score is None:
+        min_score = 0
     filtered = [p for p in papers if p.get("relevance_score", 0) >= min_score]
     if max_count is not None and max_count > 0:
         filtered = filtered[:max_count]

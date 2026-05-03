@@ -92,23 +92,43 @@ def workflow_path() -> Path:
 
 
 def read_current(path: Path | None = None) -> dict:
-    """Return ``{cadence, time_utc?, day?, expr}`` for the workflow's cron line."""
+    """Return ``{cadence, time_utc?, day?, expr}`` for the workflow's cron line.
+
+    Adds ``multiple: true`` plus the full match list when the workflow has
+    more than one cron line, so the caller can warn rather than reporting
+    only the first match.
+    """
     p = path or workflow_path()
     if not p.is_file():
         raise ScheduleError(f"workflow file not found: {p}")
     text = p.read_text(encoding="utf-8")
-    m = _CRON_LINE_RE.search(text)
-    if not m:
+    matches = list(_CRON_LINE_RE.finditer(text))
+    if not matches:
         raise ScheduleError(f"no cron: line found in {p}")
-    return parse_cron_line(m.group("expr"))
+    info = parse_cron_line(matches[0].group("expr"))
+    if len(matches) > 1:
+        info = {**info, "multiple": True,
+                "all_exprs": [m.group("expr") for m in matches]}
+    return info
 
 
 def write_cron(new_expr: str, path: Path | None = None) -> Path:
-    """Rewrite the workflow's cron line. Preserves indent + trailing comment."""
+    """Rewrite the workflow's cron line. Preserves indent + trailing comment.
+
+    Refuses to act when the workflow has more than one ``- cron:`` entry —
+    silently rewriting the first match would corrupt a second schedule
+    without warning. The caller can hand-edit instead.
+    """
     p = path or workflow_path()
     text = p.read_text(encoding="utf-8")
-    if not _CRON_LINE_RE.search(text):
+    matches = _CRON_LINE_RE.findall(text)
+    if not matches:
         raise ScheduleError(f"no cron: line found in {p}")
+    if len(matches) > 1:
+        raise ScheduleError(
+            f"{p} has {len(matches)} cron lines; refusing to guess which to "
+            "update. Hand-edit the file or remove the extra cron entries first."
+        )
 
     def _replace(m: re.Match) -> str:
         indent = m.group("indent")
@@ -146,11 +166,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.action == "show":
         info = read_current()
         if info["cadence"] == "custom":
-            print(f"cron: {info['expr']}  (custom — not produced by `scq schedule update`)")
+            print(f"cron: {info['expr']}  (custom - not produced by `scq schedule update`)")
         elif info["cadence"] == "daily":
             print(f"daily at {info['time_utc']} UTC  (cron: {info['expr']})")
         else:
             print(f"weekly on {info['day']} at {info['time_utc']} UTC  (cron: {info['expr']})")
+        if info.get("multiple"):
+            print(f"warning: workflow has {len(info['all_exprs'])} cron lines:")
+            for expr in info["all_exprs"]:
+                print(f"  - {expr}")
+            print("`scq schedule update` will refuse to operate on this file.")
         return 0
     if args.action == "update":
         try:

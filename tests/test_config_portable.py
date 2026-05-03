@@ -174,6 +174,31 @@ def test_import_rejects_unsupported_version(monkeypatch, tmp_path):
         _paths_refresh()
 
 
+def test_import_rejects_symlink_entry(monkeypatch, tmp_path):
+    """Bug-hunter #5: a Unix symlink entry inside the bundle can redirect
+    a config write to an arbitrary path. Reject before extraction."""
+    evil = tmp_path / "evil.zip"
+    with zipfile.ZipFile(evil, "w") as zf:
+        zf.writestr("MANIFEST.json", json.dumps({"version": portable.MANIFEST_VERSION}))
+        # Build a ZipInfo entry with the symlink mode bit set in
+        # external_attr (Unix S_IFLNK = 0o120000 in upper 16 bits).
+        info = zipfile.ZipInfo("user_config/digest.json")
+        info.external_attr = (0o120777 << 16)
+        zf.writestr(info, "/etc/passwd")
+    fresh = tmp_path / "fresh"
+    (fresh / "data" / "user_config").mkdir(parents=True)
+    monkeypatch.setenv("SCQ_REPO_ROOT", str(fresh))
+    from scq.config.paths import refresh as _paths_refresh
+    _paths_refresh()
+    try:
+        with pytest.raises(ValueError, match="symlink"):
+            portable.import_config(evil)
+        # No file was extracted
+        assert not (fresh / "data" / "user_config" / "digest.json").exists()
+    finally:
+        _paths_refresh()
+
+
 def test_import_rejects_zip_slip_path_traversal(monkeypatch, tmp_path):
     """An attacker-crafted bundle with a `..` segment should be rejected."""
     evil = tmp_path / "evil.zip"
