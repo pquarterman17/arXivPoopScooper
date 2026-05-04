@@ -149,14 +149,17 @@ def test_validate_one_domain(capsys):
     assert "digest: ok" in out
 
 
-def test_paths_emits_json(capsys):
+def test_paths_emits_json(capsys, monkeypatch, tmp_path):
+    monkeypatch.setenv("SCQ_DB_PATH", str(tmp_path / "arxiv_poop_scooper.db"))
+    from scq.config.paths import refresh
+    refresh()
     rc = main(["config", "paths"])
     out = capsys.readouterr().out
     assert rc == 0
     payload = json.loads(out)
     assert "db_path" in payload
     assert "papers_dir" in payload
-    assert payload["db_path"].endswith("scientific_litter_scoop.db")
+    assert payload["db_path"].endswith("arxiv_poop_scooper.db")
 
 
 def test_has_secret_returns_0_when_set(monkeypatch):
@@ -184,7 +187,7 @@ def test_set_secret_without_keyring_returns_2(monkeypatch, capsys):
 
 
 def test_init_creates_fresh_db(tmp_path, capsys):
-    db = tmp_path / "scientific_litter_scoop.db"
+    db = tmp_path / "arxiv_poop_scooper.db"
     rc = main(["init", "--db-path", str(db)])
     out = capsys.readouterr().out
     assert rc == 0
@@ -204,7 +207,7 @@ def test_init_creates_fresh_db(tmp_path, capsys):
 
 
 def test_init_idempotent_on_empty_db(tmp_path, capsys):
-    db = tmp_path / "scientific_litter_scoop.db"
+    db = tmp_path / "arxiv_poop_scooper.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()  # discard
     rc = main(["init", "--db-path", str(db)])
@@ -214,7 +217,7 @@ def test_init_idempotent_on_empty_db(tmp_path, capsys):
 
 
 def test_init_refuses_when_papers_present(tmp_path, capsys):
-    db = tmp_path / "scientific_litter_scoop.db"
+    db = tmp_path / "arxiv_poop_scooper.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()
     # Insert a paper row to simulate real user data.
@@ -242,7 +245,7 @@ def test_init_refuses_when_papers_present(tmp_path, capsys):
 
 
 def test_init_force_overwrites_populated_db(tmp_path, capsys):
-    db = tmp_path / "scientific_litter_scoop.db"
+    db = tmp_path / "arxiv_poop_scooper.db"
     main(["init", "--db-path", str(db)])
     capsys.readouterr()
     import sqlite3
@@ -268,7 +271,7 @@ def test_init_force_overwrites_populated_db(tmp_path, capsys):
 
 
 def test_init_creates_parent_directory(tmp_path, capsys):
-    db = tmp_path / "nested" / "subdir" / "scientific_litter_scoop.db"
+    db = tmp_path / "nested" / "subdir" / "arxiv_poop_scooper.db"
     rc = main(["init", "--db-path", str(db)])
     capsys.readouterr()
     assert rc == 0

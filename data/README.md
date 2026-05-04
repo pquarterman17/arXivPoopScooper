@@ -2,7 +2,7 @@
 
 This directory holds **user-specific runtime data**, most of which is gitignored.
 
-- `scientific_litter_scoop.db` — the SQLite database (gitignored; will be relocated to OneDrive in plan #2)
+- `arxiv_poop_scooper.db` — the SQLite database (gitignored; will be relocated to OneDrive in plan #2)
 - `migrations/` — versioned SQL migrations (committed). Applied in order by `scq/db/migrations.py`.
 - `user_config/` — user overrides for shipped defaults (gitignored except for `.example` templates)
 

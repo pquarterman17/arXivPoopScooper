@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scq"
 version = "0.1.0.dev0"
-description = "Scientific Literature Scoop — paper database and arXiv digest toolkit for SCQ research"
+description = "arXivPoopScooper — paper database and arXiv digest toolkit for SCQ research"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/Quartzpaige/ScientificLitterScoop"
+Repository = "https://github.com/pquarterman17/arXivPoopScooper"
 
 [project.scripts]
 scq = "scq.cli:main"

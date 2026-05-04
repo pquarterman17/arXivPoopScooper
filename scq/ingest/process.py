@@ -141,7 +141,7 @@ def lookup_doi(doi):
 
         url = f"https://api.crossref.org/works/{doi}"
         req = urllib.request.Request(url, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
             "Accept": "application/json",
         })
 
@@ -260,7 +260,7 @@ def extract_figures(pdf_path, arxiv_id, prefix):
 # ─── Database operations ──────────────────────────────────────────
 
 def load_db():
-    """Open the canonical SQLite DB at data/scientific_litter_scoop.db, applying migrations."""
+    """Open the canonical SQLite DB at data/arxiv_poop_scooper.db, applying migrations."""
     from scq.db.migrations import apply_pending
 
     db_path = _db_path()

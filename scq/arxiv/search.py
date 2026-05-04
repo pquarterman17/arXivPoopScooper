@@ -208,7 +208,7 @@ def _arxiv_get(url, label, max_retries=3):
             return None
         try:
             req = urllib.request.Request(url, headers={
-                "User-Agent": "SCQDigest/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)"
+                "User-Agent": "SCQDigest/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)"
             })
             resp = urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT)
             return resp.read()

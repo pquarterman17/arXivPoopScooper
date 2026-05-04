@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ScientificLitterScoop — Local Server Launcher
+arXivPoopScooper — Local Server Launcher
 
 Double-click START.bat / START.command or run from a terminal to:
   1. Start an HTTP server on localhost
@@ -75,7 +75,7 @@ def _ensure_console():
     # checkout, pip install, frozen path).
     import subprocess
     args = " ".join(f'"{a}"' for a in sys.argv[1:])
-    cmd = f'start "ScientificLitterScoop" /WAIT python -m scq serve {args}'.strip()
+    cmd = f'start "arXivPoopScooper" /WAIT python -m scq serve {args}'.strip()
     subprocess.Popen(cmd, shell=True)
     sys.exit(0)
 
@@ -251,7 +251,7 @@ def open_tabs(port, which):
 # This avoids CORS issues and lets us set a proper User-Agent header.
 
 ARXIV_API_BASE = "https://arxiv.org/api/query"
-ARXIV_USER_AGENT = "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)"
+ARXIV_USER_AGENT = "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)"
 
 class SCQHandler(http.server.SimpleHTTPRequestHandler):
     """Serves static files + proxies arXiv API requests."""
@@ -369,7 +369,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
         target = f"https://api.crossref.org/works/{urllib.parse.quote(doi)}"
         req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
             "Accept": "application/json",
         })
 
@@ -412,7 +412,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
         target = f"https://api.crossref.org/works?{qs}"
         req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/ScientificLitterScoop)",
+            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
             "Accept": "application/json",
         })
 
@@ -442,7 +442,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(error_msg.encode())
 
     def _handle_save_db(self):
-        """Persist the in-memory sql.js DB back to data/scientific_litter_scoop.db.
+        """Persist the in-memory sql.js DB back to data/arxiv_poop_scooper.db.
 
         The browser POSTs the raw bytes of `db.export()`. We:
           1. Cap the size (defends against runaway uploads)
@@ -782,7 +782,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             msg = EmailMessage()
             msg["From"] = from_addr
             msg["To"] = ", ".join(recipients)
-            msg["Subject"] = "[ScientificLitterScoop] Test digest"
+            msg["Subject"] = "[arXivPoopScooper] Test digest"
             msg.set_content(
                 "This is a test digest sent from the Settings UI to verify your "
                 f"email pipeline.\n\nSent at {datetime.now(timezone.utc).isoformat()} "
@@ -1047,7 +1047,7 @@ def main(argv=None):
     server = http.server.HTTPServer(("127.0.0.1", port), SCQHandler)
 
     base = f"http://localhost:{port}"
-    print(f"ScientificLitterScoop — serving at {base}")
+    print(f"arXivPoopScooper — serving at {base}")
     print()
     for key in PAGES:
         marker = " *" if key in to_open else ""

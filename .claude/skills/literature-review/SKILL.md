@@ -13,8 +13,8 @@ This skill synthesizes papers already in the database (and optionally external s
 import sqlite3, json, os, glob
 
 # Find project root + DB dynamically
-matches = glob.glob("/sessions/*/mnt/*/data/scientific_litter_scoop.db")
-DB = matches[0] if matches else "data/scientific_litter_scoop.db"
+matches = glob.glob("/sessions/*/mnt/*/data/arxiv_poop_scooper.db")
+DB = matches[0] if matches else "data/arxiv_poop_scooper.db"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(DB))
 
 conn = sqlite3.connect(DB)

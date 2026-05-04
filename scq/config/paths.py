@@ -36,7 +36,7 @@ except ImportError:  # pragma: no cover — only on 3.10
 
 # Defaults are repo-relative; resolved to absolute by `_resolve()`.
 _DEFAULTS: dict[str, str] = {
-    "db_path": "data/scientific_litter_scoop.db",
+    "db_path": "data/arxiv_poop_scooper.db",
     "papers_dir": "papers",
     "figures_dir": "figures",
     "inbox_dir": "inbox",
