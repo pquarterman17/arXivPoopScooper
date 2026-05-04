@@ -1,9 +1,8 @@
 # ScientificLitterScoop
 
-A local-first, single-user scientific literature manager focused on
-**superconducting quantum computing (SCQ)** research. Add papers from
-arXiv with a single command, browse them in a fast browser UI, take
-notes, build collections, and generate citations for LaTeX or Word.
+Customizable arXiv scraper, which integrates intoa  local reference database.
+Interests can be customized, sends daily email of newly posted manuscripts
+ranked by algorithmically calculated interests.
 
 It runs as two HTML pages served by a small Python script, backed by a
 SQLite database. No build step, no cloud account, no telemetry — just a
