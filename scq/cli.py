@@ -139,6 +139,8 @@ _PASSTHROUGH_COMMANDS = {
     "schedule":     _passthrough_module("scq.schedule",          supports_argv=True),
     # #23 (2026-05-03): convert legacy scraper_config.js → user_config/*.json.
     "migrate-from-legacy": _passthrough_module("scq.migrate",    supports_argv=True),
+    # monitor: check last digest workflow run health.
+    "monitor":             _passthrough_module("scq.monitor",     supports_argv=True),
 }
 
 
@@ -203,6 +205,12 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Scientific Literature Scoop CLI",
     )
     sub = parser.add_subparsers(dest="command", metavar="<command>")
+
+    p_doctor = sub.add_parser(
+        "doctor",
+        help="check digest pipeline health: secrets, config, paths, SMTP, GitHub secrets",
+    )
+    p_doctor.set_defaults(func=_cmd_doctor)
 
     p_init = sub.add_parser(
         "init",
@@ -311,6 +319,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 # ─── command handlers ───
+
+
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    from .doctor import run_doctor
+    return run_doctor()
 
 
 def _cmd_init(args: argparse.Namespace) -> int:
