@@ -160,6 +160,7 @@ _PASSTHROUGH_MODULES = {
     "serve":       "scq.server",
     "schedule":    "scq.schedule",
     "migrate-from-legacy": "scq.migrate",
+    "monitor":     "scq.monitor",
 }
 
 
@@ -258,6 +259,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("watch",       help="watch the inbox folder for new .bib/.ris/.json files",       add_help=False)
     sub.add_parser("overleaf",    help="sync references.bib to your Overleaf project (--setup / --status)", add_help=False)
     sub.add_parser("build-index", help="(legacy) build a full-text JSON search index from PDFs",     add_help=False)
+    sub.add_parser(
+        "monitor",
+        help="check last digest workflow run and report health (--notify / --fix)",
+        add_help=False,
+    )
 
     config = sub.add_parser("config", help="inspect and manage configuration")
     config_sub = config.add_subparsers(dest="config_command", metavar="<config-command>")
