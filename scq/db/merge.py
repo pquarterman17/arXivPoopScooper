@@ -21,11 +21,11 @@ Usage:
   python tools/merge_database.py source.db target.db --export-js
 """
 
-import sqlite3
+import argparse
 import json
 import os
+import sqlite3
 import sys
-import argparse
 
 
 def merge_databases(source_path, target_path, dry_run=False):

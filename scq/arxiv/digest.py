@@ -18,15 +18,13 @@ import sys
 from datetime import datetime, timezone
 
 from scq.arxiv import search as _search
-from scq.arxiv import email as _email
+from scq.arxiv.email import send_email_digest
 from scq.arxiv.render import generate_html_digest
 from scq.arxiv.search import (
     ARXIV_CATEGORIES,
     fetch_arxiv_papers,
     rank_papers,
 )
-from scq.arxiv.email import send_email_digest
-
 
 # ─── Config loaders (plan #6 Python pass) ───
 #

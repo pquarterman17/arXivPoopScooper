@@ -20,14 +20,13 @@ All filesystem locations resolve through :func:`scq.config.paths.paths` so
 ``data/user_config/paths.toml`` overrides take effect transparently.
 """
 
-import sys
-import os
-import re
 import json
+import re
 import sqlite3
 import subprocess
-from pathlib import Path
+import sys
 from datetime import date, datetime
+from pathlib import Path
 
 # ─── Paths ────────────────────────────────────────────────────────
 # This module lives at scq/ingest/process.py. The scq package is normally
@@ -41,6 +40,7 @@ if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
 from scq.config.paths import paths as _scq_paths  # noqa: E402
+
 
 # Resolve paths lazily on each access so paths.refresh() / SCQ_REPO_ROOT
 # overrides take effect mid-process (e.g. integration tests using tmp_path).
@@ -135,9 +135,9 @@ def lookup_doi(doi):
     volume, pages, doi, cite_bib, cite_txt
     Returns None on network error or invalid DOI."""
     try:
-        import urllib.request
-        import urllib.error
         import json
+        import urllib.error
+        import urllib.request
 
         url = f"https://api.crossref.org/works/{doi}"
         req = urllib.request.Request(url, headers={
@@ -433,7 +433,7 @@ def _process_doi(doi, note):
     conn.commit()
     conn.close()
 
-    print(f"  Paper inserted with entry_type='published'")
+    print("  Paper inserted with entry_type='published'")
 
     # 3. Update citation files
     print("\n[3/3] Updating citation files...")
@@ -595,7 +595,7 @@ def main():
                 if result.returncode == 0:
                     print("  Overleaf sync successful")
                 else:
-                    print(f"  Warning: Overleaf sync failed (run manually: python tools/overleaf_sync.py)")
+                    print("  Warning: Overleaf sync failed (run manually: python tools/overleaf_sync.py)")
                     if result.stderr:
                         print(f"  Error: {result.stderr[:200]}")
         except Exception as e:
@@ -610,7 +610,7 @@ def main():
     print(f"  Tags:     {tags}")
     if note:
         print(f"  Note:     {note}")
-    print(f"\nTo enrich (summary, key results, group name), ask Claude.")
+    print("\nTo enrich (summary, key results, group name), ask Claude.")
     print(f"{'='*60}")
 
 

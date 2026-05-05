@@ -14,12 +14,11 @@ Usage:
   python tools/process_inbox.py --dry-run    # Preview without moving files
 """
 
-import os
-import sys
-import re
 import json
+import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 # This module lives at scq/ingest/inbox.py; PROJECT_DIR is two levels up.
@@ -82,7 +81,7 @@ def find_doi(text):
 
 def find_title(text):
     """Heuristic: first long line is often the title."""
-    lines = [l.strip() for l in text.split('\n') if l.strip()]
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
     for line in lines[:10]:
         # Skip lines that look like headers/metadata
         if any(kw in line.lower() for kw in ['arxiv', 'doi:', 'journal', 'volume', 'published']):
@@ -153,7 +152,7 @@ def process_pdf(pdf_path, dry_run=False):
 
         # Remove from inbox
         pdf_path.unlink()
-        print(f"  Removed from inbox.")
+        print("  Removed from inbox.")
 
     return info
 
@@ -191,9 +190,9 @@ def main():
         with open(manifest_path, "w") as f:
             json.dump(results, f, indent=2)
         print(f"\nManifest written to: {manifest_path.name}")
-        print(f"Share this file with Claude to add papers to the database.")
+        print("Share this file with Claude to add papers to the database.")
     elif results:
-        print(f"\n--- DRY RUN SUMMARY ---")
+        print("\n--- DRY RUN SUMMARY ---")
         print(json.dumps(results, indent=2))
 
     print(f"\nDone! Processed {len(results)} paper(s).")

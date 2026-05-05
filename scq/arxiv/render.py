@@ -16,10 +16,9 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 
 from scq.arxiv.search import ARXIV_CATEGORIES
-
 
 # ─── HTML Digest Generator ───
 

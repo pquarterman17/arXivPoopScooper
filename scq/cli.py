@@ -32,9 +32,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .config.paths import paths as get_paths
 from .config import secrets as secrets_mod
 from .config import user as user_cfg
+from .config.paths import paths as get_paths
 from .db import migrations as db_migrations
 
 

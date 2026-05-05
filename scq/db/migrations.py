@@ -23,9 +23,9 @@ from __future__ import annotations
 import re
 import sqlite3
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 # Path of the migrations directory relative to the repo root.
 DEFAULT_MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "data" / "migrations"

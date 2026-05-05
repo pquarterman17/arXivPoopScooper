@@ -19,12 +19,12 @@ Usage:
   python tools/init_database.py --stats          # show db statistics
 """
 
-import sqlite3
-import json
-import re
-import os
-import sys
 import argparse
+import json
+import os
+import re
+import sqlite3
+import sys
 
 # Make the repo-root scq package importable when running from a fresh
 # checkout (`python -m scq.db.init`); harmless when installed via pip.
@@ -180,7 +180,7 @@ def migrate_from_html(db_path=DB_PATH):
         sys.exit(1)
 
     # --- Extract PAPERS array from HTML ---
-    with open(html_path, "r", encoding="utf-8") as f:
+    with open(html_path, encoding="utf-8") as f:
         html = f.read()
 
     # Find the PAPERS array
@@ -234,7 +234,7 @@ def migrate_from_html(db_path=DB_PATH):
     # --- Load notes.json ---
     notes_data = {}
     if os.path.exists(notes_path):
-        with open(notes_path, "r", encoding="utf-8") as f:
+        with open(notes_path, encoding="utf-8") as f:
             notes_data = json.load(f)
 
     papers_state = notes_data.get("papers", {})
@@ -357,7 +357,7 @@ def migrate_from_html(db_path=DB_PATH):
     # Also try to import from existing search_index.json
     index_path = os.path.join(base_dir, "search_index.json")
     if os.path.exists(index_path):
-        with open(index_path, "r") as f:
+        with open(index_path) as f:
             idx = json.load(f)
         idx_papers = idx.get("papers", {})
         if idx_papers:
@@ -467,7 +467,7 @@ def show_stats(db_path=DB_PATH):
     # Collections breakdown
     colls = conn.execute("SELECT name, COUNT(*) FROM collections GROUP BY name").fetchall()
     if colls:
-        print(f"\n  Collections:")
+        print("\n  Collections:")
         for name, count in colls:
             print(f"    {name}: {count} papers")
 

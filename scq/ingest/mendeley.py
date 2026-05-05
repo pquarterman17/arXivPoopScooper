@@ -11,7 +11,10 @@ Handles Mendeley's .bib quirks: curly-brace title protection,
 month abbreviations, mendeley-specific fields, etc.
 """
 
-import sys, json, re, os
+import json
+import os
+import re
+import sys
 
 # bibtexparser is an optional runtime dependency (only needed when actually
 # importing a .bib file). Defer the import-time check to main() so just
@@ -105,9 +108,6 @@ def entry_to_record(entry):
         cite_txt += f", arXiv:{arxiv_id}"
     cite_txt += f" ({year})." if year else "."
 
-    # Keep original .bib entry
-    cite_bib = entry.get('raw', '')  # we'll reconstruct below if needed
-
     return {
         'bibkey': entry.get('ID', ''),
         'id': arxiv_id or entry.get('ID', ''),
@@ -156,7 +156,7 @@ def main():
     parser = BibTexParser(common_strings=True)
     parser.customization = convert_to_unicode
 
-    with open(bib_path, 'r', encoding='utf-8', errors='replace') as f:
+    with open(bib_path, encoding='utf-8', errors='replace') as f:
         bib_db = bibtexparser.load(f, parser=parser)
 
     records = []
@@ -176,10 +176,10 @@ def main():
 
     if dry_run:
         print(f"Found {len(records)} entries in {bib_path}")
-        print(f"\nFirst 5 entries:")
+        print("\nFirst 5 entries:")
         for r in records[:5]:
             print(f"  [{r['year']}] {r['shortAuthors']} — {r['title'][:70]}...")
-        print(f"\nRun without --dry-run to output full JSON.")
+        print("\nRun without --dry-run to output full JSON.")
     else:
         print(json.dumps(output, indent=2, ensure_ascii=False))
 

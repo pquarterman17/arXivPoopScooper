@@ -11,12 +11,11 @@ Usage:
   python tools/build_search_index.py --stats   # Show index statistics
 """
 
-import os
-import sys
 import json
 import re
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 
 # This module lives at scq/search/index.py; PROJECT_DIR is two levels up.
 # Note: this is a legacy full-text search index (replaced by SQLite FTS5;
@@ -148,7 +147,7 @@ def show_stats():
     with open(INDEX_FILE) as f:
         index = json.load(f)
 
-    print(f"Search Index Statistics")
+    print("Search Index Statistics")
     print(f"  Built: {index.get('builtAt', 'unknown')}")
     print(f"  Papers: {len(index.get('papers', {}))}")
     for pid, data in index.get("papers", {}).items():

@@ -14,9 +14,8 @@ from __future__ import annotations
 import socket
 import subprocess
 import sys
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 # ─── result types ───
 
@@ -106,6 +105,7 @@ def _check_secret(name: str, display_name: str) -> CheckResult:
 def _check_keyring_secret(name: str, display_name: str) -> CheckResult:
     """Check a secret, skipping if keyring is unavailable and env var unset."""
     import os
+
     from .config import secrets as _secrets
 
     env_val = os.environ.get(_secrets.env_var_name(name))

@@ -7,6 +7,8 @@ See plan item #5 in plans/architecture-refactor.md.
   secrets — OS keyring + env-var fallback for SMTP password etc.
 """
 
-from .paths import Paths, paths, repo_root, refresh  # noqa: F401
-from . import user  # noqa: F401
-from . import secrets  # noqa: F401
+from . import (
+    secrets,  # noqa: F401
+    user,  # noqa: F401
+)
+from .paths import Paths, paths, refresh, repo_root  # noqa: F401

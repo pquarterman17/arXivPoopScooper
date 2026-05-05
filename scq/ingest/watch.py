@@ -14,14 +14,13 @@ Supported formats:
   .ris    — RIS format (from many reference managers)
 """
 
-import sys
-import os
 import json
 import re
-import time
 import shutil
-from pathlib import Path
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
 
 # ─── Configuration ────────────────────────────────────────────────
 
@@ -44,7 +43,7 @@ class SimpleBibTeXParser:
     @staticmethod
     def parse_file(filepath):
         """Parse .bib file and return list of entry dicts."""
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+        with open(filepath, encoding='utf-8', errors='replace') as f:
             content = f.read()
 
         entries = []
@@ -99,7 +98,7 @@ class RISParser:
     def parse_file(filepath):
         """Parse .ris file and return list of entry dicts."""
         entries = []
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+        with open(filepath, encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
 
         current_entry = {}
@@ -191,7 +190,7 @@ def process_json_file(filepath):
     """Process a .json file (bookmarklet capture or other JSON metadata)."""
     records = []
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, encoding='utf-8') as f:
             data = json.load(f)
 
         # Handle single object or array of objects
@@ -324,7 +323,7 @@ def process_directory(watch_dir, once=False):
 
                     # Move to processed
                     if move_to_processed(filepath):
-                        print(f"  → Moved to processed/")
+                        print("  → Moved to processed/")
 
                     # TODO: Here's where the actual database import would happen.
                     # For now, we just queue the data.

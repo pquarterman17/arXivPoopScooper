@@ -18,17 +18,17 @@ Press Ctrl+C (or close the terminal window) to stop.
 """
 
 import http.server
-import webbrowser
+import json
 import os
+import socket
 import sys
 import tempfile
 import threading
-import socket
 import time
-import urllib.request
-import urllib.parse
 import urllib.error
-import json
+import urllib.parse
+import urllib.request
+import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -38,7 +38,8 @@ PORT = 8080
 # there's no "fall back to relative-to-script" any more — everything goes
 # through the resolver, which honors data/user_config/paths.toml + env vars
 # and walks up to find the repo root from anywhere on disk.
-from scq.config.paths import paths as _scq_paths
+from scq.config.paths import paths as _scq_paths  # noqa: E402
+
 DB_PATH = _scq_paths().db_path
 
 # Cap on save-db payload size — defends against a runaway upload. SCQ paper
@@ -562,7 +563,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
     def _handle_config_post(self):
         from scq.config import user as _user_cfg
-        from scq.config.paths import paths as _paths_resolver, refresh as _paths_refresh
+        from scq.config.paths import paths as _paths_resolver
+        from scq.config.paths import refresh as _paths_refresh
 
         domain = self.path.rsplit("/", 1)[-1].split("?")[0]
         try:
@@ -586,7 +588,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 # Validate against the paths schema (it's not in MANIFEST so we
                 # load + validate manually).
                 schema_path = repo_root / "src" / "config" / "schema" / "paths.schema.json"
-                with open(schema_path, "r", encoding="utf-8") as f:
+                with open(schema_path, encoding="utf-8") as f:
                     schema = json.load(f)
                 errors = _user_cfg._validate(value, schema)
                 if errors:
@@ -607,7 +609,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
 
             # Validate against the domain's schema
             schema_path = repo_root / "src" / "config" / "schema" / f"{domain}.schema.json"
-            with open(schema_path, "r", encoding="utf-8") as f:
+            with open(schema_path, encoding="utf-8") as f:
                 schema = json.load(f)
             errors = _user_cfg._validate(value, schema)
             if errors:
@@ -697,6 +699,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
     # arxiv pipeline.
     def _handle_test_db_path(self):
         import sqlite3
+
         from scq.config.paths import paths as _paths_resolver
         try:
             p = _paths_resolver(force_reload=True).db_path
@@ -761,8 +764,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_test_digest(self):
-        from email.message import EmailMessage
         from datetime import datetime, timezone
+        from email.message import EmailMessage
         try:
             email_cfg, app_password = _load_email_config()
             digest_cfg = _load_digest_config()

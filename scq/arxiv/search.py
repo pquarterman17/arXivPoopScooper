@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import random
 import re
-import socket
 import time
 import urllib.error
 import urllib.parse
@@ -232,7 +231,7 @@ def _arxiv_get(url, label, max_retries=3):
             print(f"  HTTP {e.code} on {label}, retrying in {wait:.0f}s "
                   f"(attempt {attempt + 1}/{max_retries})...")
             time.sleep(wait)
-        except (urllib.error.URLError, socket.timeout) as e:
+        except (TimeoutError, urllib.error.URLError) as e:
             if attempt == max_retries - 1:
                 print(f"  Warning: Failed to fetch {label}: {e}")
                 return None

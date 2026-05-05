@@ -177,7 +177,7 @@ def _read_json(path: Path, *, required: bool) -> dict[str, Any] | None:
             raise FileNotFoundError(f"required config file missing: {path}")
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         raise ValueError(f"{path} is not valid JSON: {e}") from e

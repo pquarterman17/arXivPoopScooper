@@ -19,8 +19,11 @@ Output:
       captions.json   ← {"fig1": "Figure 1: ...", "fig2": "Figure 2: ..."}
 """
 
-import sys, os, json, re, subprocess
-from pathlib import Path
+import json
+import os
+import re
+import subprocess
+import sys
 
 # fitz (PyMuPDF) and PIL (Pillow) are optional runtime deps — only needed when
 # actually extracting figures. Defer the import-time check to main() so just
@@ -109,7 +112,7 @@ def find_figure_pages(doc, captions):
                 if pix.width > 200 and pix.height > 150:
                     fig_pages.add(page_idx)
                 pix = None
-            except:
+            except Exception:
                 pass
 
     return sorted(fig_pages)
@@ -166,7 +169,7 @@ def extract_figure_regions(page_img, doc, page_idx):
                     x1 = min(iw, x1 + pad_x)
                     y1 = min(ih, y1 + pad_y)
                     regions.append((x0, y0, x1, y1))
-        except:
+        except Exception:
             pass
 
     # Merge overlapping regions

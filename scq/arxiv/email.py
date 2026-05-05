@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 import os
 import smtplib
-import sys
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -90,7 +89,7 @@ def _load_email_recipients():
                 "migrate to data/user_config/digest.json (see plan #15) and remove this file"
             )
             try:
-                with open(legacy, "r") as f:
+                with open(legacy) as f:
                     data = json.load(f)
                 for r in data.get("recipients", []):
                     if r.get("enabled", True):
