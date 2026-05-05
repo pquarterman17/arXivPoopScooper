@@ -497,8 +497,52 @@ def _make_short_authors(authors):
 # ─── Relevance Scoring ───
 
 
-def score_paper(paper: dict) -> float:
-    """Score a paper's relevance using config-driven keyword profiles.
+def _get_ranking_mode() -> str:
+    """Read the rankingMode field from the digest config (defaults to 'smart').
+
+    Always reads fresh from the config system — not cached — so mode changes
+    take effect within the same process without requiring a restart.
+    """
+    try:
+        from scq.config.user import load_config
+
+        result = load_config("digest")
+        return result.data.get("rankingMode", "smart")
+    except Exception:  # noqa: BLE001
+        return "smart"
+
+
+def _score_paper_simple(paper: dict) -> float:
+    """Score using the flat ``_FALLBACK_KEYWORDS`` dict (pre-profile algorithm).
+
+    Identical to the scoring logic that existed before the relevance-config
+    overhaul: title hits count 2x abstract hits, no author boosts, no
+    profile focus multipliers. ``paper`` is mutated in-place.
+    """
+    title_lower = paper["title"].lower()
+    text_lower = (paper["title"] + " " + paper["abstract"]).lower()
+
+    score: float = 0.0
+    matched_keywords: list[str] = []
+
+    for keyword, weight in _FALLBACK_KEYWORDS.items():
+        kw_lower = keyword.lower()
+        title_hits = title_lower.count(kw_lower)
+        abstract_hits = text_lower.count(kw_lower) - title_hits
+        if title_hits > 0 or abstract_hits > 0:
+            kw_score = (title_hits * 2 + abstract_hits) * weight
+            score += kw_score
+            if weight > 0:
+                matched_keywords.append(keyword)
+
+    paper["relevance_score"] = max(score, 0)
+    paper["matched_keywords"] = matched_keywords
+    paper["matched_profiles"] = []
+    return score
+
+
+def _score_paper_smart(paper: dict) -> float:
+    """Score using config-driven keyword profiles with author boosts.
 
     Populates ``paper["relevance_score"]``, ``paper["matched_keywords"]``,
     and ``paper["matched_profiles"]`` as side-effects. Returns the raw
@@ -549,18 +593,55 @@ def score_paper(paper: dict) -> float:
     return score
 
 
-def rank_papers(papers: list[dict]) -> list[dict]:
+def score_paper(paper: dict) -> float:
+    """Score a paper's relevance, dispatching to the active ranking mode.
+
+    Reads ``rankingMode`` from the digest config on each call (not cached)
+    so mode changes take effect without restarting the process.
+
+    Populates ``paper["relevance_score"]``, ``paper["matched_keywords"]``,
+    and ``paper["matched_profiles"]`` as side-effects. Returns the raw
+    (pre-floor) score.
+
+    Modes:
+        "smart"  — profile-based scoring with focus multipliers and author
+                   boosts (default, current behavior).
+        "simple" — flat ``_FALLBACK_KEYWORDS`` matching, fixed 2x title
+                   multiplier, no author boosts, no profiles.
+    """
+    mode = _get_ranking_mode()
+    if mode == "simple":
+        return _score_paper_simple(paper)
+    return _score_paper_smart(paper)
+
+
+def rank_papers(papers: list[dict], mode: str | None = None) -> list[dict]:
     """Score, filter, and sort papers by relevance.
+
+    Parameters
+    ----------
+    papers:
+        List of paper dicts (mutated in-place with relevance fields).
+    mode:
+        Optional override for the ranking mode (``"simple"`` or ``"smart"``).
+        When ``None`` (default), the mode is read from the digest config.
 
     Papers whose ``relevance_score`` falls below ``minScoreToInclude``
     from the relevance config are dropped here. ``digest.py``'s
     ``minRelevanceScore`` acts as a secondary filter on top of this.
     """
-    cfg = _load_relevance_config()
-    min_score: float = cfg["minScoreToInclude"]
+    # Resolve mode once for the entire batch — avoids repeated config reads
+    # and ensures all papers in one run are scored the same way.
+    resolved_mode = mode if mode is not None else _get_ranking_mode()
 
     for p in papers:
-        score_paper(p)
+        if resolved_mode == "simple":
+            _score_paper_simple(p)
+        else:
+            _score_paper_smart(p)
+
+    cfg = _load_relevance_config()
+    min_score: float = cfg["minScoreToInclude"]
 
     papers = [p for p in papers if p.get("relevance_score", 0) >= min_score]
     papers.sort(key=lambda p: p["relevance_score"], reverse=True)

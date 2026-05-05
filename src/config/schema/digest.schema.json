@@ -70,6 +70,12 @@
     "subjectPrefix": {
       "type": "string",
       "maxLength": 40
+    },
+    "rankingMode": {
+      "type": "string",
+      "enum": ["simple", "smart"],
+      "default": "smart",
+      "description": "simple = flat keyword matching (no profiles, no author boosts). smart = profile-based scoring with focus multipliers and author boosts."
     }
   },
   "required": ["cadence", "lookbackDays"]

@@ -8,5 +8,6 @@
   "minRelevanceScore": 5,
   "includeSources": ["arxiv"],
   "recipients": [],
-  "subjectPrefix": "[SCQ digest]"
+  "subjectPrefix": "[SCQ digest]",
+  "rankingMode": "smart"
 }

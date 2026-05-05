@@ -1,10 +1,11 @@
 """Relevance config management commands.
 
-Exposes three sub-subcommands accessible via ``scq relevance <sub>``:
+Exposes four sub-subcommands accessible via ``scq relevance <sub>``:
 
     scq relevance show              -- print effective config summary
     scq relevance learn             -- analyse read/starred papers and suggest config updates
     scq relevance test <id|title>   -- score a single paper and explain every match
+    scq relevance mode <simple|smart> -- switch ranking mode in digest config
 
 Usage::
 
@@ -12,6 +13,8 @@ Usage::
     scq relevance learn
     scq relevance test 2501.12345
     scq relevance test "tantalum resonator loss"
+    scq relevance mode simple
+    scq relevance mode smart
 """
 
 from __future__ import annotations
@@ -145,11 +148,17 @@ def _tokenize(text: str) -> list[str]:
 
 def _cmd_show(args: argparse.Namespace) -> int:  # noqa: ARG001
     """Print a human-readable summary of the effective relevance config."""
-    from scq.arxiv.search import _load_relevance_config, invalidate_relevance_cache
+    from scq.arxiv.search import (
+        _get_ranking_mode,
+        _load_relevance_config,
+        invalidate_relevance_cache,
+    )
 
     invalidate_relevance_cache()
     cfg = _load_relevance_config()
 
+    mode = _get_ranking_mode()
+    print(f"Ranking mode      : {mode}")
     print(f"titleMultiplier   : {cfg['titleMultiplier']}")
     print(f"minScoreToInclude : {cfg['minScoreToInclude']}")
 
@@ -306,9 +315,47 @@ def _cmd_learn(args: argparse.Namespace) -> int:  # noqa: ARG001
     return 0
 
 
+def _cmd_mode(args: argparse.Namespace) -> int:
+    """Set the rankingMode field in data/user_config/digest.json."""
+    new_mode = args.mode
+
+    try:
+        from scq.config.paths import paths as get_paths
+
+        digest_path = get_paths().repo_root / "data" / "user_config" / "digest.json"
+    except Exception:  # noqa: BLE001
+        digest_path = Path("data/user_config/digest.json")
+
+    # Read existing file (or start from empty dict)
+    if digest_path.is_file():
+        try:
+            with open(digest_path, encoding="utf-8") as f:
+                existing: dict = json.load(f)
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"  Error reading {digest_path}: {exc}", file=sys.stderr)
+            return 1
+    else:
+        existing = {}
+
+    existing["rankingMode"] = new_mode
+
+    digest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(digest_path, "w", encoding="utf-8") as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    print(f"Ranking mode set to: {new_mode}")
+    return 0
+
+
 def _cmd_test(args: argparse.Namespace) -> int:
     """Score a single paper (by arXiv ID or title fragment) and explain every match."""
-    from scq.arxiv.search import _load_relevance_config, invalidate_relevance_cache, score_paper
+    from scq.arxiv.search import (
+        _get_ranking_mode,
+        _load_relevance_config,
+        invalidate_relevance_cache,
+        score_paper,
+    )
 
     query = args.query
 
@@ -341,11 +388,13 @@ def _cmd_test(args: argparse.Namespace) -> int:
 
     invalidate_relevance_cache()
     cfg = _load_relevance_config()
+    mode = _get_ranking_mode()
     raw_score = score_paper(paper)
 
     print(f"\nPaper: {paper.get('title', '')}")
     print(f"Authors: {paper.get('authors', '')}")
-    print(f"\nrelevance_score : {paper['relevance_score']:.1f}  (raw: {raw_score:.1f})")
+    print(f"\nRanking mode    : {mode}")
+    print(f"relevance_score : {paper['relevance_score']:.1f}  (raw: {raw_score:.1f})")
     print(f"minScoreToInclude: {cfg['minScoreToInclude']}")
     included = paper["relevance_score"] >= cfg["minScoreToInclude"]
     print(f"Would be included: {'yes' if included else 'NO (below floor)'}")
@@ -398,6 +447,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_test.add_argument("query", help="arXiv ID (e.g. 2501.12345) or title substring")
 
+    p_mode = sub.add_parser(
+        "mode",
+        help="switch ranking mode: 'simple' (flat keywords) or 'smart' (profiles + author boosts)",
+    )
+    p_mode.add_argument(
+        "mode",
+        choices=["simple", "smart"],
+        help="ranking mode to activate",
+    )
+
     args = parser.parse_args(argv)
     if args.subcmd == "show":
         return _cmd_show(args)
@@ -405,6 +464,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_learn(args)
     if args.subcmd == "test":
         return _cmd_test(args)
+    if args.subcmd == "mode":
+        return _cmd_mode(args)
 
     parser.print_help()
     return 1
