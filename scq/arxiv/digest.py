@@ -179,6 +179,66 @@ def compute_effective_days_back(days_back):
     return days_back, note
 
 
+# ─── GitHub Actions job summary ───
+
+def _write_github_step_summary(
+    *,
+    digest_date: str,
+    n_fetched: int,
+    n_relevant: int,
+    n_digest: int,
+    email_status: str,
+    artifact_run_id: str,
+) -> None:
+    """Append a Markdown summary to $GITHUB_STEP_SUMMARY if running in CI.
+
+    The file is append-only per the Actions spec; a missing env var means
+    we are running locally and the function is a no-op.
+
+    Args:
+        digest_date: ISO date string (YYYY-MM-DD) of the digest run.
+        n_fetched: Total papers fetched from arXiv before ranking/filters.
+        n_relevant: Papers that matched SCQ keywords (score >= 5).
+        n_digest: Papers included in the final digest after all filters.
+        email_status: One of ``"sent"``, ``"failed"``, or ``"skipped"``.
+        artifact_run_id: The GITHUB_RUN_ID string (empty when not in CI).
+    """
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "")
+    if not summary_path:
+        return
+
+    if email_status == "sent":
+        email_line = "Sent"
+    elif email_status == "failed":
+        email_line = "**Failed** (check SMTP secrets)"
+    else:
+        email_line = "Skipped (`--no-email` or secrets absent)"
+
+    artifact_note = (
+        f"[Download artifact](https://github.com/pquarterman17/arXivPoopScooper/"
+        f"actions/runs/{artifact_run_id}) (30-day retention)"
+        if artifact_run_id
+        else "Artifact available on the Actions run page (30-day retention)"
+    )
+
+    summary = (
+        f"## arXiv Digest — {digest_date}\n\n"
+        f"| Metric | Value |\n"
+        f"|--------|-------|\n"
+        f"| Papers fetched | {n_fetched} |\n"
+        f"| Relevant (score ≥ 5) | {n_relevant} |\n"
+        f"| In digest (after filters) | {n_digest} |\n"
+        f"| Email | {email_line} |\n\n"
+        f"{artifact_note}\n"
+    )
+
+    try:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(summary)
+    except OSError as exc:
+        print(f"  [summary] could not write to GITHUB_STEP_SUMMARY: {exc}")
+
+
 # ─── Main ───
 
 def _positive_int(value):
@@ -209,6 +269,11 @@ def main(argv=None):
         "--budget-seconds", type=int, default=600,
         help="Hard wall-clock budget for arXiv fetching (default: 600s). "
              "Leaves runway under the GH Actions 15-min job timeout."
+    )
+    parser.add_argument(
+        "--require-email", action="store_true",
+        help="Exit 2 if email fails or is skipped (for CI use). "
+             "Without this flag, email failure prints a warning but exits 0."
     )
     args = parser.parse_args(argv)
 
@@ -276,10 +341,38 @@ def main(argv=None):
     generate_html_digest(papers, digest_date, digest_path)
 
     # Send email
+    email_status = "skipped"
     if not args.no_email:
-        send_email_digest(papers, digest_date)
+        ok = send_email_digest(papers, digest_date)
+        if ok:
+            email_status = "sent"
+        else:
+            email_status = "failed"
+            if args.require_email:
+                print(
+                    "ERROR: --require-email set but email failed to send",
+                    file=sys.stderr,
+                )
+                _write_github_step_summary(
+                    digest_date=digest_date,
+                    n_fetched=pre_filter,
+                    n_relevant=relevant,
+                    n_digest=len(papers),
+                    email_status=email_status,
+                    artifact_run_id=os.environ.get("GITHUB_RUN_ID", ""),
+                )
+                sys.exit(2)
     else:
         print("  Email skipped (--no-email)")
+
+    _write_github_step_summary(
+        digest_date=digest_date,
+        n_fetched=pre_filter,
+        n_relevant=relevant,
+        n_digest=len(papers),
+        email_status=email_status,
+        artifact_run_id=os.environ.get("GITHUB_RUN_ID", ""),
+    )
 
     print(f"\nDone! {len(papers)} papers processed.")
     return digest_path

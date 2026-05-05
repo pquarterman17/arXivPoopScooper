@@ -32,6 +32,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate required secrets
+        env:
+          SCQ_EMAIL_FROM: ${{ secrets.SCQ_EMAIL_FROM }}
+          SCQ_EMAIL_APP_PASSWORD: ${{ secrets.SCQ_EMAIL_APP_PASSWORD }}
+          SCQ_EMAIL_TO: ${{ secrets.SCQ_EMAIL_TO }}
+        run: |
+          missing=()
+          [ -z "$SCQ_EMAIL_FROM" ]        && missing+=("SCQ_EMAIL_FROM")
+          [ -z "$SCQ_EMAIL_APP_PASSWORD" ] && missing+=("SCQ_EMAIL_APP_PASSWORD")
+          [ -z "$SCQ_EMAIL_TO" ]          && missing+=("SCQ_EMAIL_TO")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ERROR: the following repository secrets are missing or empty:"
+            for s in "${missing[@]}"; do echo "  - $s"; done
+            echo "Go to Settings → Secrets and variables → Actions to add them."
+            exit 1
+          fi
+          echo "All required secrets are present."
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -59,7 +77,7 @@ jobs:
             DAYS=3
           fi
           echo "Looking back $DAYS day(s)"
-          python tools/arxiv_digest.py --days $DAYS --max-results 1000 --smart-weekend
+          python tools/arxiv_digest.py --days $DAYS --max-results 1000 --smart-weekend --require-email
 
       # Note: digests are no longer committed to the repo (2026-05-01).
       # They live as a 30-day workflow artifact (downloadable from the run
