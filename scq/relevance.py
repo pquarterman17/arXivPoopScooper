@@ -318,17 +318,19 @@ def _cmd_test(args: argparse.Namespace) -> int:
     if conn is not None:
         try:
             row = conn.execute(
-                "SELECT id, title, authors, abstract FROM papers WHERE id = ? LIMIT 1",
+                "SELECT id, title, authors, summary FROM papers WHERE id = ? LIMIT 1",
                 (query,),
             ).fetchone()
             if row is None:
                 row = conn.execute(
-                    "SELECT id, title, authors, abstract FROM papers "
+                    "SELECT id, title, authors, summary FROM papers "
                     "WHERE LOWER(title) LIKE ? LIMIT 1",
                     (f"%{query.lower()}%",),
                 ).fetchone()
             if row is not None:
-                paper = dict(row)
+                d = dict(row)
+                d["abstract"] = d.pop("summary", "") or ""
+                paper = d
         finally:
             conn.close()
 
