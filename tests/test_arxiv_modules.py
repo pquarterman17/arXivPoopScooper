@@ -28,7 +28,6 @@ from scq.arxiv import digest as digest_mod
 from scq.arxiv import email as email_mod
 from scq.arxiv import search as search_mod
 
-
 # ─── search: scoring ───
 
 
@@ -65,9 +64,11 @@ def test_rank_papers_descending():
     ]
     out = search_mod.rank_papers(papers)
     scores = [p["relevance_score"] for p in out]
+    # rank_papers now drops papers below minScoreToInclude, so "Off topic"
+    # (score 0) is filtered out and only the scoring papers are returned.
     assert scores == sorted(scores, reverse=True)
     assert out[0]["title"].startswith("Transmon")  # highest scorer first
-    assert out[-1]["title"] == "Off topic"
+    assert all(p["title"] != "Off topic" for p in out)  # below-floor papers dropped
 
 
 # ─── search: budget ───
@@ -157,9 +158,11 @@ def test_mock_papers_have_required_fields():
 def test_mock_papers_rank_correctly():
     papers = digest_mod.generate_mock_papers()
     ranked = search_mod.rank_papers(papers)
-    # The first mock paper is heavily SCQ-relevant; the second is generic.
+    # The first mock paper is heavily SCQ-relevant and must appear in ranked results.
+    # The second mock paper is generic; it may be filtered out by minScoreToInclude.
+    assert len(ranked) >= 1
     assert ranked[0]["id"] == "2603.99001"
-    assert ranked[0]["relevance_score"] > ranked[-1]["relevance_score"]
+    assert ranked[0]["relevance_score"] > 0
 
 
 # ─── email: recipient loading ───

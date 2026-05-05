@@ -10,8 +10,10 @@ Two responsibilities:
      hang the GH Actions runner indefinitely.
 
   2. ``rank_papers(papers)`` / ``score_paper(paper)`` — score papers
-     against ``KEYWORD_WEIGHTS`` (title hits worth 2x abstract hits) and
-     return them sorted descending.
+     against config-driven keyword profiles (title hits worth
+     ``titleMultiplier``x abstract hits) and return them sorted descending.
+     Falls back to ``_FALLBACK_KEYWORDS`` when the config system is
+     unavailable.
 
 Pure logic — no DOM, no email side-effects, no DB writes. Suitable for
 unit testing with a mocked HTTP layer.
@@ -38,10 +40,10 @@ ARXIV_CATEGORIES = [
     "physics.app-ph",  # applied physics — catches device fabrication papers
 ]
 
-# Keywords grouped by topic with weights (higher = more relevant).
-# Negative weights penalize off-topic papers that share generic keywords.
+# Fallback keyword weights used when the relevance config cannot be loaded.
+# Negative weights penalise off-topic papers that share generic keywords.
 # Tuned for superconducting-quantum-computing materials research.
-KEYWORD_WEIGHTS = {
+_FALLBACK_KEYWORDS = {
     # ── Materials & fabrication (primary focus) ──
     "superconducting qubit": 10,
     "loss tangent": 10,
@@ -153,6 +155,10 @@ KEYWORD_WEIGHTS = {
     "barren plateau": -5,
 }
 
+# Keep KEYWORD_WEIGHTS as a public alias for backwards-compat (e.g. tests that
+# import it directly). Points at the same object as _FALLBACK_KEYWORDS.
+KEYWORD_WEIGHTS = _FALLBACK_KEYWORDS
+
 ARXIV_API = "http://arxiv.org/api/query"
 ARXIV_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
 
@@ -163,6 +169,100 @@ ARXIV_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/sc
 _BUDGET_DEADLINE = None
 _HTTP_TIMEOUT = 30  # per-request socket timeout (sec)
 _MAX_BACKOFF = 30  # cap any single retry wait (sec)
+
+# ─── Relevance config cache ───
+
+# Loaded once per process on first call to _load_relevance_config().
+# None = not yet loaded; dict = previously loaded (may be fallback).
+_RELEVANCE_CONFIG_CACHE: dict | None = None
+
+
+def _load_relevance_config() -> dict:
+    """Return the effective relevance config, loaded once per process.
+
+    Merges ship defaults with user overrides. Each profile in the user
+    override is merged on top of the matching defaults profile: the user
+    can set ``focus`` and add/override individual keywords without
+    restating the entire profile.
+
+    Falls back to a synthetic config built from ``_FALLBACK_KEYWORDS`` on
+    any error so the digest pipeline never hard-stops due to a config
+    problem.
+    """
+    global _RELEVANCE_CONFIG_CACHE
+    if _RELEVANCE_CONFIG_CACHE is not None:
+        return _RELEVANCE_CONFIG_CACHE
+
+    try:
+        from scq.config.user import load_config
+
+        result = load_config("relevance")
+        cfg = result.data
+        if result.errors:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "relevance config has validation errors (%d); proceeding anyway: %s",
+                len(result.errors),
+                result.errors,
+            )
+        _RELEVANCE_CONFIG_CACHE = _build_effective_config(cfg)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  [relevance] config unreadable, using built-in keywords: {exc}")
+        _RELEVANCE_CONFIG_CACHE = _fallback_effective_config()
+
+    return _RELEVANCE_CONFIG_CACHE
+
+
+def _build_effective_config(cfg: dict) -> dict:
+    """Compute the flattened effective-keywords dict from a merged config."""
+    title_mult = float(cfg.get("titleMultiplier", 2.0))
+    min_score = float(cfg.get("minScoreToInclude", 5))
+    author_boosts: dict[str, float] = {
+        k: float(v) for k, v in (cfg.get("authorBoosts") or {}).items()
+    }
+
+    profiles: dict[str, dict] = cfg.get("profiles") or {}
+    effective_keywords: dict[str, float] = {}
+    keyword_to_profiles: dict[str, list[str]] = {}
+
+    for profile_name, profile in profiles.items():
+        focus = float(profile.get("focus", 1.0))
+        if focus == 0.0:
+            continue  # entire profile silenced
+        for kw, weight in (profile.get("keywords") or {}).items():
+            eff = float(weight) * focus
+            # Last-profile wins for duplicate keywords (consistent with _deep_merge)
+            effective_keywords[kw] = eff
+            keyword_to_profiles[kw] = keyword_to_profiles.get(kw, []) + [profile_name]
+
+    return {
+        "titleMultiplier": title_mult,
+        "minScoreToInclude": min_score,
+        "authorBoosts": author_boosts,
+        "effectiveKeywords": effective_keywords,
+        "keywordToProfiles": keyword_to_profiles,
+    }
+
+
+def _fallback_effective_config() -> dict:
+    """Synthetic effective config built from the hardcoded _FALLBACK_KEYWORDS."""
+    return {
+        "titleMultiplier": 2.0,
+        "minScoreToInclude": 5,
+        "authorBoosts": {},
+        "effectiveKeywords": dict(_FALLBACK_KEYWORDS),
+        "keywordToProfiles": {kw: ["fallback"] for kw in _FALLBACK_KEYWORDS},
+    }
+
+
+def invalidate_relevance_cache() -> None:
+    """Force reload of relevance config on next score_paper() call.
+
+    Useful in tests and after the user edits relevance.json mid-session.
+    """
+    global _RELEVANCE_CONFIG_CACHE
+    _RELEVANCE_CONFIG_CACHE = None
 
 
 def set_budget(seconds: float | None) -> None:
@@ -397,30 +497,71 @@ def _make_short_authors(authors):
 # ─── Relevance Scoring ───
 
 
-def score_paper(paper):
-    """Score a paper's relevance based on keyword matches in title + abstract."""
-    text = (paper["title"] + " " + paper["abstract"]).lower()
-    score = 0
-    matched_keywords = []
+def score_paper(paper: dict) -> float:
+    """Score a paper's relevance using config-driven keyword profiles.
 
-    for keyword, weight in KEYWORD_WEIGHTS.items():
+    Populates ``paper["relevance_score"]``, ``paper["matched_keywords"]``,
+    and ``paper["matched_profiles"]`` as side-effects. Returns the raw
+    (pre-floor) score so callers can inspect it before clamping.
+
+    Scoring formula per keyword:
+        (title_hits * titleMultiplier + abstract_hits) * effective_weight
+
+    where effective_weight = base_weight * profile.focus.
+
+    After keyword scoring, any author whose name (case-insensitive) is a
+    substring of ``authorBoosts`` keys receives the corresponding bonus.
+    """
+    cfg = _load_relevance_config()
+    effective_keywords: dict[str, float] = cfg["effectiveKeywords"]
+    keyword_to_profiles: dict[str, list[str]] = cfg["keywordToProfiles"]
+    title_mult: float = cfg["titleMultiplier"]
+    author_boosts: dict[str, float] = cfg["authorBoosts"]
+
+    title_lower = paper["title"].lower()
+    abstract_lower = paper["abstract"].lower()
+
+    score: float = 0.0
+    matched_keywords: list[str] = []
+    matched_profiles: set[str] = set()
+
+    for keyword, eff_weight in effective_keywords.items():
         kw_lower = keyword.lower()
-        title_hits = paper["title"].lower().count(kw_lower)
-        abstract_hits = text.count(kw_lower) - title_hits
+        title_hits = title_lower.count(kw_lower)
+        abstract_hits = abstract_lower.count(kw_lower)
         if title_hits > 0 or abstract_hits > 0:
-            kw_score = (title_hits * 2 + abstract_hits) * weight
+            kw_score = (title_hits * title_mult + abstract_hits) * eff_weight
             score += kw_score
-            if weight > 0:
+            if eff_weight > 0:
                 matched_keywords.append(keyword)
+                for pname in keyword_to_profiles.get(keyword, []):
+                    matched_profiles.add(pname)
+
+    # Author boosts
+    authors_lower = paper.get("authors", "").lower()
+    for author_substr, boost in author_boosts.items():
+        if author_substr.lower() in authors_lower:
+            score += boost
 
     paper["relevance_score"] = max(score, 0)
     paper["matched_keywords"] = matched_keywords
+    paper["matched_profiles"] = sorted(matched_profiles)
     return score
 
 
-def rank_papers(papers):
-    """Score and sort papers by relevance."""
+def rank_papers(papers: list[dict]) -> list[dict]:
+    """Score, filter, and sort papers by relevance.
+
+    Papers whose ``relevance_score`` falls below ``minScoreToInclude``
+    from the relevance config are dropped here. ``digest.py``'s
+    ``minRelevanceScore`` acts as a secondary filter on top of this.
+    """
+    cfg = _load_relevance_config()
+    min_score: float = cfg["minScoreToInclude"]
+
     for p in papers:
         score_paper(p)
+
+    papers = [p for p in papers if p.get("relevance_score", 0) >= min_score]
     papers.sort(key=lambda p: p["relevance_score"], reverse=True)
     return papers

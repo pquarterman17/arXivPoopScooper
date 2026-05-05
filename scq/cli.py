@@ -148,6 +148,8 @@ _PASSTHROUGH_COMMANDS = {
     "migrate-from-legacy": _passthrough_module("scq.migrate", supports_argv=True),
     # monitor: check last digest workflow run health.
     "monitor": _passthrough_module("scq.monitor", supports_argv=True),
+    # relevance: config-driven scoring management.
+    "relevance": _passthrough_module("scq.relevance", supports_argv=True),
 }
 
 
@@ -168,6 +170,7 @@ _PASSTHROUGH_MODULES = {
     "schedule": "scq.schedule",
     "migrate-from-legacy": "scq.migrate",
     "monitor": "scq.monitor",
+    "relevance": "scq.relevance",
 }
 
 
@@ -282,6 +285,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "monitor",
         help="check last digest workflow run and report health (--notify / --fix)",
+        add_help=False,
+    )
+    sub.add_parser(
+        "relevance",
+        help="inspect/improve relevance scoring (show / learn / test <id|title>)",
         add_help=False,
     )
 

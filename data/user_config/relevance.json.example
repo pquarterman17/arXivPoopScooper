@@ -1,0 +1,17 @@
+{
+  "$schema": "../../src/config/schema/relevance.schema.json",
+  "authorBoosts": {
+    "YOUR_PI_SURNAME": 5,
+    "COLLABORATOR_SURNAME": 3
+  },
+  "profiles": {
+    "materials": {
+      "focus": 1.5,
+      "keywords": {}
+    },
+    "off_topic": {
+      "focus": 0.0,
+      "keywords": {}
+    }
+  }
+}

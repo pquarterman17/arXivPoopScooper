@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scq://schema/relevance",
+  "title": "Relevance scoring configuration",
+  "description": "Controls how papers are scored for relevance. Keywords are organised into named profiles, each with a focus multiplier. Author name substrings can receive bonus points. The effective weight for a keyword is its base weight multiplied by its profile's focus value.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "titleMultiplier": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Weight multiplier applied to keyword hits in the paper title vs the abstract. Default 2.0 means a title match is worth twice an abstract match."
+    },
+    "minScoreToInclude": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Papers whose final relevance_score is below this floor are dropped by rank_papers(). digest.py's minRelevanceScore acts as a secondary filter on top."
+    },
+    "authorBoosts": {
+      "type": "object",
+      "description": "Map of author name substrings (case-insensitive) to bonus point values added to the paper score when any author matches. Example: { \"de Leon\": 5, \"Oliver\": 4 }.",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "description": "Named keyword groups. Each profile has a focus multiplier (0 = silent) and a keywords map (keyword string → integer weight, negative weights penalise).",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["focus", "keywords"],
+        "properties": {
+          "focus": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Multiplier applied to all keyword weights in this profile. Set to 0 to silence the entire profile."
+          },
+          "keywords": {
+            "type": "object",
+            "description": "Keyword string → integer weight. Negative weights penalise papers. Title hits are multiplied by titleMultiplier.",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["titleMultiplier", "minScoreToInclude", "profiles"]
+}

@@ -1,0 +1,143 @@
+{
+  "$schema": "../schema/relevance.schema.json",
+  "titleMultiplier": 2.0,
+  "minScoreToInclude": 5,
+  "authorBoosts": {},
+  "profiles": {
+    "materials": {
+      "focus": 1.0,
+      "keywords": {
+        "superconducting qubit": 10,
+        "loss tangent": 10,
+        "dielectric loss": 10,
+        "materials loss": 9,
+        "surface oxide": 9,
+        "surface treatment": 9,
+        "internal quality": 9,
+        "tantalum": 9,
+        "niobium": 8,
+        "aluminum oxide": 8,
+        "sapphire": 7,
+        "silicon substrate": 7,
+        "high-resistivity silicon": 8,
+        "TiN": 8,
+        "NbTiN": 8,
+        "josephson junction": 8,
+        "quality factor": 8,
+        "thin film": 7,
+        "coplanar waveguide": 8,
+        "CPW": 7,
+        "microwave resonator": 8,
+        "kinetic inductance": 7,
+        "superinductor": 8,
+        "fabrication": 5,
+        "substrate": 5,
+        "sputtering": 7,
+        "magnetron sputtering": 8,
+        "molecular beam epitaxy": 8,
+        "MBE": 7,
+        "epitaxial": 6,
+        "atomic layer deposition": 7,
+        "ALD": 6,
+        "evaporation": 4,
+        "e-beam evaporation": 7,
+        "Dolan bridge": 8,
+        "superconducting resonator": 8,
+        "microwave cavity": 6,
+        "3D cavity": 7
+      }
+    },
+    "coherence": {
+      "focus": 1.0,
+      "keywords": {
+        "transmon": 9,
+        "fluxonium": 9,
+        "coherence": 8,
+        "T1": 8,
+        "T2": 8,
+        "two-level system": 8,
+        "TLS": 7,
+        "decoherence": 7,
+        "dephasing": 7,
+        "quasiparticle": 7,
+        "charge noise": 7,
+        "flux noise": 7,
+        "energy relaxation": 7,
+        "purcell": 6,
+        "relaxation": 5,
+        "noise": 3
+      }
+    },
+    "characterization": {
+      "focus": 1.0,
+      "keywords": {
+        "XPS": 7,
+        "x-ray photoelectron": 7,
+        "ARXPS": 8,
+        "EELS": 7,
+        "electron energy loss": 7,
+        "TEM": 5,
+        "STEM": 6,
+        "AFM": 5,
+        "STM": 5,
+        "ellipsometry": 7,
+        "x-ray reflectivity": 7,
+        "XRR": 7,
+        "SIMS": 7,
+        "secondary ion mass": 7,
+        "transport measurement": 6,
+        "sheet resistance": 6,
+        "residual resistivity ratio": 7,
+        "RRR": 6
+      }
+    },
+    "readout": {
+      "focus": 1.0,
+      "keywords": {
+        "parametric amplif": 7,
+        "JPA": 7,
+        "TWPA": 7,
+        "dispersive readout": 7,
+        "quantum-limited": 6
+      }
+    },
+    "gates": {
+      "focus": 1.0,
+      "keywords": {
+        "gate fidelity": 7,
+        "optimal control": 6,
+        "DRAG": 6,
+        "leakage": 5,
+        "cross-resonance": 6
+      }
+    },
+    "general_scq": {
+      "focus": 1.0,
+      "keywords": {
+        "superconducting circuit": 8,
+        "circuit QED": 7,
+        "cQED": 7,
+        "quantum processor": 4,
+        "quantum computing": 2
+      }
+    },
+    "off_topic": {
+      "focus": 1.0,
+      "keywords": {
+        "variational quantum eigensolver": -6,
+        "VQE": -5,
+        "QAOA": -6,
+        "quantum approximate optimization": -6,
+        "Grover": -4,
+        "quantum advantage": -5,
+        "quantum supremacy": -5,
+        "quantum machine learning": -5,
+        "quantum neural network": -5,
+        "quantum chemistry": -4,
+        "quantum simulation": -3,
+        "variational ansatz": -5,
+        "barren plateau": -5
+      }
+    }
+  }
+}

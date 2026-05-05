@@ -50,6 +50,7 @@ MANIFEST: tuple[str, ...] = (
     "privacy",
     "search-sources",
     "auto-tag-rules",
+    "relevance",
 )
 
 
