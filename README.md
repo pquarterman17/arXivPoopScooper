@@ -1,6 +1,6 @@
 # arXivPoopScooper
 
-Customizable arXiv scraper, which integrates intoa  local reference database.
+Customizable arXiv scraper, which integrates into a local reference database.
 Interests can be customized, sends daily email of newly posted manuscripts
 ranked by algorithmically calculated interests.
 
@@ -27,10 +27,19 @@ folder you can back up with `cp -r`.
 - **Collections + exports** — group papers, export `.bib`, `.txt`, or
   `.json` for LaTeX projects.
 - **Daily arXiv digest** (optional) — a GitHub Actions workflow emails
-  a daily summary of new papers in chosen categories.
+  a daily summary of new papers in chosen categories. The workflow
+  validates secrets before running, writes a job summary with paper
+  counts, and auto-opens a GitHub Issue with fix instructions on failure.
+- **Config-driven relevance ranking** — interest profiles, keyword
+  weights, and author boosts live in `data/user_config/relevance.json`.
+  Use `scq relevance learn` to grow the config from your reading history,
+  and `scq relevance test` to debug scoring on any abstract.
 - **Hot-editable config** — search sources, auto-tag rules, citation
   styles, digest cadence, and watchlists live in JSON files validated
   against shared JSON Schemas.
+- **Local health-check** — `scq doctor` validates 9 aspects (secrets,
+  paths, SMTP, config files) in one shot; `scq monitor` surfaces the
+  last CI digest run status with optional `--fix` mode.
 
 ---
 

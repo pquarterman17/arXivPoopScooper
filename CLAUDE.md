@@ -126,10 +126,13 @@ arXivPoopScooper/
 │   ├── arxiv_poop_scooper.db    Canonical SQLite database (served via HTTP)
 │   ├── migrations/          Versioned schema (001_initial.sql, etc.)
 │   └── user_config/         User overrides (gitignored) + .example starters
+│       └── relevance.json.example   Relevance profile template
 ├── src/                     Layered frontend (no build step, ES modules)
 │   ├── core/                  db, store, events, config, search-config-bridge — DOM-free
 │   ├── services/              papers/notes/tags/citations/arxiv/exports/etc — DOM-free
 │   ├── config/                schemas + ship-defaults
+│   │   ├── schema/relevance.schema.json   JSON Schema for relevance config
+│   │   └── defaults/relevance.json        Ship-default keyword profiles
 │   ├── ui/                    DOM-coupled (database/, scraper/, settings/)
 │   ├── dev/                   Storybook-style harness — stories under stories/
 │   └── tests/                 vitest specs (run with `npm test`)
@@ -144,7 +147,10 @@ arXivPoopScooper/
 │   ├── overleaf/              sync (references.bib → Overleaf project)
 │   ├── search/                build-index
 │   ├── schedule.py            `scq schedule show/update` for the digest cron line
-│   └── migrate.py             `scq migrate-from-legacy` — scraper_config.js → user_config
+│   ├── migrate.py             `scq migrate-from-legacy` — scraper_config.js → user_config
+│   ├── doctor.py              `scq doctor` — local health-check (9 aspects)
+│   ├── monitor.py             `scq monitor` — GitHub Actions digest run status
+│   └── relevance.py           `scq relevance show/learn/test` — config-driven ranking
 ├── papers/                  [Junction → arXivPoopScooper\papers] PDFs: <arXivId>_<Author>_<ShortTitle>.pdf
 ├── figures/                 [Junction → arXivPoopScooper\figures] Extracted figures by arXiv ID
 │   └── <arXivId>/           fig1.jpg, fig2.jpg, ..., captions.json
@@ -159,6 +165,9 @@ arXivPoopScooper/
 │   ├── enrich-paper/        PDF → summary/results/group
 │   ├── db-maintenance/      CRUD operations on the database
 │   └── literature-review/   Synthesize papers into field overviews
+├── .github/
+│   ├── workflows/           CI: test.yml (lint→pytest→vitest→e2e), digest.yml (weekly)
+│   └── branch-protection-setup.md   GitHub branch protection configuration guide
 ├── LICENSE                  MIT
 ├── SECURITY.md              Vulnerability disclosure policy
 ├── CLAUDE.md                This file
@@ -219,6 +228,45 @@ local proxy in `scq/server.py` that avoids CORS and sets a proper User-Agent hea
   All code uses `arxiv.org` instead. Do NOT switch back to `export.arxiv.org`.
 - If 429 rate-limit errors occur, wait a few minutes between searches.
 
+## CI Pipeline
+
+The GitHub Actions CI gate runs in three sequential stages:
+
+1. **Lint** (`ruff check` + `ruff format --check`) — must pass before any tests run
+2. **Tests** — `pytest` (enforces `--cov-fail-under=40`) + `vitest`; both depend on the lint job
+3. **E2E smoke** — spins up `scq serve` with unbuffered Python output and hits a representative slice of endpoints
+
+The **digest workflow** (`.github/workflows/digest.yml`) adds:
+- **Fail-fast secrets check** — validates `SCQ_EMAIL_FROM`, `SCQ_EMAIL_APP_PASSWORD`, `SCQ_EMAIL_TO` are non-empty before running
+- **`--require-email` flag** on the digest script — exits 2 if email fails (CI-safe)
+- **GitHub Actions job summary** — writes paper counts + email status to the run summary page
+- **Self-healing on failure** — auto-opens a GitHub Issue labelled `digest-failure` with diagnosis + fix instructions
+
+Branch protection setup is documented at `.github/branch-protection-setup.md`.
+
+## Relevance Config System
+
+Keywords and ranking parameters are **config-driven**, not hardcoded. The system falls back to built-in defaults if config loading fails.
+
+**Config files:**
+- `src/config/schema/relevance.schema.json` — JSON Schema (source of truth for valid keys)
+- `src/config/defaults/relevance.json` — ship defaults (committed; covers all SCQ topics)
+- `data/user_config/relevance.json` — user overrides (gitignored; copy from `.example`)
+
+**Profiles** — each profile has a `focus` multiplier and a list of keywords with weights:
+- `materials`, `coherence`, `characterization`, `readout`, `gates`, `general_scq`, `off_topic`
+
+**Author boosts** — substring match on the `authors` field → bonus score points.
+
+**Tunable parameters:** `titleMultiplier` (title keyword hits score higher), `minScoreToInclude` (paper score threshold for digest inclusion).
+
+**CLI commands for relevance:**
+```bash
+scq relevance show           # active profiles, focus values, author boosts, keyword counts
+scq relevance learn          # scans read/starred papers, suggests author boosts + keywords
+scq relevance test "query"   # scores a paper and explains every keyword/author match
+```
+
 ## Common Tasks Quick Reference
 
 **Add paper:** Use the `add-paper` skill, or manually: fetch.bat/sh → process_paper.py → enrich
@@ -228,3 +276,6 @@ local proxy in `scq/server.py` that avoids CORS and sets a proper User-Agent hea
 **Literature review:** Use the `literature-review` skill to synthesize papers on a topic
 **Bulk import:** Use `tools/import_mendeley.py` for .bib files
 **DB migration:** Use `tools/init_database.py` to create/update schema
+**Health check:** `scq doctor` — validates Python version, keyring secrets, config files, recipients, DB path, digests dir, GitHub secrets, SMTP connectivity (9 checks total)
+**CI status:** `scq monitor` — checks last GitHub Actions digest run; `--notify` for structured output, `--fix` runs doctor + suggests remedies
+**Tune relevance:** `scq relevance show/learn/test` — inspect and evolve the paper-ranking config

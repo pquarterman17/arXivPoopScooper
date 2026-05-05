@@ -280,6 +280,74 @@ Keyword dictionary (18+ domain terms) for auto-suggesting tags when papers are a
 
 ---
 
+### CI/CD Pipeline
+
+The GitHub Actions CI has two workflows:
+
+**Test workflow** (`.github/workflows/test.yml`) — runs on every push and pull request:
+1. **Lint gate** — `ruff check` + `ruff format --check` runs first; pytest and vitest jobs are blocked until lint passes
+2. **pytest** — runs the full Python test suite with `--cov-fail-under=40` coverage enforcement
+3. **vitest** — runs the full frontend test suite
+4. **E2E smoke test** — spins up `scq serve` (unbuffered) and hits a representative slice of HTTP endpoints
+
+**Digest workflow** (`.github/workflows/digest.yml`) — runs on schedule (weekly):
+- **Fail-fast secrets check** — validates `SCQ_EMAIL_FROM`, `SCQ_EMAIL_APP_PASSWORD`, and `SCQ_EMAIL_TO` are non-empty before any digest work starts; fails immediately with a clear error if any are missing
+- **`--require-email` flag** — the digest script exits with code 2 if the email step fails, ensuring CI correctly reports failure rather than silently succeeding
+- **GitHub Actions job summary** — writes paper counts and email delivery status to the run's summary page for quick inspection without reading logs
+- **Self-healing on failure** — if the digest job fails, the workflow automatically opens a GitHub Issue labelled `digest-failure` with a diagnosis of the likely cause and step-by-step fix instructions
+
+Branch protection configuration (required status checks, dismiss-stale-reviews settings) is documented at `.github/branch-protection-setup.md`.
+
+---
+
+### Relevance & Ranking System
+
+Paper relevance scoring is **config-driven** — keywords, weights, and author boosts live in JSON files, not hardcoded Python. The system falls back to built-in defaults if the config file is missing or malformed.
+
+**Config files:**
+- `src/config/schema/relevance.schema.json` — JSON Schema; the authoritative definition of valid keys and value ranges
+- `src/config/defaults/relevance.json` — ship defaults committed to the repo; covers all major SCQ topic areas
+- `data/user_config/relevance.json` — user overrides (gitignored; copy from `relevance.json.example` to start)
+
+**Interest profiles** — seven named profiles, each with a `focus` multiplier and weighted keyword list:
+- `materials` — substrate, deposition, and materials processing terms
+- `coherence` — T1/T2/loss mechanisms
+- `characterization` — spectroscopy and measurement techniques
+- `readout` — dispersive readout, amplifier chains
+- `gates` — gate fidelity, cross-resonance, two-qubit operations
+- `general_scq` — broad superconducting qubit terms
+- `off_topic` — negative-weight terms that reduce score (e.g., photonics, classical ML)
+
+**Author boosts** — substring matches on the `authors` field give a configurable bonus, letting you up-weight papers from groups you follow closely.
+
+**Tunable parameters:** `titleMultiplier` (title hits score higher than abstract hits), `minScoreToInclude` (minimum score for a paper to appear in the digest).
+
+---
+
+### CLI Commands
+
+**`scq doctor`** — local health-check. Validates 9 aspects of the installation:
+- Python version compatibility
+- Keyring secrets present (email credentials)
+- Config files exist and parse correctly
+- Recipient list non-empty
+- DB path resolves and is writable
+- Digests output directory exists
+- GitHub secrets configured (checks `.github/workflows/` for referenced secret names)
+- SMTP connectivity (attempts a test connection without sending)
+
+**`scq monitor`** — checks the most recent GitHub Actions digest run status. Flags:
+- `--notify` — structured output suitable for piping or desktop notifications
+- `--fix` — runs `scq doctor` and suggests specific remedies for any detected failures
+
+**`scq relevance show`** — prints the active relevance config: profile names, `focus` multipliers, author boost list, and keyword counts per profile.
+
+**`scq relevance learn`** — scans papers you have marked as read or starred, computes frequent authors and terms not yet in your config, and suggests additions as a JSON patch you can paste into `data/user_config/relevance.json`.
+
+**`scq relevance test <query>`** — scores a free-text query as if it were a paper abstract and prints a breakdown: total score, per-profile contribution, and every keyword/author match with its weight.
+
+---
+
 ## Current Papers (5)
 
 | ID | Authors | Title | Group |
