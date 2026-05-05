@@ -108,7 +108,7 @@ jobs:
         # 8080. The serve module finds an open port automatically; we set
         # SCQ_PORT explicitly so curl knows where to look.
         run: |
-          python -m scq serve >/tmp/scq-server.log 2>&1 &
+          python -u -m scq serve >/tmp/scq-server.log 2>&1 &
           echo "SERVER_PID=$!" >> "$GITHUB_ENV"
         # Note: the server defaults to port 8080. find_open_port() picks
         # the next free one, so we read the actual bound port from the log.
