@@ -34,8 +34,8 @@ ARXIV_CATEGORIES = [
     "quant-ph",
     "cond-mat.supr-con",
     "cond-mat.mtrl-sci",
-    "cond-mat.mes-hall",   # mesoscopic / nanoscale — catches qubit & resonator device work
-    "physics.app-ph",      # applied physics — catches device fabrication papers
+    "cond-mat.mes-hall",  # mesoscopic / nanoscale — catches qubit & resonator device work
+    "physics.app-ph",  # applied physics — catches device fabrication papers
 ]
 
 # Keywords grouped by topic with weights (higher = more relevant).
@@ -43,122 +43,114 @@ ARXIV_CATEGORIES = [
 # Tuned for superconducting-quantum-computing materials research.
 KEYWORD_WEIGHTS = {
     # ── Materials & fabrication (primary focus) ──
-    "superconducting qubit":        10,
-    "loss tangent":                 10,
-    "dielectric loss":              10,
-    "materials loss":                9,
-    "surface oxide":                 9,
-    "surface treatment":             9,
-    "internal quality":              9,
-    "tantalum":                      9,
-    "niobium":                       8,
-    "aluminum oxide":                8,
-    "sapphire":                      7,
-    "silicon substrate":             7,
-    "high-resistivity silicon":      8,
-    "TiN":                           8,
-    "NbTiN":                         8,
-    "josephson junction":            8,
-    "quality factor":                8,
-    "thin film":                     7,
-    "coplanar waveguide":            8,
-    "CPW":                           7,
-    "microwave resonator":           8,
-    "kinetic inductance":            7,
-    "superinductor":                 8,
-    "fabrication":                   5,
-    "substrate":                     5,
-
+    "superconducting qubit": 10,
+    "loss tangent": 10,
+    "dielectric loss": 10,
+    "materials loss": 9,
+    "surface oxide": 9,
+    "surface treatment": 9,
+    "internal quality": 9,
+    "tantalum": 9,
+    "niobium": 8,
+    "aluminum oxide": 8,
+    "sapphire": 7,
+    "silicon substrate": 7,
+    "high-resistivity silicon": 8,
+    "TiN": 8,
+    "NbTiN": 8,
+    "josephson junction": 8,
+    "quality factor": 8,
+    "thin film": 7,
+    "coplanar waveguide": 8,
+    "CPW": 7,
+    "microwave resonator": 8,
+    "kinetic inductance": 7,
+    "superinductor": 8,
+    "fabrication": 5,
+    "substrate": 5,
     # ── Qubit coherence & design (close second) ──
-    "transmon":                      9,
-    "fluxonium":                     9,
-    "coherence":                     8,
-    "T1":                            8,
-    "T2":                            8,
-    "two-level system":              8,
-    "TLS":                           7,
-    "decoherence":                   7,
-    "dephasing":                     7,
-    "quasiparticle":                 7,
-    "charge noise":                  7,
-    "flux noise":                    7,
-    "energy relaxation":             7,
-    "purcell":                       6,
-    "relaxation":                    5,
-    "noise":                         3,
-
+    "transmon": 9,
+    "fluxonium": 9,
+    "coherence": 8,
+    "T1": 8,
+    "T2": 8,
+    "two-level system": 8,
+    "TLS": 7,
+    "decoherence": 7,
+    "dephasing": 7,
+    "quasiparticle": 7,
+    "charge noise": 7,
+    "flux noise": 7,
+    "energy relaxation": 7,
+    "purcell": 6,
+    "relaxation": 5,
+    "noise": 3,
     # ── Characterization techniques ──
-    "XPS":                           7,
-    "x-ray photoelectron":           7,
-    "ARXPS":                         8,
-    "EELS":                          7,
-    "electron energy loss":          7,
-    "TEM":                           5,
-    "STEM":                          6,
-    "AFM":                           5,
-    "STM":                           5,
-    "ellipsometry":                  7,
-    "x-ray reflectivity":            7,
-    "XRR":                           7,
-    "SIMS":                          7,
-    "secondary ion mass":            7,
-    "transport measurement":         6,
-    "sheet resistance":              6,
-    "residual resistivity ratio":    7,
-    "RRR":                           6,
-
+    "XPS": 7,
+    "x-ray photoelectron": 7,
+    "ARXPS": 8,
+    "EELS": 7,
+    "electron energy loss": 7,
+    "TEM": 5,
+    "STEM": 6,
+    "AFM": 5,
+    "STM": 5,
+    "ellipsometry": 7,
+    "x-ray reflectivity": 7,
+    "XRR": 7,
+    "SIMS": 7,
+    "secondary ion mass": 7,
+    "transport measurement": 6,
+    "sheet resistance": 6,
+    "residual resistivity ratio": 7,
+    "RRR": 6,
     # ── Growth & deposition ──
-    "sputtering":                    7,
-    "magnetron sputtering":          8,
-    "molecular beam epitaxy":        8,
-    "MBE":                           7,
-    "epitaxial":                     6,
-    "atomic layer deposition":       7,
-    "ALD":                           6,
-    "evaporation":                   4,
-    "e-beam evaporation":            7,
-    "Dolan bridge":                  8,
-
+    "sputtering": 7,
+    "magnetron sputtering": 8,
+    "molecular beam epitaxy": 8,
+    "MBE": 7,
+    "epitaxial": 6,
+    "atomic layer deposition": 7,
+    "ALD": 6,
+    "evaporation": 4,
+    "e-beam evaporation": 7,
+    "Dolan bridge": 8,
     # ── Readout & amplification ──
-    "parametric amplif":             7,
-    "JPA":                           7,
-    "TWPA":                          7,
-    "dispersive readout":            7,
-    "quantum-limited":               6,
-
+    "parametric amplif": 7,
+    "JPA": 7,
+    "TWPA": 7,
+    "dispersive readout": 7,
+    "quantum-limited": 6,
     # ── Gates & control ──
-    "gate fidelity":                 7,
-    "optimal control":               6,
-    "DRAG":                          6,
-    "leakage":                       5,
-    "cross-resonance":               6,
-
+    "gate fidelity": 7,
+    "optimal control": 6,
+    "DRAG": 6,
+    "leakage": 5,
+    "cross-resonance": 6,
     # ── Resonators ──
-    "superconducting resonator":     8,
-    "microwave cavity":              6,
-    "3D cavity":                     7,
-
+    "superconducting resonator": 8,
+    "microwave cavity": 6,
+    "3D cavity": 7,
     # ── General SCQ ──
-    "superconducting circuit":       8,
-    "circuit QED":                   7,
-    "cQED":                          7,
-    "quantum processor":             4,
-    "quantum computing":             2,
-
+    "superconducting circuit": 8,
+    "circuit QED": 7,
+    "cQED": 7,
+    "quantum processor": 4,
+    "quantum computing": 2,
     # ── Negative: quantum algorithms (not hardware) ──
     "variational quantum eigensolver": -6,
-    "VQE":                          -5,
-    "QAOA":                         -6,
+    "VQE": -5,
+    "QAOA": -6,
     "quantum approximate optimization": -6,
-    "Grover":                       -4,
-    "quantum advantage":            -5,
-    "quantum supremacy":            -5,
-    "quantum machine learning":     -5,
-    "quantum neural network":       -5,
-    "quantum chemistry":            -4,
-    "quantum simulation":           -3,
-    "variational ansatz":           -5,
-    "barren plateau":               -5,
+    "Grover": -4,
+    "quantum advantage": -5,
+    "quantum supremacy": -5,
+    "quantum machine learning": -5,
+    "quantum neural network": -5,
+    "quantum chemistry": -4,
+    "quantum simulation": -3,
+    "variational ansatz": -5,
+    "barren plateau": -5,
 }
 
 ARXIV_API = "http://arxiv.org/api/query"
@@ -170,7 +162,7 @@ ARXIV_NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/sc
 # A 2026-04-29 incident hung the runner for 15 min on a single hung connection.
 _BUDGET_DEADLINE = None
 _HTTP_TIMEOUT = 30  # per-request socket timeout (sec)
-_MAX_BACKOFF = 30   # cap any single retry wait (sec)
+_MAX_BACKOFF = 30  # cap any single retry wait (sec)
 
 
 def set_budget(seconds: float | None) -> None:
@@ -206,9 +198,12 @@ def _arxiv_get(url, label, max_retries=3):
             print(f"  Aborting {label}: time budget exhausted")
             return None
         try:
-            req = urllib.request.Request(url, headers={
-                "User-Agent": "SCQDigest/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)"
-            })
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "SCQDigest/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)"
+                },
+            )
             resp = urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT)
             return resp.read()
         except urllib.error.HTTPError as e:
@@ -222,27 +217,31 @@ def _arxiv_get(url, label, max_retries=3):
             except ValueError:
                 wait = 0
             if wait <= 0:
-                wait = min(_MAX_BACKOFF, 5 * (2 ** attempt))
+                wait = min(_MAX_BACKOFF, 5 * (2**attempt))
             wait += random.uniform(0, wait * 0.25)  # jitter
             wait = _clamp_wait(wait)
             if wait is None:
                 print(f"  Aborting {label}: time budget exhausted before retry")
                 return None
-            print(f"  HTTP {e.code} on {label}, retrying in {wait:.0f}s "
-                  f"(attempt {attempt + 1}/{max_retries})...")
+            print(
+                f"  HTTP {e.code} on {label}, retrying in {wait:.0f}s "
+                f"(attempt {attempt + 1}/{max_retries})..."
+            )
             time.sleep(wait)
         except (TimeoutError, urllib.error.URLError) as e:
             if attempt == max_retries - 1:
                 print(f"  Warning: Failed to fetch {label}: {e}")
                 return None
-            wait = min(_MAX_BACKOFF, 5 * (2 ** attempt))
+            wait = min(_MAX_BACKOFF, 5 * (2**attempt))
             wait += random.uniform(0, wait * 0.25)
             wait = _clamp_wait(wait)
             if wait is None:
                 print(f"  Aborting {label}: time budget exhausted before retry")
                 return None
-            print(f"  Network error on {label} ({e}), retrying in {wait:.0f}s "
-                  f"(attempt {attempt + 1}/{max_retries})...")
+            print(
+                f"  Network error on {label} ({e}), retrying in {wait:.0f}s "
+                f"(attempt {attempt + 1}/{max_retries})..."
+            )
             time.sleep(wait)
         except Exception as e:
             print(f"  Warning: Failed to fetch {label}: {e}")
@@ -297,7 +296,9 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
         print("  Falling back to per-category fetches...")
         for i, cat in enumerate(categories):
             if _budget_exceeded():
-                print(f"  Skipping remaining categories ({len(categories) - i} left): time budget exhausted")
+                print(
+                    f"  Skipping remaining categories ({len(categories) - i} left): time budget exhausted"
+                )
                 break
             if i > 0:
                 time.sleep(3)  # arXiv API guideline: ~3s between requests
@@ -361,17 +362,19 @@ def fetch_arxiv_papers(categories, days_back=1, max_results=200):
                 if link.get("title") == "pdf":
                     pdf_url = link.get("href", "")
 
-            papers.append({
-                "id": arxiv_id,
-                "title": title,
-                "authors": ", ".join(authors),
-                "short_authors": _make_short_authors(authors),
-                "abstract": summary,
-                "published": published.isoformat(),
-                "categories": categories_list,
-                "pdf_url": pdf_url or f"https://arxiv.org/pdf/{arxiv_id}",
-                "abs_url": f"https://arxiv.org/abs/{arxiv_id}",
-            })
+            papers.append(
+                {
+                    "id": arxiv_id,
+                    "title": title,
+                    "authors": ", ".join(authors),
+                    "short_authors": _make_short_authors(authors),
+                    "abstract": summary,
+                    "published": published.isoformat(),
+                    "categories": categories_list,
+                    "pdf_url": pdf_url or f"https://arxiv.org/pdf/{arxiv_id}",
+                    "abs_url": f"https://arxiv.org/abs/{arxiv_id}",
+                }
+            )
 
     for cat in categories:
         n = sum(1 for p in papers if cat in p.get("categories", []))
@@ -392,6 +395,7 @@ def _make_short_authors(authors):
 
 
 # ─── Relevance Scoring ───
+
 
 def score_paper(paper):
     """Score a paper's relevance based on keyword matches in title + abstract."""

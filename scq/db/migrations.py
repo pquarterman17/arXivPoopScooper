@@ -55,9 +55,7 @@ def discover(migrations_dir: Path = DEFAULT_MIGRATIONS_DIR) -> list[Migration]:
             continue
         m = _MIGRATION_NAME_RE.match(path.name)
         if not m:
-            raise ValueError(
-                f"Migration filename {path.name!r} does not match NNN_<name>.sql"
-            )
+            raise ValueError(f"Migration filename {path.name!r} does not match NNN_<name>.sql")
         found.append(Migration(version=int(m.group(1)), name=path.stem, path=path))
 
     versions = [mig.version for mig in found]

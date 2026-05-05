@@ -68,9 +68,7 @@ def load_config(domain: str, *, repo_root: Path | None = None) -> LoadResult:
     returned alongside any error list.
     """
     if domain not in MANIFEST:
-        raise ValueError(
-            f"unknown config domain {domain!r}; known: {', '.join(MANIFEST)}"
-        )
+        raise ValueError(f"unknown config domain {domain!r}; known: {', '.join(MANIFEST)}")
     root = repo_root or _paths().repo_root
     defaults = _read_json(root / "src" / "config" / "defaults" / f"{domain}.json", required=True)
     override_path = root / "data" / "user_config" / f"{domain}.json"

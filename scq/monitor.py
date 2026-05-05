@@ -76,11 +76,16 @@ def fetch_last_run() -> dict[str, Any]:
     Raises ``RuntimeError`` on any gh invocation failure.
     """
     rc, out, err = _run_gh(
-        "run", "list",
-        "--repo", _REPO,
-        "--workflow", _WORKFLOW,
-        "--limit", "1",
-        "--json", "status,conclusion,createdAt,url,databaseId",
+        "run",
+        "list",
+        "--repo",
+        _REPO,
+        "--workflow",
+        _WORKFLOW,
+        "--limit",
+        "1",
+        "--json",
+        "status,conclusion,createdAt,url,databaseId",
     )
     if rc != 0:
         raise RuntimeError(f"gh run list failed (exit {rc}): {err}")
@@ -216,6 +221,7 @@ def _run_fix(result: MonitorResult) -> None:
     print("\n-- diagnosis --")
     try:
         from .doctor import run_doctor  # type: ignore[import]
+
         issues = run_doctor()
     except ImportError:
         issues = None
@@ -238,10 +244,7 @@ def _run_fix(result: MonitorResult) -> None:
         if kind == "secrets_missing":
             missing = issue.get("missing", [])
             print(f"Missing GitHub secrets: {', '.join(missing)}")
-            print(
-                "Fix: add them at "
-                "https://github.com/" + _REPO + "/settings/secrets/actions"
-            )
+            print("Fix: add them at https://github.com/" + _REPO + "/settings/secrets/actions")
         elif kind == "smtp_unreachable":
             print("SMTP server is unreachable — this may be transient.")
             print(
@@ -277,8 +280,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="scq monitor",
         description=(
-            "Check the last GitHub Actions run of the arXiv digest workflow "
-            "and report its health."
+            "Check the last GitHub Actions run of the arXiv digest workflow and report its health."
         ),
     )
     parser.add_argument(

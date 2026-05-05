@@ -30,6 +30,7 @@ def extract_text_from_pdf(pdf_path):
     """Extract full text from a PDF using PyMuPDF."""
     try:
         import fitz
+
         doc = fitz.open(str(pdf_path))
         pages = []
         for i, page in enumerate(doc):
@@ -42,9 +43,9 @@ def extract_text_from_pdf(pdf_path):
         print("  [warn] PyMuPDF not installed. Trying pdftotext...")
         try:
             import subprocess
+
             result = subprocess.run(
-                ["pdftotext", str(pdf_path), "-"],
-                capture_output=True, text=True, timeout=60
+                ["pdftotext", str(pdf_path), "-"], capture_output=True, text=True, timeout=60
             )
             if result.stdout.strip():
                 return [{"page": 1, "text": result.stdout.strip()}]
@@ -55,7 +56,7 @@ def extract_text_from_pdf(pdf_path):
 
 def tokenize(text):
     """Simple tokenization: lowercase, split on non-alphanumeric."""
-    return re.findall(r'[a-z0-9]+(?:\.[0-9]+)?', text.lower())
+    return re.findall(r"[a-z0-9]+(?:\.[0-9]+)?", text.lower())
 
 
 def build_index():
@@ -71,11 +72,7 @@ def build_index():
 
     print(f"Found {len(pdfs)} PDF(s) in pdfs/\n")
 
-    index = {
-        "version": 1,
-        "builtAt": "",
-        "papers": {}
-    }
+    index = {"version": 1, "builtAt": "", "papers": {}}
 
     total_pages = 0
     total_words = 0
@@ -95,29 +92,60 @@ def build_index():
 
         for p in pages:
             # Clean text: collapse whitespace, remove very short lines
-            clean = re.sub(r'\s+', ' ', p["text"]).strip()
+            clean = re.sub(r"\s+", " ", p["text"]).strip()
             tokens = tokenize(clean)
             word_freq.update(tokens)
 
             # Store abbreviated page text (first 500 chars per page for snippet search)
-            page_texts.append({
-                "p": p["page"],
-                "t": clean[:500]
-            })
+            page_texts.append({"p": p["page"], "t": clean[:500]})
 
         # Top terms (excluding very common words)
-        stop_words = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all',
-                      'can', 'had', 'her', 'was', 'one', 'our', 'out', 'has',
-                      'have', 'this', 'that', 'with', 'from', 'they', 'been',
-                      'said', 'each', 'which', 'their', 'will', 'other', 'about',
-                      'many', 'then', 'them', 'these', 'some', 'would', 'into'}
+        stop_words = {
+            "the",
+            "and",
+            "for",
+            "are",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "had",
+            "her",
+            "was",
+            "one",
+            "our",
+            "out",
+            "has",
+            "have",
+            "this",
+            "that",
+            "with",
+            "from",
+            "they",
+            "been",
+            "said",
+            "each",
+            "which",
+            "their",
+            "will",
+            "other",
+            "about",
+            "many",
+            "then",
+            "them",
+            "these",
+            "some",
+            "would",
+            "into",
+        }
         top_terms = [w for w, c in word_freq.most_common(100) if w not in stop_words and len(w) > 2]
 
         index["papers"][paper_id] = {
             "pages": page_texts,
             "topTerms": top_terms[:50],
             "pageCount": len(pages),
-            "wordCount": sum(word_freq.values())
+            "wordCount": sum(word_freq.values()),
         }
 
         total_pages += len(pages)
@@ -125,6 +153,7 @@ def build_index():
         print(f"{len(pages)} pages, {sum(word_freq.values())} words")
 
     from datetime import datetime
+
     index["builtAt"] = datetime.now().isoformat()
 
     with open(INDEX_FILE, "w") as f:

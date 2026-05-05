@@ -23,6 +23,7 @@ _PASS = "pass"
 _FAIL = "fail"
 _SKIP = "skip"
 
+
 def _supports_unicode() -> bool:
     """Return True if stdout can encode the Unicode check/cross marks."""
     enc = getattr(sys.stdout, "encoding", None) or ""
@@ -42,6 +43,7 @@ _STATUS_SYMBOLS = {
 # Try importing colorama for coloured output; degrade gracefully if absent.
 try:
     import colorama  # type: ignore[import-untyped]
+
     colorama.init(autoreset=True)
     _GREEN = colorama.Fore.GREEN
     _RED = colorama.Fore.RED
@@ -60,11 +62,12 @@ _STATUS_COLORS = {
 @dataclass
 class CheckResult:
     name: str
-    status: str   # _PASS | _FAIL | _SKIP
-    detail: str   # shown after the dots
+    status: str  # _PASS | _FAIL | _SKIP
+    detail: str  # shown after the dots
 
 
 # ─── masking ───
+
 
 def _mask(value: str | None, *, show: int = 8) -> str:
     """Return first *show* chars + *** for non-empty values, or '<empty>'."""
@@ -77,6 +80,7 @@ def _mask(value: str | None, *, show: int = 8) -> str:
 
 # ─── individual checks ───
 
+
 def _check_python_version() -> CheckResult:
     vi = sys.version_info
     ver = f"{vi.major}.{vi.minor}.{vi.micro}"
@@ -87,6 +91,7 @@ def _check_python_version() -> CheckResult:
 
 def _check_secret(name: str, display_name: str) -> CheckResult:
     from .config import secrets as _secrets
+
     try:
         value = _secrets.get(name)
     except Exception as exc:  # noqa: BLE001
@@ -114,7 +119,9 @@ def _check_keyring_secret(name: str, display_name: str) -> CheckResult:
         return _check_secret(name, display_name)
 
     if not _secrets.keyring_available():
-        return CheckResult(display_name, _SKIP, "skipped (keyring not installed and env var not set)")
+        return CheckResult(
+            display_name, _SKIP, "skipped (keyring not installed and env var not set)"
+        )
 
     return _check_secret(name, display_name)
 
@@ -123,6 +130,7 @@ def _check_digest_config() -> CheckResult:
     name = "config: digest.json"
     try:
         from .config import user as user_cfg
+
         result = user_cfg.load_config("digest")
     except FileNotFoundError as exc:
         return CheckResult(name, _FAIL, f"missing: {exc}")
@@ -132,7 +140,9 @@ def _check_digest_config() -> CheckResult:
         return CheckResult(name, _FAIL, str(exc))
 
     if result.errors:
-        return CheckResult(name, _FAIL, f"{len(result.errors)} validation error(s): {result.errors[0]}")
+        return CheckResult(
+            name, _FAIL, f"{len(result.errors)} validation error(s): {result.errors[0]}"
+        )
     return CheckResult(name, _PASS, f"ok ({result.source})")
 
 
@@ -140,6 +150,7 @@ def _check_recipients() -> CheckResult:
     name = "config: recipients"
     try:
         from .arxiv.email import load_email_recipients
+
         recipients = load_email_recipients()
     except Exception as exc:  # noqa: BLE001
         return CheckResult(name, _FAIL, f"error loading recipients: {exc}")
@@ -156,6 +167,7 @@ def _check_database_path() -> CheckResult:
     name = "paths: database"
     try:
         from .config.paths import paths as get_paths
+
         db = get_paths().db_path
     except Exception as exc:  # noqa: BLE001
         return CheckResult(name, _FAIL, f"path resolution error: {exc}")
@@ -170,6 +182,7 @@ def _check_digests_dir() -> CheckResult:
     name = "paths: digests dir"
     try:
         from .config.paths import paths as get_paths
+
         d = get_paths().digests_dir
     except Exception as exc:  # noqa: BLE001
         return CheckResult(name, _FAIL, f"path resolution error: {exc}")
@@ -242,7 +255,7 @@ _CHECKS: list[Callable[[], CheckResult]] = [
     _check_smtp_connectivity,
 ]
 
-_LINE_WIDTH = 50   # total width of the name + dots portion
+_LINE_WIDTH = 50  # total width of the name + dots portion
 
 
 def _format_line(result: CheckResult) -> str:
@@ -283,7 +296,9 @@ def run_doctor() -> int:
     else:
         status_color = _RED
         fail_sym = _STATUS_SYMBOLS[_FAIL]
-        summary = f"{passed}/{total} checks passed {dash} {failed} issue(s) found (see {fail_sym} above)"
+        summary = (
+            f"{passed}/{total} checks passed {dash} {failed} issue(s) found (see {fail_sym} above)"
+        )
         if skipped:
             summary += f", {skipped} skipped"
 

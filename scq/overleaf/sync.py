@@ -32,6 +32,7 @@ REPO_DIR = OVERLEAF_DIR / "repo"
 CONFIG_PATH = OVERLEAF_DIR / "config.json"
 try:
     from scq.config.paths import paths as _scq_paths  # type: ignore[import-not-found]
+
     BIB_PATH = Path(_scq_paths().references_bib_path)
 except Exception:
     BIB_PATH = PROJECT_DIR / "references.bib"
@@ -39,6 +40,7 @@ GITIGNORE_PATH = PROJECT_DIR / ".gitignore"
 
 
 # ─── Config management ────────────────────────────────────────────
+
 
 def load_config():
     """Load config from .overleaf/config.json, return None if not exists."""
@@ -61,9 +63,9 @@ def save_config(config):
 
 def setup_mode(git_url):
     """Setup: Clone Overleaf repo and save config."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Overleaf Sync — Setup")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Create .overleaf directory
     OVERLEAF_DIR.mkdir(parents=True, exist_ok=True)
@@ -74,11 +76,11 @@ def setup_mode(git_url):
     if REPO_DIR.exists():
         print("  Removing existing repo...")
         import shutil
+
         shutil.rmtree(REPO_DIR)
 
     result = subprocess.run(
-        ["git", "clone", git_url, str(REPO_DIR)],
-        capture_output=True, text=True
+        ["git", "clone", git_url, str(REPO_DIR)], capture_output=True, text=True
     )
     if result.returncode != 0:
         print("ERROR: Failed to clone repo:")
@@ -93,7 +95,7 @@ def setup_mode(git_url):
         "bib_filename": "references.bib",
         "last_sync": None,
         "auto_sync": True,
-        "created_at": datetime.now().isoformat()
+        "created_at": datetime.now().isoformat(),
     }
     save_config(config)
     print("  Config saved to .overleaf/config.json")
@@ -116,13 +118,13 @@ def setup_mode(git_url):
         print("ERROR: Setup incomplete")
         sys.exit(1)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("SUCCESS — Overleaf sync configured")
     print(f"  Git URL: {git_url}")
     print(f"  Bib file: references.bib → {config['bib_filename']}")
     print("  Auto-sync: enabled")
     print("\nRun 'python tools/overleaf_sync.py' to sync.")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 def sync_mode(force=False):
@@ -142,54 +144,46 @@ def sync_mode(force=False):
         print(f"\nERROR: references.bib not found at {BIB_PATH}")
         sys.exit(1)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Overleaf Sync — Syncing")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Copy references.bib to repo
     bib_filename = config.get("bib_filename", "references.bib")
     target_bib = REPO_DIR / bib_filename
     print("\n[1/4] Copying references.bib...")
     import shutil
+
     shutil.copy(BIB_PATH, target_bib)
     print(f"  Copied to .overleaf/repo/{bib_filename}")
 
     # Check for changes
     os.chdir(REPO_DIR)
-    result = subprocess.run(
-        ["git", "diff", "--cached", "--quiet"],
-        capture_output=True
-    )
+    result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
     # Stage the file
     print("\n[2/4] Staging file in Git...")
     subprocess.run(["git", "add", bib_filename], capture_output=True)
     print(f"  Staged {bib_filename}")
 
     # Check for changes again
-    result = subprocess.run(
-        ["git", "diff", "--cached", "--quiet"],
-        capture_output=True
-    )
+    result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
     has_changes = result.returncode != 0
 
     if not has_changes and not force:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("Already up to date — no changes to push")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
         return
 
     # Count entries in bib file
     bib_text = BIB_PATH.read_text()
-    entry_count = len(re.findall(r'^@\w+\{', bib_text, re.MULTILINE))
+    entry_count = len(re.findall(r"^@\w+\{", bib_text, re.MULTILINE))
 
     # Commit
     print("\n[3/4] Committing changes...")
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     commit_msg = f"Update references.bib — {entry_count} entries, synced {now}"
-    result = subprocess.run(
-        ["git", "commit", "-m", commit_msg],
-        capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, text=True)
     if result.returncode != 0:
         print(f"  Warning: {result.stderr.strip()}")
     else:
@@ -197,10 +191,7 @@ def sync_mode(force=False):
 
     # Push
     print("\n[4/4] Pushing to Overleaf...")
-    result = subprocess.run(
-        ["git", "push"],
-        capture_output=True, text=True
-    )
+    result = subprocess.run(["git", "push"], capture_output=True, text=True)
     if result.returncode != 0:
         print("\nERROR: Failed to push:")
         print(result.stderr)
@@ -216,10 +207,10 @@ def sync_mode(force=False):
     config["last_sync"] = datetime.now().isoformat()
     save_config(config)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"SUCCESS — Synced {entry_count} citations to Overleaf")
     print(f"  Last sync: {config['last_sync']}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 def status_mode():
@@ -234,11 +225,11 @@ def status_mode():
     entry_count = 0
     if BIB_PATH.exists():
         bib_text = BIB_PATH.read_text()
-        entry_count = len(re.findall(r'^@\w+\{', bib_text, re.MULTILINE))
+        entry_count = len(re.findall(r"^@\w+\{", bib_text, re.MULTILINE))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Overleaf Sync — Status")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     print("Configuration:")
     print(f"  Git URL:         {config.get('git_url', 'N/A')}")
     print(f"  Bib filename:    {config.get('bib_filename', 'references.bib')}")
@@ -247,7 +238,7 @@ def status_mode():
     print(f"  Total entries:   {entry_count}")
     print(f"  Bib file:        {BIB_PATH}")
     print("\nSync History:")
-    if config.get('last_sync'):
+    if config.get("last_sync"):
         print(f"  Last sync:       {config['last_sync']}")
     else:
         print("  Last sync:       never")
@@ -255,10 +246,7 @@ def status_mode():
     # Check uncommitted changes in repo
     if REPO_DIR.exists():
         os.chdir(REPO_DIR)
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            capture_output=True, text=True
-        )
+        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if result.stdout.strip():
             print("\nUncommitted changes in .overleaf/repo/:")
             for line in result.stdout.strip().split("\n"):
@@ -266,10 +254,11 @@ def status_mode():
         else:
             print("\nNo uncommitted changes in .overleaf/repo/")
 
-    print(f"\n{'='*60}\n")
+    print(f"\n{'=' * 60}\n")
 
 
 # ─── Main ─────────────────────────────────────────────────────────
+
 
 def main():
     if len(sys.argv) > 1:

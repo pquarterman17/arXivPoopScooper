@@ -50,7 +50,7 @@ SQLITE_MAGIC = b"SQLite format 3\x00"
 
 PAGES = {
     "database": "paper_database.html",
-    "scraper":  "paper_scraper.html",
+    "scraper": "paper_scraper.html",
 }
 
 # ── Ensure we're running in a visible terminal ──────────────────────
@@ -59,6 +59,7 @@ PAGES = {
 # with pythonw. Re-launch in a real console so the user can see output
 # and hit Ctrl+C.
 
+
 def _ensure_console():
     """On Windows, re-launch in a cmd.exe window if there's no console."""
     if sys.platform != "win32":
@@ -66,6 +67,7 @@ def _ensure_console():
     try:
         # If we already have a console, this succeeds silently
         import ctypes
+
         if ctypes.windll.kernel32.GetConsoleWindow() != 0:
             return
     except Exception:
@@ -75,10 +77,12 @@ def _ensure_console():
     # invocation works regardless of where scq is installed (editable
     # checkout, pip install, frozen path).
     import subprocess
+
     args = " ".join(f'"{a}"' for a in sys.argv[1:])
     cmd = f'start "arXivPoopScooper" /WAIT python -m scq serve {args}'.strip()
     subprocess.Popen(cmd, shell=True)
     sys.exit(0)
+
 
 # ── Server logic ────────────────────────────────────────────────────
 # Note: the bootstrap (chdir, sys.argv parsing, port binding, serve_forever)
@@ -120,9 +124,13 @@ def _load_email_config():
     if user_config/email.json is missing or the keyring/secret isn't set.
     Used by the /api/test/smtp + /api/test/digest endpoints."""
     from scq.config import user as _user_cfg
+
     try:
         from scq.config import secrets as _secrets_mod  # type: ignore[import-not-found]
-        password = _secrets_mod.get("email_app_password") or os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
+
+        password = _secrets_mod.get("email_app_password") or os.environ.get(
+            "SCQ_EMAIL_APP_PASSWORD", ""
+        )
     except Exception:  # noqa: BLE001
         password = os.environ.get("SCQ_EMAIL_APP_PASSWORD", "")
     try:
@@ -135,6 +143,7 @@ def _load_email_config():
 def _load_digest_config():
     """Return the merged digest config (defaults + user_config override)."""
     from scq.config import user as _user_cfg
+
     try:
         return _user_cfg.load_config("digest").data
     except Exception:  # noqa: BLE001
@@ -154,6 +163,7 @@ def _smtp_connect(host, port, use_tls, from_addr, app_password, *, timeout=10):
     """
     import smtplib
     import ssl
+
     ctx = ssl.create_default_context()
     if port == 465:
         smtp = smtplib.SMTP_SSL(host, port, timeout=timeout, context=ctx)
@@ -254,6 +264,7 @@ def open_tabs(port, which):
 ARXIV_API_BASE = "https://arxiv.org/api/query"
 ARXIV_USER_AGENT = "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)"
 
+
 class SCQHandler(http.server.SimpleHTTPRequestHandler):
     """Serves static files + proxies arXiv API requests."""
 
@@ -322,10 +333,13 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         target = f"{ARXIV_API_BASE}?{qs}"
-        req = urllib.request.Request(target, headers={
-            "User-Agent": ARXIV_USER_AGENT,
-            "Accept": "application/xml, text/xml, */*",
-        })
+        req = urllib.request.Request(
+            target,
+            headers={
+                "User-Agent": ARXIV_USER_AGENT,
+                "Accept": "application/xml, text/xml, */*",
+            },
+        )
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -369,10 +383,13 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         target = f"https://api.crossref.org/works/{urllib.parse.quote(doi)}"
-        req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
-            "Accept": "application/json",
-        })
+        req = urllib.request.Request(
+            target,
+            headers={
+                "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
+                "Accept": "application/json",
+            },
+        )
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -412,10 +429,13 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         target = f"https://api.crossref.org/works?{qs}"
-        req = urllib.request.Request(target, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
-            "Accept": "application/json",
-        })
+        req = urllib.request.Request(
+            target,
+            headers={
+                "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
+                "Accept": "application/json",
+            },
+        )
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -464,8 +484,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             if content_length > MAX_DB_UPLOAD_BYTES:
                 self._save_db_error(
                     413,
-                    f"DB too large ({content_length} bytes; max "
-                    f"{MAX_DB_UPLOAD_BYTES})",
+                    f"DB too large ({content_length} bytes; max {MAX_DB_UPLOAD_BYTES})",
                 )
                 return
 
@@ -501,9 +520,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 "ok": True,
                 "bytes": len(data),
                 "path": str(target),
-                "savedAt": datetime.now(timezone.utc).strftime(
-                    "%Y-%m-%dT%H:%M:%S.%fZ"
-                ),
+                "savedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             }
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -645,9 +662,11 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
     # with empty value? no — clients should ask the user to re-enter).
     # Deletion stays on the CLI (`scq config delete-secret <name>`); the
     # browser can clear a value by setting it to "" if `value` is omitted.
-    SECRET_NAME_ALLOWLIST = frozenset({
-        "email_app_password",   # SMTP App Password (Gmail or generic)
-    })
+    SECRET_NAME_ALLOWLIST = frozenset(
+        {
+            "email_app_password",  # SMTP App Password (Gmail or generic)
+        }
+    )
 
     def _handle_secret_post(self):
         try:
@@ -671,16 +690,22 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 self._json_response(400, {"ok": False, "error": "Missing or invalid 'name'"})
                 return
             if name not in self.SECRET_NAME_ALLOWLIST:
-                self._json_response(400, {
-                    "ok": False,
-                    "error": f"Secret name not in allowlist. Allowed: {sorted(self.SECRET_NAME_ALLOWLIST)}",
-                })
+                self._json_response(
+                    400,
+                    {
+                        "ok": False,
+                        "error": f"Secret name not in allowlist. Allowed: {sorted(self.SECRET_NAME_ALLOWLIST)}",
+                    },
+                )
                 return
             if not isinstance(value, str):
-                self._json_response(400, {"ok": False, "error": "Missing or invalid 'value' (must be string)"})
+                self._json_response(
+                    400, {"ok": False, "error": "Missing or invalid 'value' (must be string)"}
+                )
                 return
 
             from scq.config import secrets as _secrets_mod
+
             try:
                 _secrets_mod.set(name, value)
             except _secrets_mod.KeyringUnavailable as e:
@@ -701,6 +726,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
         import sqlite3
 
         from scq.config.paths import paths as _paths_resolver
+
         try:
             p = _paths_resolver(force_reload=True).db_path
             if not p.exists():
@@ -714,24 +740,36 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 return
             try:
                 # Check magic + papers count. Both fail loudly if the file isn't a valid SQLite paper DB.
-                row = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='papers'").fetchone()
+                row = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='papers'"
+                ).fetchone()
                 papers = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0] if row else None
             finally:
                 conn.close()
             if papers is None:
-                self._json_response(200, {"ok": False, "error": "File exists but has no `papers` table — not an SCQ database."})
+                self._json_response(
+                    200,
+                    {
+                        "ok": False,
+                        "error": "File exists but has no `papers` table — not an SCQ database.",
+                    },
+                )
                 return
-            self._json_response(200, {
-                "ok": True,
-                "path": str(p),
-                "size": size,
-                "papers": papers,
-            })
+            self._json_response(
+                200,
+                {
+                    "ok": True,
+                    "path": str(p),
+                    "size": size,
+                    "papers": papers,
+                },
+            )
         except Exception as e:  # noqa: BLE001
             self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_test_smtp(self):
         import smtplib
+
         try:
             email_cfg, app_password = _load_email_config()
             # Schema keys are camelCase (smtpHost / smtpPort / fromAddress /
@@ -742,30 +780,52 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             use_tls = email_cfg.get("useTls", True)
             from_addr = email_cfg.get("fromAddress") or os.environ.get("SCQ_EMAIL_FROM", "")
             if not from_addr:
-                self._json_response(200, {"ok": False, "error": "No fromAddress set (data/user_config/email.json or SCQ_EMAIL_FROM)."})
+                self._json_response(
+                    200,
+                    {
+                        "ok": False,
+                        "error": "No fromAddress set (data/user_config/email.json or SCQ_EMAIL_FROM).",
+                    },
+                )
                 return
             if not app_password:
-                self._json_response(200, {"ok": False, "error": "No SMTP app password — `scq config set-secret email_app_password` or set SCQ_EMAIL_APP_PASSWORD."})
+                self._json_response(
+                    200,
+                    {
+                        "ok": False,
+                        "error": "No SMTP app password — `scq config set-secret email_app_password` or set SCQ_EMAIL_APP_PASSWORD.",
+                    },
+                )
                 return
             smtp = _smtp_connect(host, port, use_tls, from_addr, app_password, timeout=10)
             try:
                 pass  # connection + login already verified
             finally:
                 smtp.quit()
-            self._json_response(200, {
-                "ok": True,
-                "host": host,
-                "port": port,
-                "from": from_addr,
-            })
+            self._json_response(
+                200,
+                {
+                    "ok": True,
+                    "host": host,
+                    "port": port,
+                    "from": from_addr,
+                },
+            )
         except smtplib.SMTPAuthenticationError as e:
-            self._json_response(200, {"ok": False, "error": f"Auth failed ({e.smtp_code}): {e.smtp_error.decode(errors='replace') if hasattr(e, 'smtp_error') else e}"})
+            self._json_response(
+                200,
+                {
+                    "ok": False,
+                    "error": f"Auth failed ({e.smtp_code}): {e.smtp_error.decode(errors='replace') if hasattr(e, 'smtp_error') else e}",
+                },
+            )
         except Exception as e:  # noqa: BLE001
             self._json_response(200, {"ok": False, "error": str(e)})
 
     def _handle_test_digest(self):
         from datetime import datetime, timezone
         from email.message import EmailMessage
+
         try:
             email_cfg, app_password = _load_email_config()
             digest_cfg = _load_digest_config()
@@ -776,10 +836,14 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             from_addr = email_cfg.get("fromAddress") or os.environ.get("SCQ_EMAIL_FROM", "")
             recipients = _normalize_recipients(digest_cfg.get("recipients", []))
             if not from_addr or not app_password:
-                self._json_response(200, {"ok": False, "error": "Missing email credentials — see Email tab."})
+                self._json_response(
+                    200, {"ok": False, "error": "Missing email credentials — see Email tab."}
+                )
                 return
             if not recipients:
-                self._json_response(200, {"ok": False, "error": "No active recipients in digest config."})
+                self._json_response(
+                    200, {"ok": False, "error": "No active recipients in digest config."}
+                )
                 return
 
             msg = EmailMessage()
@@ -799,12 +863,15 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             finally:
                 smtp.quit()
 
-            self._json_response(200, {
-                "ok": True,
-                "recipients": recipients,
-                "papers": 0,  # this is a stub digest, no papers fetched
-                "from": from_addr,
-            })
+            self._json_response(
+                200,
+                {
+                    "ok": True,
+                    "recipients": recipients,
+                    "papers": 0,  # this is a stub digest, no papers fetched
+                    "from": from_addr,
+                },
+            )
         except Exception as e:  # noqa: BLE001
             self._json_response(200, {"ok": False, "error": str(e)})
 
@@ -827,7 +894,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             body = self.rfile.read(content_length)
-            payload = json.loads(body.decode('utf-8'))
+            payload = json.loads(body.decode("utf-8"))
 
             # Create inbox directory if needed (resolved via paths() so the
             # user's user_config/paths.toml override is honored).
@@ -839,7 +906,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             filename = f"bookmarklet_{timestamp}.json"
             filepath = inbox_dir / filename
 
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2, ensure_ascii=False)
 
             # Success response
@@ -847,12 +914,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            response = {
-                "status": "ok",
-                "message": "Paper queued for import",
-                "file": filename
-            }
-            self.wfile.write(json.dumps(response).encode('utf-8'))
+            response = {"status": "ok", "message": "Paper queued for import", "file": filename}
+            self.wfile.write(json.dumps(response).encode("utf-8"))
 
         except json.JSONDecodeError:
             self.send_response(400)
@@ -866,7 +929,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             error = {"error": f"Server error: {str(e)}"}
-            self.wfile.write(json.dumps(error).encode('utf-8'))
+            self.wfile.write(json.dumps(error).encode("utf-8"))
 
     def _handle_pdf_upload(self):
         """Handle PDF file uploads via drag-and-drop or file picker.
@@ -875,6 +938,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
         Saves the PDF to papers/ directory and returns metadata.
         """
         import re
+
         try:
             content_type = self.headers.get("Content-Type", "")
             content_length = int(self.headers.get("Content-Length", 0))
@@ -898,7 +962,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             # Extract boundary from Content-Type header
-            boundary_match = re.search(r'boundary=([^;\s]+)', content_type)
+            boundary_match = re.search(r"boundary=([^;\s]+)", content_type)
             if not boundary_match:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json")
@@ -911,30 +975,38 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(content_length)
 
             # Parse the multipart body
-            parts = body.split(f'--{boundary}'.encode())
+            parts = body.split(f"--{boundary}".encode())
             pdf_data = None
             original_filename = "document"
 
             for part in parts:
-                if b'Content-Disposition' not in part:
+                if b"Content-Disposition" not in part:
                     continue
 
                 # Extract filename if present
                 filename_match = re.search(rb'filename="([^"]+)"', part)
                 if filename_match:
-                    original_filename = filename_match.group(1).decode('utf-8', errors='replace')
+                    original_filename = filename_match.group(1).decode("utf-8", errors="replace")
                     # Extract just the filename without path
                     original_filename = os.path.basename(original_filename)
 
                 # Content after the headers (separated by blank line)
-                if b'\r\n\r\n' in part:
-                    content_start = part.index(b'\r\n\r\n') + 4
-                    content_end = part.rfind(b'\r\n')
-                    pdf_data = part[content_start:content_end] if content_end > content_start else part[content_start:]
-                elif b'\n\n' in part:
-                    content_start = part.index(b'\n\n') + 2
-                    content_end = part.rfind(b'\n')
-                    pdf_data = part[content_start:content_end] if content_end > content_start else part[content_start:]
+                if b"\r\n\r\n" in part:
+                    content_start = part.index(b"\r\n\r\n") + 4
+                    content_end = part.rfind(b"\r\n")
+                    pdf_data = (
+                        part[content_start:content_end]
+                        if content_end > content_start
+                        else part[content_start:]
+                    )
+                elif b"\n\n" in part:
+                    content_start = part.index(b"\n\n") + 2
+                    content_end = part.rfind(b"\n")
+                    pdf_data = (
+                        part[content_start:content_end]
+                        if content_end > content_start
+                        else part[content_start:]
+                    )
 
                 if pdf_data:
                     break
@@ -948,11 +1020,11 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             # Sanitize filename
-            safe_name = re.sub(r'[^a-zA-Z0-9._\- ]', '_', original_filename)
-            if not safe_name.lower().endswith('.pdf'):
-                safe_name += '.pdf'
+            safe_name = re.sub(r"[^a-zA-Z0-9._\- ]", "_", original_filename)
+            if not safe_name.lower().endswith(".pdf"):
+                safe_name += ".pdf"
             base, ext = os.path.splitext(safe_name)
-            if len(base.encode('utf-8')) > 200:
+            if len(base.encode("utf-8")) > 200:
                 base = base[:200]
             safe_name = base + ext
 
@@ -970,7 +1042,7 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 counter += 1
 
             # Save the PDF
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(pdf_data)
 
             # Create metadata entry in inbox (resolved via paths()).
@@ -987,10 +1059,10 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 "pdf_path": os.path.join("papers", safe_name),
                 "upload_time": datetime.now().isoformat(),
                 "file_size": len(pdf_data),
-                "status": "awaiting_processing"
+                "status": "awaiting_processing",
             }
 
-            with open(meta_filepath, 'w', encoding='utf-8') as f:
+            with open(meta_filepath, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2, ensure_ascii=False)
 
             # Success response
@@ -1003,9 +1075,9 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
                 "filename": safe_name,
                 "path": os.path.join("papers", safe_name),
                 "size": len(pdf_data),
-                "metadata_file": meta_filename
+                "metadata_file": meta_filename,
             }
-            self.wfile.write(json.dumps(response).encode('utf-8'))
+            self.wfile.write(json.dumps(response).encode("utf-8"))
 
         except Exception as e:
             self.send_response(500)
@@ -1013,7 +1085,8 @@ class SCQHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             error = {"error": f"Upload failed: {str(e)}"}
-            self.wfile.write(json.dumps(error).encode('utf-8'))
+            self.wfile.write(json.dumps(error).encode("utf-8"))
+
 
 def main(argv=None):
     """CLI entry point. Pulls argv, finds a port, binds + serves until Ctrl+C.

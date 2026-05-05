@@ -62,8 +62,8 @@ def extract_captions(doc):
     captions = {}
     # Patterns for figure captions in physics papers
     patterns = [
-        r'((?:Figure|Fig\.|FIG\.)\s*(\d+)[.:]\s*(.+?)(?:\n\n|\Z))',
-        r'((?:Figure|Fig\.|FIG\.)\s*(\d+)[.:]\s*(.+?)(?=(?:Figure|Fig\.|FIG\.)\s*\d+|$))',
+        r"((?:Figure|Fig\.|FIG\.)\s*(\d+)[.:]\s*(.+?)(?:\n\n|\Z))",
+        r"((?:Figure|Fig\.|FIG\.)\s*(\d+)[.:]\s*(.+?)(?=(?:Figure|Fig\.|FIG\.)\s*\d+|$))",
     ]
 
     for page_idx in range(len(doc)):
@@ -76,15 +76,12 @@ def extract_captions(doc):
                 fig_num = int(match.group(2))
                 caption_text = match.group(1).strip()
                 # Clean up caption: collapse whitespace, limit length
-                caption_text = re.sub(r'\s+', ' ', caption_text)
+                caption_text = re.sub(r"\s+", " ", caption_text)
                 if len(caption_text) > 500:
                     caption_text = caption_text[:497] + "..."
 
                 if fig_num not in captions:
-                    captions[fig_num] = {
-                        "caption": caption_text,
-                        "page": page_idx
-                    }
+                    captions[fig_num] = {"caption": caption_text, "page": page_idx}
 
     return captions
 
@@ -121,15 +118,24 @@ def find_figure_pages(doc, captions):
 def rasterize_page(pdf_path, page_num, dpi=200):
     """Rasterize a single page using pdftoppm. Returns PIL Image."""
     result = subprocess.run(
-        ['pdftoppm', '-jpeg', '-r', str(dpi),
-         '-f', str(page_num + 1), '-l', str(page_num + 1),
-         str(pdf_path)],
-        capture_output=True
+        [
+            "pdftoppm",
+            "-jpeg",
+            "-r",
+            str(dpi),
+            "-f",
+            str(page_num + 1),
+            "-l",
+            str(page_num + 1),
+            str(pdf_path),
+        ],
+        capture_output=True,
     )
     if result.returncode != 0:
         return None
 
     from io import BytesIO
+
     return Image.open(BytesIO(result.stdout))
 
 
@@ -210,7 +216,7 @@ def save_figure(img, path, max_width=800, quality=70):
     if w > max_width:
         ratio = max_width / w
         img = img.resize((max_width, int(h * ratio)), Image.LANCZOS)
-    img.save(path, 'JPEG', quality=quality, optimize=True)
+    img.save(path, "JPEG", quality=quality, optimize=True)
 
 
 def main():
@@ -222,8 +228,8 @@ def main():
     out_dir = sys.argv[2]
     prefix = "fig"
 
-    if '--prefix' in sys.argv:
-        idx = sys.argv.index('--prefix')
+    if "--prefix" in sys.argv:
+        idx = sys.argv.index("--prefix")
         if idx + 1 < len(sys.argv):
             prefix = sys.argv[idx + 1]
 
@@ -245,7 +251,7 @@ def main():
 
     # Step 2: Find pages with figures
     fig_pages = find_figure_pages(doc, captions)
-    print(f"Figure pages: {[p+1 for p in fig_pages]}")
+    print(f"Figure pages: {[p + 1 for p in fig_pages]}")
 
     # Step 3: Process each figure
     results = {}
@@ -282,7 +288,7 @@ def main():
             results[f"fig{fig_num}"] = {
                 "file": fname,
                 "page": page_idx + 1,
-                "caption": captions[fig_num]["caption"]
+                "caption": captions[fig_num]["caption"],
             }
     else:
         # No captions found — fall back to extracting each figure page
@@ -299,12 +305,12 @@ def main():
             results[f"fig{fig_counter}"] = {
                 "file": fname,
                 "page": page_idx + 1,
-                "caption": f"Page {page_idx + 1}"
+                "caption": f"Page {page_idx + 1}",
             }
 
     # Save captions mapping
     captions_path = os.path.join(out_dir, "captions.json")
-    with open(captions_path, 'w', encoding='utf-8') as f:
+    with open(captions_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
     print(f"\nDone: {len(results)} figures extracted to {out_dir}/")
@@ -317,5 +323,5 @@ def main():
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

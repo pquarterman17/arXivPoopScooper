@@ -66,7 +66,9 @@ def _eval_js_via_node(js_path: Path) -> dict:
     )
     result = subprocess.run(
         ["node", "-e", js],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(f"node failed to evaluate {js_path}:\n{result.stderr.strip()}")
@@ -89,10 +91,13 @@ def _convert_search_sources(legacy: dict) -> dict:
         for key, value in sources_in.items():
             if not isinstance(value, dict):
                 continue
-            entry = {"id": key, "label": value.get("label", key),
-                     "type": value.get("type", "arxiv"),
-                     "color": value.get("color", "#58a6ff"),
-                     "enabled": bool(value.get("enabled", False))}
+            entry = {
+                "id": key,
+                "label": value.get("label", key),
+                "type": value.get("type", "arxiv"),
+                "color": value.get("color", "#58a6ff"),
+                "enabled": bool(value.get("enabled", False)),
+            }
             for opt in ("journalRef", "journalName", "issn"):
                 if value.get(opt) not in (None, ""):
                     entry[opt] = value[opt]
@@ -106,7 +111,7 @@ def _convert_search_sources(legacy: dict) -> dict:
             if not isinstance(p, dict):
                 continue
             label = p.get("label", "")
-            pid = _slug(label) or f"preset-{len(presets_out)+1}"
+            pid = _slug(label) or f"preset-{len(presets_out) + 1}"
             # Disambiguate collisions
             base = pid
             n = 2
@@ -124,7 +129,9 @@ def _convert_search_sources(legacy: dict) -> dict:
             "enabled": bool(af.get("enabled", True)),
             "cooldownHours": int(af.get("cooldownHours", 4)),
             "maxResultsPerQuery": int(af.get("maxResultsPerQuery", 25)),
-            "delayBetweenQueriesMs": int(af.get("delayBetweenQueries", af.get("delayBetweenQueriesMs", 1500))),
+            "delayBetweenQueriesMs": int(
+                af.get("delayBetweenQueries", af.get("delayBetweenQueriesMs", 1500))
+            ),
         }
     return out
 
@@ -161,7 +168,10 @@ def migrate(*, dry_run: bool = False, overwrite: bool = False) -> dict:
     """
     legacy = _find_legacy_file()
     if legacy is None:
-        return {"status": "nothing-to-migrate", "reason": "scraper_config.js not found in repo root"}
+        return {
+            "status": "nothing-to-migrate",
+            "reason": "scraper_config.js not found in repo root",
+        }
 
     data = _eval_js_via_node(legacy)
     search_doc = _convert_search_sources(data)
@@ -187,8 +197,14 @@ def migrate(*, dry_run: bool = False, overwrite: bool = False) -> dict:
     _write("search-sources.json", search_doc)
     _write("auto-tag-rules.json", autotag_doc)
 
-    return {"status": "ok", "written": written, "skipped": skipped,
-            "source": str(legacy), "search_doc": search_doc, "autotag_doc": autotag_doc}
+    return {
+        "status": "ok",
+        "written": written,
+        "skipped": skipped,
+        "source": str(legacy),
+        "search_doc": search_doc,
+        "autotag_doc": autotag_doc,
+    }
 
 
 # ─── CLI ───
@@ -199,10 +215,14 @@ def main(argv: list[str] | None = None) -> int:
         prog="scq migrate-from-legacy",
         description="Convert scraper_config.js into data/user_config/*.json.",
     )
-    parser.add_argument("--dry-run", action="store_true",
-                        help="show what would be written without touching disk")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="replace existing user_config files (default: skip)")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="show what would be written without touching disk"
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="replace existing user_config files (default: skip)",
+    )
     args = parser.parse_args(argv)
 
     try:

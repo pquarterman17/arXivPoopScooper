@@ -34,6 +34,7 @@ if _REPO_ROOT not in sys.path:
 
 try:
     from scq.config.paths import paths as _scq_paths
+
     DB_PATH = str(_scq_paths().db_path)
 except Exception:
     DB_PATH = os.path.join(_REPO_ROOT, "data", "arxiv_poop_scooper.db")
@@ -207,11 +208,11 @@ def migrate_from_html(db_path=DB_PATH):
 
     # Convert JS object notation to JSON
     # Add quotes around unquoted keys
-    papers_json = re.sub(r'(?m)^\s*(\w+)\s*:', r'"\1":', papers_js)
+    papers_json = re.sub(r"(?m)^\s*(\w+)\s*:", r'"\1":', papers_js)
     # Fix nested object keys in figures arrays
-    papers_json = re.sub(r'(?<=\{)\s*(\w+)\s*:', r'"\1":', papers_json)
+    papers_json = re.sub(r"(?<=\{)\s*(\w+)\s*:", r'"\1":', papers_json)
     # Handle trailing commas (arrays and objects)
-    papers_json = re.sub(r',\s*([}\]])', r'\1', papers_json)
+    papers_json = re.sub(r",\s*([}\]])", r"\1", papers_json)
     # Replace single quotes with double quotes (careful with apostrophes)
     # Actually, the JS uses double quotes already for strings
 
@@ -253,34 +254,40 @@ def migrate_from_html(db_path=DB_PATH):
         tags = json.dumps(p.get("tags", []))
         key_results = json.dumps(p.get("keyResults", []))
 
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR REPLACE INTO papers
             (id, title, authors, short_authors, year, group_name, date_added,
              tags, summary, key_results, cite_bib, cite_txt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            pid,
-            p.get("title", ""),
-            p.get("authors", ""),
-            p.get("shortAuthors", ""),
-            p.get("year", 0),
-            p.get("group", ""),
-            p.get("dateAdded", ""),
-            tags,
-            p.get("summary", ""),
-            key_results,
-            p.get("citeBib", ""),
-            p.get("citeTxt", ""),
-        ))
+        """,
+            (
+                pid,
+                p.get("title", ""),
+                p.get("authors", ""),
+                p.get("shortAuthors", ""),
+                p.get("year", 0),
+                p.get("group", ""),
+                p.get("dateAdded", ""),
+                tags,
+                p.get("summary", ""),
+                key_results,
+                p.get("citeBib", ""),
+                p.get("citeTxt", ""),
+            ),
+        )
 
         # Figures
         for i, fig in enumerate(p.get("figures", [])):
             key = fig.get("key", "")
             file_path = figs.get(key, f"figures/extracted/{key}.jpg")
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO figures (paper_id, figure_key, file_path, label, caption, sort_order)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (pid, key, file_path, fig.get("label", ""), fig.get("desc", ""), i))
+            """,
+                (pid, key, file_path, fig.get("label", ""), fig.get("desc", ""), i),
+            )
 
         # State from notes.json
         ps = papers_state.get(pid, {})
@@ -289,38 +296,53 @@ def migrate_from_html(db_path=DB_PATH):
         note_content = ps.get("notes", "")
         last_edited = edit_history.get(pid, "")
         if note_content or last_edited:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO notes (paper_id, content, last_edited)
                 VALUES (?, ?, ?)
-            """, (pid, note_content, last_edited))
+            """,
+                (pid, note_content, last_edited),
+            )
 
         # Read status + priority
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR REPLACE INTO read_status (paper_id, is_read, priority)
             VALUES (?, ?, ?)
-        """, (pid, 1 if ps.get("read") else 0, ps.get("priority", 0)))
+        """,
+            (pid, 1 if ps.get("read") else 0, ps.get("priority", 0)),
+        )
 
         # Highlights
         for hl in ps.get("highlights", []):
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO highlights (paper_id, text, page, color)
                 VALUES (?, ?, ?, ?)
-            """, (pid, hl.get("text", ""), hl.get("page"), hl.get("color", "#58a6ff")))
+            """,
+                (pid, hl.get("text", ""), hl.get("page"), hl.get("color", "#58a6ff")),
+            )
 
         # Manual links
         for linked_id in ps.get("manualLinks", []):
             a, b = sorted([pid, linked_id])
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR IGNORE INTO paper_links (paper_a, paper_b)
                 VALUES (?, ?)
-            """, (a, b))
+            """,
+                (a, b),
+            )
 
         # Collections
         for coll_name in ps.get("collections", []):
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR IGNORE INTO collections (name, paper_id)
                 VALUES (?, ?)
-            """, (coll_name, pid))
+            """,
+                (coll_name, pid),
+            )
 
     conn.commit()
 
@@ -329,6 +351,7 @@ def migrate_from_html(db_path=DB_PATH):
     if os.path.exists(pdfs_dir):
         try:
             import fitz  # PyMuPDF
+
             pdf_count = 0
             for fname in os.listdir(pdfs_dir):
                 if not fname.lower().endswith(".pdf"):
@@ -340,10 +363,13 @@ def migrate_from_html(db_path=DB_PATH):
                     for page_num in range(len(doc)):
                         text = doc[page_num].get_text()
                         if text.strip():
-                            conn.execute("""
+                            conn.execute(
+                                """
                                 INSERT INTO pdf_text (paper_id, page_num, content)
                                 VALUES (?, ?, ?)
-                            """, (paper_id, str(page_num + 1), text))
+                            """,
+                                (paper_id, str(page_num + 1), text),
+                            )
                     doc.close()
                     pdf_count += 1
                 except Exception as e:
@@ -364,10 +390,13 @@ def migrate_from_html(db_path=DB_PATH):
             for safe_id, data in idx_papers.items():
                 paper_id = safe_id.replace("_", ".")
                 for pg in data.get("pages", []):
-                    conn.execute("""
+                    conn.execute(
+                        """
                         INSERT OR IGNORE INTO pdf_text (paper_id, page_num, content)
                         VALUES (?, ?, ?)
-                    """, (paper_id, str(pg.get("p", "")), pg.get("t", "")))
+                    """,
+                        (paper_id, str(pg.get("p", "")), pg.get("t", "")),
+                    )
             conn.commit()
             print(f"Imported search index for {len(idx_papers)} papers")
 
@@ -422,10 +451,10 @@ def parse_js_object(js_str):
     s = js_str.strip()
 
     # Unquoted keys → quoted keys
-    s = re.sub(r'(?m)(?<=\{|\,)\s*(\w+)\s*:', r'"\1":', s)
+    s = re.sub(r"(?m)(?<=\{|\,)\s*(\w+)\s*:", r'"\1":', s)
 
     # Trailing commas
-    s = re.sub(r',\s*([}\]])', r'\1', s)
+    s = re.sub(r",\s*([}\]])", r"\1", s)
 
     try:
         return json.loads(s)

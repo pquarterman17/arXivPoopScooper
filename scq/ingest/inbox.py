@@ -28,6 +28,7 @@ SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parents[1]
 try:
     from scq.config.paths import paths as _scq_paths  # type: ignore[import-not-found]
+
     _P = _scq_paths()
     INBOX_DIR = Path(_P.inbox_dir)
     FIGURES_DIR = Path(_P.figures_dir)
@@ -37,10 +38,12 @@ except Exception:
 # pdfs/ is a legacy directory used by this batch importer; not in paths().
 PDFS_DIR = PROJECT_DIR / "pdfs"
 
+
 def extract_text_first_pages(pdf_path, max_pages=2):
     """Extract text from first pages of a PDF using PyMuPDF."""
     try:
         import fitz
+
         doc = fitz.open(str(pdf_path))
         text = ""
         for i in range(min(max_pages, len(doc))):
@@ -52,18 +55,21 @@ def extract_text_first_pages(pdf_path, max_pages=2):
         try:
             result = subprocess.run(
                 ["pdftotext", "-l", str(max_pages), str(pdf_path), "-"],
-                capture_output=True, text=True, timeout=30
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             return result.stdout
         except Exception:
             return ""
 
+
 def find_arxiv_id(text):
     """Try to extract arXiv ID from text."""
     patterns = [
-        r'arXiv[:\s]*(\d{4}\.\d{4,5})',
-        r'arxiv\.org/abs/(\d{4}\.\d{4,5})',
-        r'(\d{4}\.\d{4,5})v\d',
+        r"arXiv[:\s]*(\d{4}\.\d{4,5})",
+        r"arxiv\.org/abs/(\d{4}\.\d{4,5})",
+        r"(\d{4}\.\d{4,5})v\d",
     ]
     for pat in patterns:
         m = re.search(pat, text, re.IGNORECASE)
@@ -71,24 +77,27 @@ def find_arxiv_id(text):
             return m.group(1)
     return None
 
+
 def find_doi(text):
     """Try to extract DOI from text."""
-    m = re.search(r'(10\.\d{4,}/[^\s,;]+)', text)
+    m = re.search(r"(10\.\d{4,}/[^\s,;]+)", text)
     if m:
-        doi = m.group(1).rstrip('.')
+        doi = m.group(1).rstrip(".")
         return doi
     return None
 
+
 def find_title(text):
     """Heuristic: first long line is often the title."""
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
     for line in lines[:10]:
         # Skip lines that look like headers/metadata
-        if any(kw in line.lower() for kw in ['arxiv', 'doi:', 'journal', 'volume', 'published']):
+        if any(kw in line.lower() for kw in ["arxiv", "doi:", "journal", "volume", "published"]):
             continue
-        if len(line) > 20 and not line.startswith('http'):
+        if len(line) > 20 and not line.startswith("http"):
             return line
     return None
+
 
 def process_pdf(pdf_path, dry_run=False):
     """Process a single PDF from the inbox."""
@@ -125,7 +134,7 @@ def process_pdf(pdf_path, dry_run=False):
 
     if not dry_run:
         # Move PDF to pdfs/ folder
-        safe_id = re.sub(r'[^a-zA-Z0-9._-]', '_', paper_id)
+        safe_id = re.sub(r"[^a-zA-Z0-9._-]", "_", paper_id)
         dest = PDFS_DIR / f"{safe_id}.pdf"
         shutil.copy2(str(pdf_path), str(dest))
         print(f"  Copied to: {dest.relative_to(PROJECT_DIR)}")
@@ -137,7 +146,9 @@ def process_pdf(pdf_path, dry_run=False):
             try:
                 result = subprocess.run(
                     [sys.executable, str(extract_script), str(dest), str(fig_out)],
-                    capture_output=True, text=True, timeout=120
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
                 )
                 if result.returncode == 0 and fig_out.exists():
                     captions_file = fig_out / "captions.json"

@@ -45,12 +45,29 @@ from scq.config.paths import paths as _scq_paths  # noqa: E402
 # Resolve paths lazily on each access so paths.refresh() / SCQ_REPO_ROOT
 # overrides take effect mid-process (e.g. integration tests using tmp_path).
 # Capturing them at module load was B4 from the 2026-04-30 audit.
-def _inbox_dir()    -> Path: return Path(_scq_paths().inbox_dir)
-def _papers_dir()   -> Path: return Path(_scq_paths().papers_dir)
-def _figures_dir()  -> Path: return Path(_scq_paths().figures_dir)
-def _db_path()      -> Path: return Path(_scq_paths().db_path)
-def _bib_path()     -> Path: return Path(_scq_paths().references_bib_path)
-def _txt_path()     -> Path: return Path(_scq_paths().references_txt_path)
+def _inbox_dir() -> Path:
+    return Path(_scq_paths().inbox_dir)
+
+
+def _papers_dir() -> Path:
+    return Path(_scq_paths().papers_dir)
+
+
+def _figures_dir() -> Path:
+    return Path(_scq_paths().figures_dir)
+
+
+def _db_path() -> Path:
+    return Path(_scq_paths().db_path)
+
+
+def _bib_path() -> Path:
+    return Path(_scq_paths().references_bib_path)
+
+
+def _txt_path() -> Path:
+    return Path(_scq_paths().references_txt_path)
+
 
 # Figure extraction lives at scq.ingest.extract; invoke via the `-m` runner
 # so the same path works in pip-installed and source-checkout setups.
@@ -58,6 +75,7 @@ EXTRACT_CMD = [sys.executable, "-m", "scq.ingest.extract"]
 
 
 # ─── Citation generators ──────────────────────────────────────────
+
 
 def make_bibtex(meta):
     """Generate a BibTeX entry from metadata."""
@@ -80,8 +98,8 @@ def make_bibtex(meta):
     arxiv_id = meta["arxiv_id"]
 
     bib = f"""@article{{{key},
-  title     = {{{meta['title']}}},
-  author    = {{{' and '.join(bib_authors)}}},
+  title     = {{{meta["title"]}}},
+  author    = {{{" and ".join(bib_authors)}}},
   journal   = {{arXiv preprint}},
   volume    = {{}},
   pages     = {{}},
@@ -129,6 +147,7 @@ def short_author(authors):
 
 # ─── CrossRef DOI lookup ──────────────────────────────────────────
 
+
 def lookup_doi(doi):
     """Fetch metadata from CrossRef API for a given DOI.
     Returns dict with: title, authors, short_authors, year, journal,
@@ -140,41 +159,53 @@ def lookup_doi(doi):
         import urllib.request
 
         url = f"https://api.crossref.org/works/{doi}"
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
-            "Accept": "application/json",
-        })
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "SCQDatabase/1.0 (+https://github.com/pquarterman17/arXivPoopScooper)",
+                "Accept": "application/json",
+            },
+        )
 
         with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
+            data = json.loads(resp.read().decode("utf-8"))
 
-        if not data.get('message'):
+        if not data.get("message"):
             return None
 
-        msg = data['message']
-        title = msg.get('title', [''])[0] if isinstance(msg.get('title'), list) else msg.get('title', '')
-        authors = [f"{a.get('given', '')} {a.get('family', '')}".strip()
-                   for a in msg.get('author', [])]
-        year = msg.get('published', {}).get('date-parts', [[None]])[0][0] or date.today().year
-        journal = msg.get('container-title', [''])[0] if isinstance(msg.get('container-title'), list) else msg.get('container-title', '')
-        volume = msg.get('volume', '')
-        pages = msg.get('page', '')
+        msg = data["message"]
+        title = (
+            msg.get("title", [""])[0]
+            if isinstance(msg.get("title"), list)
+            else msg.get("title", "")
+        )
+        authors = [
+            f"{a.get('given', '')} {a.get('family', '')}".strip() for a in msg.get("author", [])
+        ]
+        year = msg.get("published", {}).get("date-parts", [[None]])[0][0] or date.today().year
+        journal = (
+            msg.get("container-title", [""])[0]
+            if isinstance(msg.get("container-title"), list)
+            else msg.get("container-title", "")
+        )
+        volume = msg.get("volume", "")
+        pages = msg.get("page", "")
 
         # Generate citations
         cite_bib_key, cite_bib = _make_doi_bibtex(doi, title, authors, year, journal, volume, pages)
         cite_txt = _make_doi_plain_cite(authors, title, journal, volume, pages, year, doi)
 
         return {
-            'title': title,
-            'authors': authors,
-            'short_authors': short_author(authors),
-            'year': year,
-            'journal': journal,
-            'volume': volume,
-            'pages': pages,
-            'doi': doi,
-            'cite_bib': cite_bib,
-            'cite_txt': cite_txt
+            "title": title,
+            "authors": authors,
+            "short_authors": short_author(authors),
+            "year": year,
+            "journal": journal,
+            "volume": volume,
+            "pages": pages,
+            "doi": doi,
+            "cite_bib": cite_bib,
+            "cite_txt": cite_txt,
         }
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as e:
         print(f"  [warn] DOI lookup failed for {doi}: {e}")
@@ -201,7 +232,7 @@ def _make_doi_bibtex(doi, title, authors, year, journal, volume, pages):
 
     bib = f"""@article{{{key},
   title     = {{{title}}},
-  author    = {{{' and '.join(bib_authors)}}},
+  author    = {{{" and ".join(bib_authors)}}},
   journal   = {{{journal}}},
   volume    = {{{volume}}},
   pages     = {{{pages}}},
@@ -236,6 +267,7 @@ def _make_doi_plain_cite(authors, title, journal, volume, pages, year, doi):
 
 # ─── Figure extraction ────────────────────────────────────────────
 
+
 def extract_figures(pdf_path, arxiv_id, prefix):
     """Run extract_figures.py and return the captions dict."""
     fig_dir = _figures_dir() / arxiv_id
@@ -243,7 +275,9 @@ def extract_figures(pdf_path, arxiv_id, prefix):
 
     result = subprocess.run(
         EXTRACT_CMD + [str(pdf_path), str(fig_dir), "--prefix", prefix],
-        capture_output=True, text=True, timeout=120
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
 
     if result.returncode != 0:
@@ -259,6 +293,7 @@ def extract_figures(pdf_path, arxiv_id, prefix):
 
 # ─── Database operations ──────────────────────────────────────────
 
+
 def load_db():
     """Open the canonical SQLite DB at data/arxiv_poop_scooper.db, applying migrations."""
     from scq.db.migrations import apply_pending
@@ -271,52 +306,89 @@ def load_db():
     return conn
 
 
-def insert_paper(conn, meta, summary, key_results_list, tags_list,
-                 group_name, bib, plain_cite, pdf_rel_path, note):
+def insert_paper(
+    conn,
+    meta,
+    summary,
+    key_results_list,
+    tags_list,
+    group_name,
+    bib,
+    plain_cite,
+    pdf_rel_path,
+    note,
+):
     """Insert or update a paper in all relevant tables."""
     cur = conn.cursor()
     arxiv_id = meta["arxiv_id"]
     year = int(meta["published"][:4])
 
-    cur.execute("""
+    cur.execute(
+        """
         INSERT OR REPLACE INTO papers
         (id, title, authors, short_authors, year, journal, volume, pages,
          doi, arxiv_id, url, group_name, date_added, tags, summary,
          key_results, cite_bib, cite_txt, pdf_path)
         VALUES (?,?,?,?,?, '','','', ?,?, ?,?,?, ?,?, ?,?,?,?)
-    """, (
-        arxiv_id, meta["title"], ", ".join(meta["authors"]),
-        short_author(meta["authors"]), year,
-        f"10.48550/arXiv.{arxiv_id}", arxiv_id,
-        f"https://arxiv.org/abs/{arxiv_id}", group_name,
-        date.today().isoformat(),
-        json.dumps(tags_list), summary, json.dumps(key_results_list),
-        bib, plain_cite, pdf_rel_path
-    ))
+    """,
+        (
+            arxiv_id,
+            meta["title"],
+            ", ".join(meta["authors"]),
+            short_author(meta["authors"]),
+            year,
+            f"10.48550/arXiv.{arxiv_id}",
+            arxiv_id,
+            f"https://arxiv.org/abs/{arxiv_id}",
+            group_name,
+            date.today().isoformat(),
+            json.dumps(tags_list),
+            summary,
+            json.dumps(key_results_list),
+            bib,
+            plain_cite,
+            pdf_rel_path,
+        ),
+    )
 
     # Read status (unread, no priority)
-    cur.execute("""
+    cur.execute(
+        """
         INSERT OR IGNORE INTO read_status (paper_id, is_read, priority)
         VALUES (?, 0, 0)
-    """, (arxiv_id,))
+    """,
+        (arxiv_id,),
+    )
 
     # Note
     if note:
-        cur.execute("""
+        cur.execute(
+            """
             INSERT OR REPLACE INTO notes (paper_id, content, last_edited)
             VALUES (?, ?, ?)
-        """, (arxiv_id, note, datetime.now().isoformat()))
+        """,
+            (arxiv_id, note, datetime.now().isoformat()),
+        )
 
     # FTS index — delete old entry first to avoid duplicates
     try:
         cur.execute("DELETE FROM papers_fts WHERE id = ?", (arxiv_id,))
     except Exception:
         pass
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO papers_fts (id, title, authors, summary, tags, key_results)
         VALUES (?, ?, ?, ?, ?, ?)
-    """, (arxiv_id, meta["title"], ", ".join(meta["authors"]),
-          summary, json.dumps(tags_list), json.dumps(key_results_list)))
+    """,
+        (
+            arxiv_id,
+            meta["title"],
+            ", ".join(meta["authors"]),
+            summary,
+            json.dumps(tags_list),
+            json.dumps(key_results_list),
+        ),
+    )
 
     conn.commit()
 
@@ -325,18 +397,27 @@ def insert_figures(conn, arxiv_id, figures, prefix):
     """Insert figure entries into the database."""
     cur = conn.cursor()
     for fig_key, fig_data in sorted(figures.items()):
-        fig_num = int(re.search(r'\d+', fig_key).group())
-        cur.execute("""
+        fig_num = int(re.search(r"\d+", fig_key).group())
+        cur.execute(
+            """
             INSERT OR REPLACE INTO figures
             (paper_id, figure_key, file_path, label, caption, sort_order)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (arxiv_id, f"{prefix}_{fig_key}",
-              f"figures/{arxiv_id}/{fig_data['file']}",
-              f"Fig. {fig_num}", fig_data["caption"], fig_num - 1))
+        """,
+            (
+                arxiv_id,
+                f"{prefix}_{fig_key}",
+                f"figures/{arxiv_id}/{fig_data['file']}",
+                f"Fig. {fig_num}",
+                fig_data["caption"],
+                fig_num - 1,
+            ),
+        )
     conn.commit()
 
 
 # ─── Citation file updates ────────────────────────────────────────
+
 
 def append_bib(bib_entry, arxiv_id):
     """Append a BibTeX entry to references.bib if not already present."""
@@ -358,7 +439,7 @@ def append_txt(plain_cite, arxiv_id):
         print("  references.txt: already contains this entry")
         return
     # Find next reference number
-    nums = re.findall(r'^\[(\d+)\]', existing, re.MULTILINE)
+    nums = re.findall(r"^\[(\d+)\]", existing, re.MULTILINE)
     next_num = max(int(n) for n in nums) + 1 if nums else 1
     with open(txt_path, "a", encoding="utf-8") as f:
         f.write(f"\n[{next_num}] {plain_cite}\n")
@@ -367,11 +448,12 @@ def append_txt(plain_cite, arxiv_id):
 
 # ─── DOI processing ───────────────────────────────────────────────
 
+
 def _process_doi(doi, note):
     """Process a paper using CrossRef metadata from a DOI."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Fetching from CrossRef: {doi}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Fetch metadata
     print("\n[1/3] Looking up DOI metadata...")
@@ -414,22 +496,36 @@ def _process_doi(doi, note):
     # Insert into database
     print("\n[2/3] Inserting into database...")
     pdf_rel = ""  # No PDF for published papers (unless downloaded separately)
-    insert_paper(conn, {
-        'title': meta['title'],
-        'authors': meta['authors'],
-        'published': f"{meta['year']}-01-01",
-        'arxiv_id': '',
-        'categories': [],
-        'abstract': meta['journal']
-    }, meta['title'], [], tags, '', meta['cite_bib'], meta['cite_txt'], pdf_rel, note)
+    insert_paper(
+        conn,
+        {
+            "title": meta["title"],
+            "authors": meta["authors"],
+            "published": f"{meta['year']}-01-01",
+            "arxiv_id": "",
+            "categories": [],
+            "abstract": meta["journal"],
+        },
+        meta["title"],
+        [],
+        tags,
+        "",
+        meta["cite_bib"],
+        meta["cite_txt"],
+        pdf_rel,
+        note,
+    )
 
     # Update the paper entry with published metadata
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         UPDATE papers
         SET journal = ?, volume = ?, pages = ?, doi = ?, entry_type = 'published'
         WHERE id = ?
-    """, (meta['journal'], meta['volume'], meta['pages'], meta['doi'], entry_id))
+    """,
+        (meta["journal"], meta["volume"], meta["pages"], meta["doi"], entry_id),
+    )
     conn.commit()
     conn.close()
 
@@ -437,11 +533,11 @@ def _process_doi(doi, note):
 
     # 3. Update citation files
     print("\n[3/3] Updating citation files...")
-    append_bib(meta['cite_bib'], entry_id)
-    append_txt(meta['cite_txt'], entry_id)
+    append_bib(meta["cite_bib"], entry_id)
+    append_txt(meta["cite_txt"], entry_id)
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"DONE — {doi} added to database")
     print(f"  Title:   {meta['title']}")
     print(f"  Authors: {meta['short_authors']}")
@@ -449,16 +545,19 @@ def _process_doi(doi, note):
     print(f"  Tags:    {tags}")
     if note:
         print(f"  Note:    {note}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 # ─── Main ─────────────────────────────────────────────────────────
 
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 tools/process_paper.py <arxiv_id> [--note \"...\"]")
-        print("       python3 tools/process_paper.py --doi <doi> [--note \"...\"]")
-        print("       Reads inbox/<arxiv_id>_meta.json (from fetch_arxiv.js) or fetches from CrossRef")
+        print('Usage: python3 tools/process_paper.py <arxiv_id> [--note "..."]')
+        print('       python3 tools/process_paper.py --doi <doi> [--note "..."]')
+        print(
+            "       Reads inbox/<arxiv_id>_meta.json (from fetch_arxiv.js) or fetches from CrossRef"
+        )
         sys.exit(1)
 
     note = ""
@@ -488,10 +587,10 @@ def main():
     with open(meta_path) as f:
         meta = json.load(f)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing: {meta['title']}")
     print(f"  {short_author(meta['authors'])} ({meta['published'][:4]})")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Find the PDF
     pdf_file = meta.get("pdf_file", "")
@@ -564,8 +663,9 @@ def main():
     print("\n[3/4] Inserting into database...")
     conn = load_db()
     pdf_rel = f"papers/{pdf_file}"
-    insert_paper(conn, meta, summary, key_results, tags,
-                 group_name, bib_entry, plain_cite, pdf_rel, note)
+    insert_paper(
+        conn, meta, summary, key_results, tags, group_name, bib_entry, plain_cite, pdf_rel, note
+    )
     if figures:
         insert_figures(conn, arxiv_id, figures, prefix)
     conn.commit()
@@ -590,19 +690,23 @@ def main():
                 # installed works regardless of cwd.
                 result = subprocess.run(
                     [sys.executable, "-m", "scq.overleaf.sync"],
-                    capture_output=True, text=True, timeout=60
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
                 )
                 if result.returncode == 0:
                     print("  Overleaf sync successful")
                 else:
-                    print("  Warning: Overleaf sync failed (run manually: python tools/overleaf_sync.py)")
+                    print(
+                        "  Warning: Overleaf sync failed (run manually: python tools/overleaf_sync.py)"
+                    )
                     if result.stderr:
                         print(f"  Error: {result.stderr[:200]}")
         except Exception as e:
             print(f"  Warning: Could not auto-sync to Overleaf: {e}")
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"DONE — {arxiv_id} added to database")
     print(f"  Title:    {meta['title']}")
     print(f"  Authors:  {short_author(meta['authors'])}")
@@ -611,7 +715,7 @@ def main():
     if note:
         print(f"  Note:     {note}")
     print("\nTo enrich (summary, key results, group name), ask Claude.")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":

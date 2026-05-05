@@ -47,6 +47,7 @@ def merge_databases(source_path, target_path, dry_run=False):
         # Backup target before merging
         backup_path = target_path + ".pre-merge.bak"
         import shutil
+
         shutil.copy2(target_path, backup_path)
         print(f"Backed up target to {backup_path}")
         tgt = sqlite3.connect(target_path)
@@ -54,10 +55,15 @@ def merge_databases(source_path, target_path, dry_run=False):
     tgt.row_factory = sqlite3.Row
 
     stats = {
-        "papers_added": 0, "papers_updated": 0, "papers_skipped": 0,
-        "figures_added": 0, "highlights_added": 0,
-        "collections_added": 0, "links_added": 0,
-        "notes_updated": 0, "read_status_updated": 0,
+        "papers_added": 0,
+        "papers_updated": 0,
+        "papers_skipped": 0,
+        "figures_added": 0,
+        "highlights_added": 0,
+        "collections_added": 0,
+        "links_added": 0,
+        "notes_updated": 0,
+        "read_status_updated": 0,
         "pdf_pages_added": 0,
     }
 
@@ -72,20 +78,38 @@ def merge_databases(source_path, target_path, dry_run=False):
         if sid not in target_ids:
             # New paper — insert it
             if not dry_run:
-                tgt.execute("""
+                tgt.execute(
+                    """
                     INSERT INTO papers (id, title, authors, short_authors, year, journal,
                       volume, pages, doi, arxiv_id, url, group_name, date_added,
                       tags, summary, key_results, cite_bib, cite_txt, pdf_path,
                       created_at, updated_at)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """, (
-                    sp["id"], sp["title"], sp["authors"], sp["short_authors"],
-                    sp["year"], sp["journal"], sp["volume"], sp["pages"],
-                    sp["doi"], sp["arxiv_id"], sp["url"], sp["group_name"],
-                    sp["date_added"], sp["tags"], sp["summary"], sp["key_results"],
-                    sp["cite_bib"], sp["cite_txt"], sp["pdf_path"],
-                    sp["created_at"], sp["updated_at"]
-                ))
+                """,
+                    (
+                        sp["id"],
+                        sp["title"],
+                        sp["authors"],
+                        sp["short_authors"],
+                        sp["year"],
+                        sp["journal"],
+                        sp["volume"],
+                        sp["pages"],
+                        sp["doi"],
+                        sp["arxiv_id"],
+                        sp["url"],
+                        sp["group_name"],
+                        sp["date_added"],
+                        sp["tags"],
+                        sp["summary"],
+                        sp["key_results"],
+                        sp["cite_bib"],
+                        sp["cite_txt"],
+                        sp["pdf_path"],
+                        sp["created_at"],
+                        sp["updated_at"],
+                    ),
+                )
             stats["papers_added"] += 1
             print(f"  + ADD paper: {sp['short_authors']} — {sp['title'][:50]}")
         else:
@@ -111,7 +135,16 @@ def merge_databases(source_path, target_path, dry_run=False):
                 updates["tags"] = json.dumps(merged_tags)
 
             # Fill in blanks
-            for field in ["cite_bib", "cite_txt", "doi", "arxiv_id", "journal", "volume", "pages", "pdf_path"]:
+            for field in [
+                "cite_bib",
+                "cite_txt",
+                "doi",
+                "arxiv_id",
+                "journal",
+                "volume",
+                "pages",
+                "pdf_path",
+            ]:
                 if not tp[field] and sp[field]:
                     updates[field] = sp[field]
 
@@ -135,11 +168,20 @@ def merge_databases(source_path, target_path, dry_run=False):
         key = (sf["paper_id"], sf["figure_key"])
         if key not in existing_figs:
             if not dry_run:
-                tgt.execute("""
+                tgt.execute(
+                    """
                     INSERT INTO figures (paper_id, figure_key, file_path, label, caption, sort_order)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (sf["paper_id"], sf["figure_key"], sf["file_path"],
-                      sf["label"], sf["caption"], sf["sort_order"]))
+                """,
+                    (
+                        sf["paper_id"],
+                        sf["figure_key"],
+                        sf["file_path"],
+                        sf["label"],
+                        sf["caption"],
+                        sf["sort_order"],
+                    ),
+                )
             stats["figures_added"] += 1
 
     # ─── Merge notes ───
@@ -149,8 +191,10 @@ def merge_databases(source_path, target_path, dry_run=False):
         if tn is None:
             if sn["content"]:
                 if not dry_run:
-                    tgt.execute("INSERT INTO notes (paper_id, content, last_edited) VALUES (?, ?, ?)",
-                                (sn["paper_id"], sn["content"], sn["last_edited"]))
+                    tgt.execute(
+                        "INSERT INTO notes (paper_id, content, last_edited) VALUES (?, ?, ?)",
+                        (sn["paper_id"], sn["content"], sn["last_edited"]),
+                    )
                 stats["notes_updated"] += 1
         else:
             # Keep the more recent note, or the longer one if no timestamps
@@ -165,26 +209,34 @@ def merge_databases(source_path, target_path, dry_run=False):
                 use_source = True
 
             if use_source and not dry_run:
-                tgt.execute("UPDATE notes SET content = ?, last_edited = ? WHERE paper_id = ?",
-                            (sn["content"], sn["last_edited"], sn["paper_id"]))
+                tgt.execute(
+                    "UPDATE notes SET content = ?, last_edited = ? WHERE paper_id = ?",
+                    (sn["content"], sn["last_edited"], sn["paper_id"]),
+                )
                 stats["notes_updated"] += 1
 
     # ─── Merge read status ───
     source_rs = src.execute("SELECT * FROM read_status").fetchall()
     for sr in source_rs:
-        tr = tgt.execute("SELECT * FROM read_status WHERE paper_id = ?", (sr["paper_id"],)).fetchone()
+        tr = tgt.execute(
+            "SELECT * FROM read_status WHERE paper_id = ?", (sr["paper_id"],)
+        ).fetchone()
         if tr is None:
             if not dry_run:
-                tgt.execute("INSERT INTO read_status (paper_id, is_read, priority) VALUES (?, ?, ?)",
-                            (sr["paper_id"], sr["is_read"], sr["priority"]))
+                tgt.execute(
+                    "INSERT INTO read_status (paper_id, is_read, priority) VALUES (?, ?, ?)",
+                    (sr["paper_id"], sr["is_read"], sr["priority"]),
+                )
             stats["read_status_updated"] += 1
         else:
             new_read = max(sr["is_read"] or 0, tr["is_read"] or 0)
             new_priority = max(sr["priority"] or 0, tr["priority"] or 0)
             if new_read != (tr["is_read"] or 0) or new_priority != (tr["priority"] or 0):
                 if not dry_run:
-                    tgt.execute("UPDATE read_status SET is_read = ?, priority = ? WHERE paper_id = ?",
-                                (new_read, new_priority, sr["paper_id"]))
+                    tgt.execute(
+                        "UPDATE read_status SET is_read = ?, priority = ? WHERE paper_id = ?",
+                        (new_read, new_priority, sr["paper_id"]),
+                    )
                 stats["read_status_updated"] += 1
 
     # ─── Merge highlights ───
@@ -197,8 +249,10 @@ def merge_databases(source_path, target_path, dry_run=False):
         key = (sh["paper_id"], sh["text"])
         if key not in existing_hl:
             if not dry_run:
-                tgt.execute("INSERT INTO highlights (paper_id, text, page, color) VALUES (?, ?, ?, ?)",
-                            (sh["paper_id"], sh["text"], sh["page"], sh["color"]))
+                tgt.execute(
+                    "INSERT INTO highlights (paper_id, text, page, color) VALUES (?, ?, ?, ?)",
+                    (sh["paper_id"], sh["text"], sh["page"], sh["color"]),
+                )
             stats["highlights_added"] += 1
 
     # ─── Merge collections ───
@@ -211,8 +265,10 @@ def merge_databases(source_path, target_path, dry_run=False):
         key = (sc["name"], sc["paper_id"])
         if key not in existing_colls:
             if not dry_run:
-                tgt.execute("INSERT OR IGNORE INTO collections (name, paper_id) VALUES (?, ?)",
-                            (sc["name"], sc["paper_id"]))
+                tgt.execute(
+                    "INSERT OR IGNORE INTO collections (name, paper_id) VALUES (?, ?)",
+                    (sc["name"], sc["paper_id"]),
+                )
             stats["collections_added"] += 1
 
     # ─── Merge paper links ───
@@ -225,8 +281,10 @@ def merge_databases(source_path, target_path, dry_run=False):
         key = (sl["paper_a"], sl["paper_b"])
         if key not in existing_links:
             if not dry_run:
-                tgt.execute("INSERT OR IGNORE INTO paper_links (paper_a, paper_b) VALUES (?, ?)",
-                            (sl["paper_a"], sl["paper_b"]))
+                tgt.execute(
+                    "INSERT OR IGNORE INTO paper_links (paper_a, paper_b) VALUES (?, ?)",
+                    (sl["paper_a"], sl["paper_b"]),
+                )
             stats["links_added"] += 1
 
     # ─── Merge PDF text index ───
@@ -240,8 +298,10 @@ def merge_databases(source_path, target_path, dry_run=False):
             key = (sp["paper_id"], sp["page_num"])
             if key not in existing_pdf:
                 if not dry_run:
-                    tgt.execute("INSERT INTO pdf_text (paper_id, page_num, content) VALUES (?, ?, ?)",
-                                (sp["paper_id"], sp["page_num"], sp["content"]))
+                    tgt.execute(
+                        "INSERT INTO pdf_text (paper_id, page_num, content) VALUES (?, ?, ?)",
+                        (sp["paper_id"], sp["page_num"], sp["content"]),
+                    )
                 stats["pdf_pages_added"] += 1
     except Exception:
         pass  # pdf_text table might not exist in source
@@ -262,7 +322,9 @@ def merge_databases(source_path, target_path, dry_run=False):
     # Print summary
     prefix = "[DRY RUN] " if dry_run else ""
     print(f"\n{prefix}Merge complete:")
-    print(f"  Papers: {stats['papers_added']} added, {stats['papers_updated']} updated, {stats['papers_skipped']} unchanged")
+    print(
+        f"  Papers: {stats['papers_added']} added, {stats['papers_updated']} updated, {stats['papers_skipped']} unchanged"
+    )
     print(f"  Figures: {stats['figures_added']} added")
     print(f"  Notes: {stats['notes_updated']} updated")
     print(f"  Read status: {stats['read_status_updated']} updated")
@@ -286,8 +348,10 @@ def export_collection(db_path, collection_name, output_path):
 
     # Get paper IDs in the collection
     paper_ids = [
-        r["paper_id"] for r in
-        src.execute("SELECT paper_id FROM collections WHERE name = ?", (collection_name,)).fetchall()
+        r["paper_id"]
+        for r in src.execute(
+            "SELECT paper_id FROM collections WHERE name = ?", (collection_name,)
+        ).fetchall()
     ]
     if not paper_ids:
         print(f"Error: collection '{collection_name}' is empty or doesn't exist")
@@ -303,6 +367,7 @@ def export_collection(db_path, collection_name, output_path):
 
     # Use the schema from init_database
     from init_database import SCHEMA
+
     out = sqlite3.connect(output_path)
     out.executescript(SCHEMA)
 
@@ -311,51 +376,81 @@ def export_collection(db_path, collection_name, output_path):
     # Copy papers
     papers = src.execute(f"SELECT * FROM papers WHERE id IN ({placeholders})", paper_ids).fetchall()
     for p in papers:
-        out.execute("""
+        out.execute(
+            """
             INSERT INTO papers (id, title, authors, short_authors, year, journal,
               volume, pages, doi, arxiv_id, url, group_name, date_added,
               tags, summary, key_results, cite_bib, cite_txt, pdf_path,
               created_at, updated_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, tuple(p))
+        """,
+            tuple(p),
+        )
 
     # Copy figures
     for p in src.execute(f"SELECT * FROM figures WHERE paper_id IN ({placeholders})", paper_ids):
-        out.execute("INSERT INTO figures (paper_id, figure_key, file_path, label, caption, sort_order) VALUES (?,?,?,?,?,?)",
-                    (p["paper_id"], p["figure_key"], p["file_path"], p["label"], p["caption"], p["sort_order"]))
+        out.execute(
+            "INSERT INTO figures (paper_id, figure_key, file_path, label, caption, sort_order) VALUES (?,?,?,?,?,?)",
+            (
+                p["paper_id"],
+                p["figure_key"],
+                p["file_path"],
+                p["label"],
+                p["caption"],
+                p["sort_order"],
+            ),
+        )
 
     # Copy notes
     for p in src.execute(f"SELECT * FROM notes WHERE paper_id IN ({placeholders})", paper_ids):
-        out.execute("INSERT INTO notes (paper_id, content, last_edited) VALUES (?,?,?)",
-                    (p["paper_id"], p["content"], p["last_edited"]))
+        out.execute(
+            "INSERT INTO notes (paper_id, content, last_edited) VALUES (?,?,?)",
+            (p["paper_id"], p["content"], p["last_edited"]),
+        )
 
     # Copy read status
-    for p in src.execute(f"SELECT * FROM read_status WHERE paper_id IN ({placeholders})", paper_ids):
-        out.execute("INSERT INTO read_status (paper_id, is_read, priority) VALUES (?,?,?)",
-                    (p["paper_id"], p["is_read"], p["priority"]))
+    for p in src.execute(
+        f"SELECT * FROM read_status WHERE paper_id IN ({placeholders})", paper_ids
+    ):
+        out.execute(
+            "INSERT INTO read_status (paper_id, is_read, priority) VALUES (?,?,?)",
+            (p["paper_id"], p["is_read"], p["priority"]),
+        )
 
     # Copy highlights
     for p in src.execute(f"SELECT * FROM highlights WHERE paper_id IN ({placeholders})", paper_ids):
-        out.execute("INSERT INTO highlights (paper_id, text, page, color) VALUES (?,?,?,?)",
-                    (p["paper_id"], p["text"], p["page"], p["color"]))
+        out.execute(
+            "INSERT INTO highlights (paper_id, text, page, color) VALUES (?,?,?,?)",
+            (p["paper_id"], p["text"], p["page"], p["color"]),
+        )
 
     # Copy collection membership (only for this collection)
     for pid in paper_ids:
-        out.execute("INSERT INTO collections (name, paper_id) VALUES (?, ?)", (collection_name, pid))
+        out.execute(
+            "INSERT INTO collections (name, paper_id) VALUES (?, ?)", (collection_name, pid)
+        )
 
     # Copy links (only between papers both in this collection)
     pid_set = set(paper_ids)
-    for lnk in src.execute(f"SELECT * FROM paper_links WHERE paper_a IN ({placeholders}) AND paper_b IN ({placeholders})",
-                            paper_ids + paper_ids):
+    for lnk in src.execute(
+        f"SELECT * FROM paper_links WHERE paper_a IN ({placeholders}) AND paper_b IN ({placeholders})",
+        paper_ids + paper_ids,
+    ):
         if lnk["paper_a"] in pid_set and lnk["paper_b"] in pid_set:
-            out.execute("INSERT OR IGNORE INTO paper_links (paper_a, paper_b) VALUES (?,?)",
-                        (lnk["paper_a"], lnk["paper_b"]))
+            out.execute(
+                "INSERT OR IGNORE INTO paper_links (paper_a, paper_b) VALUES (?,?)",
+                (lnk["paper_a"], lnk["paper_b"]),
+            )
 
     # Copy PDF text
     try:
-        for p in src.execute(f"SELECT * FROM pdf_text WHERE paper_id IN ({placeholders})", paper_ids):
-            out.execute("INSERT INTO pdf_text (paper_id, page_num, content) VALUES (?,?,?)",
-                        (p["paper_id"], p["page_num"], p["content"]))
+        for p in src.execute(
+            f"SELECT * FROM pdf_text WHERE paper_id IN ({placeholders})", paper_ids
+        ):
+            out.execute(
+                "INSERT INTO pdf_text (paper_id, page_num, content) VALUES (?,?,?)",
+                (p["paper_id"], p["page_num"], p["content"]),
+            )
     except Exception:
         pass
 

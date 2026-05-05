@@ -82,7 +82,12 @@ def parse_cron_line(expr: str) -> dict:
         return {"cadence": "daily", "time_utc": time_utc, "expr": expr.strip()}
     if dow.isdigit() and 0 <= int(dow) <= 6:
         names = {v: k for k, v in _DOW_MAP.items()}
-        return {"cadence": "weekly", "day": names[int(dow)], "time_utc": time_utc, "expr": expr.strip()}
+        return {
+            "cadence": "weekly",
+            "day": names[int(dow)],
+            "time_utc": time_utc,
+            "expr": expr.strip(),
+        }
     return {"cadence": "custom", "expr": expr.strip()}
 
 
@@ -107,8 +112,7 @@ def read_current(path: Path | None = None) -> dict:
         raise ScheduleError(f"no cron: line found in {p}")
     info = parse_cron_line(matches[0].group("expr"))
     if len(matches) > 1:
-        info = {**info, "multiple": True,
-                "all_exprs": [m.group("expr") for m in matches]}
+        info = {**info, "multiple": True, "all_exprs": [m.group("expr") for m in matches]}
     return info
 
 
@@ -148,13 +152,16 @@ def write_cron(new_expr: str, path: Path | None = None) -> Path:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="scq schedule",
-                                     description="Inspect or update the digest cron schedule.")
+    parser = argparse.ArgumentParser(
+        prog="scq schedule", description="Inspect or update the digest cron schedule."
+    )
     sub = parser.add_subparsers(dest="action", required=True)
 
     sub.add_parser("show", help="Print the current cron expression in human form")
 
-    upd = sub.add_parser("update", help="Rewrite the workflow cron line from --cadence/--day/--time")
+    upd = sub.add_parser(
+        "update", help="Rewrite the workflow cron line from --cadence/--day/--time"
+    )
     upd.add_argument("--cadence", required=True, choices=["daily", "weekly"])
     upd.add_argument("--day", choices=_DOW_NAMES, help="Required for --cadence weekly")
     upd.add_argument("--time", required=True, help="HH:MM in 24-hour UTC (e.g. 07:00)")

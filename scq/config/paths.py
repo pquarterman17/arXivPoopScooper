@@ -129,6 +129,7 @@ def _cached_paths() -> Paths:
             # Log to stderr; missing/malformed TOML shouldn't crash a CLI tool
             # the user is trying to run to fix the very same problem.
             import sys
+
             print(
                 f"[scq.config.paths] could not read {toml_path}: {e}; using defaults",
                 file=sys.stderr,

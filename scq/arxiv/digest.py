@@ -36,10 +36,10 @@ from scq.arxiv.search import (
 # constants the legacy code path used.
 
 _DIGEST_DEFAULTS = {
-    "maxPapers": None,           # None = no cap (matches legacy behavior)
-    "lookbackDays": 3,           # legacy --days default
-    "minRelevanceScore": 0,      # 0 = no filtering (legacy "send everything ranked")
-    "includeSources": [],        # empty = all enabled (matches schema description)
+    "maxPapers": None,  # None = no cap (matches legacy behavior)
+    "lookbackDays": 3,  # legacy --days default
+    "minRelevanceScore": 0,  # 0 = no filtering (legacy "send everything ranked")
+    "includeSources": [],  # empty = all enabled (matches schema description)
 }
 
 
@@ -54,16 +54,19 @@ def _load_digest_config():
     """
     try:
         from scq.config.user import load_config
+
         result = load_config("digest")
         data = result.data or {}
+
         def _coerce(key):
             value = data.get(key)
             return value if value is not None else _DIGEST_DEFAULTS[key]
+
         return {
-            "maxPapers":         _coerce("maxPapers"),
-            "lookbackDays":      _coerce("lookbackDays"),
+            "maxPapers": _coerce("maxPapers"),
+            "lookbackDays": _coerce("lookbackDays"),
             "minRelevanceScore": _coerce("minRelevanceScore"),
-            "includeSources":    _coerce("includeSources"),
+            "includeSources": _coerce("includeSources"),
         }
     except Exception as e:  # noqa: BLE001 — keep the workflow robust
         print(f"  [config] digest config unreadable, using defaults: {e}")
@@ -74,6 +77,7 @@ def _load_search_categories():
     """Return arxivCategories from search-sources config, fallback to constants."""
     try:
         from scq.config.user import load_config
+
         result = load_config("search-sources")
         cats = (result.data or {}).get("arxivCategories")
         if isinstance(cats, list) and cats:
@@ -102,12 +106,14 @@ def _apply_digest_filters(papers, *, min_score, max_count):
         filtered = filtered[:max_count]
     return filtered
 
+
 # Where finished digest HTMLs land. `paths().digests_dir` is the canonical
 # resolver and respects user_config/paths.toml + SCQ_DIGESTS_DIR. Falls back
 # to repo-relative `digests/` for source-checkout invocations before
 # ``pip install``.
 try:
     from scq.config.paths import paths as _scq_paths
+
     DIGEST_DIR = str(_scq_paths().digests_dir)
 except Exception:  # noqa: BLE001
     DIGEST_DIR = os.path.join(
@@ -117,6 +123,7 @@ except Exception:  # noqa: BLE001
 
 
 # ─── Mock data (used by --test mode) ───
+
 
 def generate_mock_papers():
     """Generate mock papers for testing when arXiv API is unavailable."""
@@ -156,6 +163,7 @@ def generate_mock_papers():
 
 # ─── Weekend smart lookback ───
 
+
 def compute_effective_days_back(days_back):
     """Return ``(effective_days, note)`` adjusting for weekends.
 
@@ -178,6 +186,7 @@ def compute_effective_days_back(days_back):
 
 
 # ─── GitHub Actions job summary ───
+
 
 def _write_github_step_summary(
     *,
@@ -239,6 +248,7 @@ def _write_github_step_summary(
 
 # ─── Main ───
 
+
 def _positive_int(value):
     n = int(value)
     if n < 1:
@@ -250,28 +260,43 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="SCQ arXiv Daily Digest")
     # Config-backed flags use sentinel `None` so we can distinguish "not
     # specified" (→ fall back to digest config) from "explicitly set to N".
-    parser.add_argument("--days", type=int, default=None,
-                        help="Days to look back. Defaults to digest.lookbackDays.")
+    parser.add_argument(
+        "--days", type=int, default=None, help="Days to look back. Defaults to digest.lookbackDays."
+    )
     parser.add_argument("--no-email", action="store_true", help="Skip email, generate HTML only")
     parser.add_argument("--test", action="store_true", help="Use mock data (no network)")
-    parser.add_argument("--max-results", type=int, default=500, help="Max papers per category at fetch time")
-    parser.add_argument("--max-papers", type=_positive_int, default=None,
-                        help="Cap on papers in the digest after ranking. Defaults to digest.maxPapers.")
-    parser.add_argument("--min-score", type=int, default=None,
-                        help="Drop papers below this relevance score. Defaults to digest.minRelevanceScore.")
     parser.add_argument(
-        "--smart-weekend", action="store_true",
-        help="Auto-extend lookback on weekends so Friday's papers are not missed"
+        "--max-results", type=int, default=500, help="Max papers per category at fetch time"
     )
     parser.add_argument(
-        "--budget-seconds", type=int, default=600,
+        "--max-papers",
+        type=_positive_int,
+        default=None,
+        help="Cap on papers in the digest after ranking. Defaults to digest.maxPapers.",
+    )
+    parser.add_argument(
+        "--min-score",
+        type=int,
+        default=None,
+        help="Drop papers below this relevance score. Defaults to digest.minRelevanceScore.",
+    )
+    parser.add_argument(
+        "--smart-weekend",
+        action="store_true",
+        help="Auto-extend lookback on weekends so Friday's papers are not missed",
+    )
+    parser.add_argument(
+        "--budget-seconds",
+        type=int,
+        default=600,
         help="Hard wall-clock budget for arXiv fetching (default: 600s). "
-             "Leaves runway under the GH Actions 15-min job timeout."
+        "Leaves runway under the GH Actions 15-min job timeout.",
     )
     parser.add_argument(
-        "--require-email", action="store_true",
+        "--require-email",
+        action="store_true",
         help="Exit 2 if email fails or is skipped (for CI use). "
-             "Without this flag, email failure prints a warning but exits 0."
+        "Without this flag, email failure prints a warning but exits 0.",
     )
     args = parser.parse_args(argv)
 

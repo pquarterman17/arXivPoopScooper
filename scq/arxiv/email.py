@@ -38,6 +38,7 @@ from scq.arxiv.search import ARXIV_CATEGORIES
 EMAIL_TO = os.environ.get("SCQ_EMAIL_TO", "")
 try:
     from scq.config import secrets as _secrets  # type: ignore[import-not-found]
+
     EMAIL_FROM = _secrets.get("email_from") or ""
     EMAIL_APP_PASSWORD = _secrets.get("email_app_password") or ""
 except ImportError:
@@ -49,6 +50,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 
 # ─── Email Digest ───
+
 
 def _load_email_recipients():
     """Load enabled recipient records from the digest config.
@@ -66,17 +68,20 @@ def _load_email_recipients():
     # 1. user_config/digest.json via the new config system
     try:
         from scq.config.user import load_config  # type: ignore[import-not-found]
+
         result = load_config("digest")
         for r in result.data.get("recipients", []) or []:
             if not isinstance(r, dict) or "email" not in r:
                 continue
             if not r.get("enabled", True):
                 continue
-            recipients.append({
-                "email": r["email"],
-                "name": r.get("name", ""),
-                "frequency": r.get("frequency", "daily"),
-            })
+            recipients.append(
+                {
+                    "email": r["email"],
+                    "name": r.get("name", ""),
+                    "frequency": r.get("frequency", "daily"),
+                }
+            )
     except Exception as e:  # noqa: BLE001 — keep the digest workflow robust
         print(f"  [recipients] could not read digest config: {e}")
 
@@ -93,11 +98,13 @@ def _load_email_recipients():
                     data = json.load(f)
                 for r in data.get("recipients", []):
                     if r.get("enabled", True):
-                        recipients.append({
-                            "email": r["email"],
-                            "name": r.get("name", ""),
-                            "frequency": r.get("frequency", "daily"),
-                        })
+                        recipients.append(
+                            {
+                                "email": r["email"],
+                                "name": r.get("name", ""),
+                                "frequency": r.get("frequency", "daily"),
+                            }
+                        )
             except (json.JSONDecodeError, KeyError):
                 pass
 
@@ -116,8 +123,7 @@ def send_email_digest(papers, digest_date, frequency="daily"):
 
     recipients = _load_email_recipients()
     # Filter by frequency (daily recipients get daily, weekly get weekly, "both" gets both)
-    recipients = [r for r in recipients
-                  if r["frequency"] == frequency or r["frequency"] == "both"]
+    recipients = [r for r in recipients if r["frequency"] == frequency or r["frequency"] == "both"]
     if not recipients:
         print(f"  No {frequency} email recipients configured")
         return False
@@ -141,16 +147,16 @@ def send_email_digest(papers, digest_date, frequency="daily"):
         body_html += f"""
   <div style="margin: 16px 0; padding: 12px; border-left: 3px solid {color}; background: #f8f9fa;">
     <div style="font-weight: 600; margin-bottom: 4px;">
-      {star_icon}<a href="{p['abs_url']}" style="color: #1a73e8; text-decoration: none;">{p['title']}</a>
+      {star_icon}<a href="{p["abs_url"]}" style="color: #1a73e8; text-decoration: none;">{p["title"]}</a>
       <span style="color: {color}; font-size: 12px; font-weight: 700;">[{score}]</span>
     </div>
     <div style="font-size: 13px; color: #666; margin-bottom: 4px;">
-      {p['short_authors']} &middot; {p['published'][:10]}
+      {p["short_authors"]} &middot; {p["published"][:10]}
     </div>
     <div style="font-size: 12px; color: #888; margin-bottom: 6px;">Keywords: {keywords}</div>
     <div style="font-size: 12px;">
-      <a href="{p['abs_url']}" style="color: #1a73e8; margin-right: 12px;">Abstract</a>
-      <a href="{p['pdf_url']}" style="color: #1a73e8; margin-right: 12px;">PDF</a>
+      <a href="{p["abs_url"]}" style="color: #1a73e8; margin-right: 12px;">Abstract</a>
+      <a href="{p["pdf_url"]}" style="color: #1a73e8; margin-right: 12px;">PDF</a>
     </div>
   </div>
 """
@@ -162,7 +168,7 @@ def send_email_digest(papers, digest_date, frequency="daily"):
     <span style="font-size: 11px; color: #999;">File: digests/digest_{digest_date}.html</span>
   </p>
   <p style="font-size: 11px; color: #999; text-align: center;">
-    Categories: {', '.join(ARXIV_CATEGORIES)}<br>
+    Categories: {", ".join(ARXIV_CATEGORIES)}<br>
     Manage recipients in paper_database.html Settings or email_recipients.json
   </p>
 </div>
@@ -199,7 +205,6 @@ def send_email_digest(papers, digest_date, frequency="daily"):
             print(f"  Email to {recipient['email']} failed: {e}")
 
     return sent_count > 0
-
 
 
 # Public alias — keeps the historical name available without the leading

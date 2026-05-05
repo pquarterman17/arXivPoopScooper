@@ -124,6 +124,7 @@ def keyring_available() -> bool:
     """
     try:
         import keyring  # noqa: F401
+
         return True
     except ImportError:
         return False

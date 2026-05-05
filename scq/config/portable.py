@@ -35,8 +35,15 @@ from .paths import paths
 
 MANIFEST_VERSION = 1
 PORTABLE_DOMAINS = (
-    "digest", "citations", "ui", "ingest", "email", "watchlist", "privacy",
-    "search-sources", "auto-tag-rules",
+    "digest",
+    "citations",
+    "ui",
+    "ingest",
+    "email",
+    "watchlist",
+    "privacy",
+    "search-sources",
+    "auto-tag-rules",
 )
 
 

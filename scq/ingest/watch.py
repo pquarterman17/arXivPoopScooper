@@ -29,6 +29,7 @@ SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parents[1]
 try:
     from scq.config.paths import paths as _scq_paths  # type: ignore[import-not-found]
+
     DEFAULT_WATCH_DIR = Path(_scq_paths().inbox_dir)
 except Exception:
     DEFAULT_WATCH_DIR = PROJECT_DIR / "inbox"
@@ -37,18 +38,19 @@ SUPPORTED_EXTENSIONS = {".bib", ".ris", ".json"}
 
 # ─── Simple BibTeX parser (no external dependencies) ─────────────
 
+
 class SimpleBibTeXParser:
     """Minimal BibTeX parser that extracts key fields without bibtexparser."""
 
     @staticmethod
     def parse_file(filepath):
         """Parse .bib file and return list of entry dicts."""
-        with open(filepath, encoding='utf-8', errors='replace') as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             content = f.read()
 
         entries = []
         # Find all @<type>{<key>, ... } blocks
-        pattern = r'@(\w+)\s*\{\s*([^,]+?),\s*(.*?)\n\s*\}'
+        pattern = r"@(\w+)\s*\{\s*([^,]+?),\s*(.*?)\n\s*\}"
         for match in re.finditer(pattern, content, re.DOTALL | re.IGNORECASE):
             entry_type = match.group(1).lower()
             entry_key = match.group(2).strip()
@@ -59,16 +61,12 @@ class SimpleBibTeXParser:
             field_pattern = r'(\w+)\s*=\s*(?:\{([^}]*)\}|"([^"]*)"|([^,}]*))'
             for field_match in re.finditer(field_pattern, fields_text):
                 field_name = field_match.group(1).lower()
-                field_value = (field_match.group(2) or
-                               field_match.group(3) or
-                               field_match.group(4)).strip()
+                field_value = (
+                    field_match.group(2) or field_match.group(3) or field_match.group(4)
+                ).strip()
                 fields[field_name] = field_value
 
-            entries.append({
-                'type': entry_type,
-                'key': entry_key,
-                'fields': fields
-            })
+            entries.append({"type": entry_type, "key": entry_key, "fields": fields})
 
         return entries
 
@@ -78,18 +76,19 @@ class SimpleBibTeXParser:
         if not text:
             return ""
         # Remove braces
-        text = re.sub(r'[{}]', '', text)
+        text = re.sub(r"[{}]", "", text)
         # Common LaTeX commands
-        text = re.sub(r'\\textendash\b', '–', text)
-        text = re.sub(r'\\textemdash\b', '—', text)
-        text = re.sub(r'\\&', '&', text)
-        text = re.sub(r'~', ' ', text)
+        text = re.sub(r"\\textendash\b", "–", text)
+        text = re.sub(r"\\textemdash\b", "—", text)
+        text = re.sub(r"\\&", "&", text)
+        text = re.sub(r"~", " ", text)
         # Strip remaining commands
-        text = re.sub(r'\\[a-zA-Z]+\s*', '', text)
+        text = re.sub(r"\\[a-zA-Z]+\s*", "", text)
         return text.strip()
 
 
 # ─── RIS parser ───────────────────────────────────────────────────
+
 
 class RISParser:
     """Simple RIS format parser."""
@@ -98,35 +97,35 @@ class RISParser:
     def parse_file(filepath):
         """Parse .ris file and return list of entry dicts."""
         entries = []
-        with open(filepath, encoding='utf-8', errors='replace') as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
 
         current_entry = {}
         for line in lines:
-            line = line.rstrip('\n\r')
-            if not line or not line.startswith('TY'):
+            line = line.rstrip("\n\r")
+            if not line or not line.startswith("TY"):
                 continue
 
-            if line.startswith('TY') and current_entry:
+            if line.startswith("TY") and current_entry:
                 entries.append(current_entry)
                 current_entry = {}
 
-            if line.startswith('TY  '):
-                current_entry['type'] = line[6:]
-            elif line.startswith('TI  '):
-                current_entry['title'] = line[6:]
-            elif line.startswith('AU  '):
-                if 'authors' not in current_entry:
-                    current_entry['authors'] = []
-                current_entry['authors'].append(line[6:])
-            elif line.startswith('PY  '):
-                current_entry['year'] = line[6:]
-            elif line.startswith('DO  '):
-                current_entry['doi'] = line[6:]
-            elif line.startswith('UR  '):
-                current_entry['url'] = line[6:]
-            elif line.startswith('AB  '):
-                current_entry['abstract'] = line[6:]
+            if line.startswith("TY  "):
+                current_entry["type"] = line[6:]
+            elif line.startswith("TI  "):
+                current_entry["title"] = line[6:]
+            elif line.startswith("AU  "):
+                if "authors" not in current_entry:
+                    current_entry["authors"] = []
+                current_entry["authors"].append(line[6:])
+            elif line.startswith("PY  "):
+                current_entry["year"] = line[6:]
+            elif line.startswith("DO  "):
+                current_entry["doi"] = line[6:]
+            elif line.startswith("UR  "):
+                current_entry["url"] = line[6:]
+            elif line.startswith("AB  "):
+                current_entry["abstract"] = line[6:]
 
         if current_entry:
             entries.append(current_entry)
@@ -136,11 +135,12 @@ class RISParser:
 
 # ─── Import handlers ──────────────────────────────────────────────
 
+
 def extract_arxiv_id(text):
     """Extract arXiv ID from text (e.g., from url, note, or eprint field)."""
     if not text:
         return None
-    match = re.search(r'(\d{4}\.\d{4,5})', text)
+    match = re.search(r"(\d{4}\.\d{4,5})", text)
     return match.group(1) if match else None
 
 
@@ -152,12 +152,12 @@ def process_bib_file(filepath):
         entries = parser.parse_file(filepath)
 
         for entry in entries:
-            fields = entry['fields']
+            fields = entry["fields"]
             arxiv_id = None
-            doi = fields.get('doi', '')
+            doi = fields.get("doi", "")
 
             # Try to find arXiv ID
-            for field_name in ['eprint', 'arxivid', 'note', 'url']:
+            for field_name in ["eprint", "arxivid", "note", "url"]:
                 if field_name in fields:
                     arxiv_id = extract_arxiv_id(fields[field_name])
                     if arxiv_id:
@@ -165,16 +165,16 @@ def process_bib_file(filepath):
 
             # Build record
             record = {
-                'type': entry['type'],
-                'bibkey': entry['key'],
-                'title': parser.clean_text(fields.get('title', 'Untitled')),
-                'authors': parser.clean_text(fields.get('author', '')).split(' and '),
-                'year': fields.get('year', ''),
-                'doi': doi,
-                'arxivId': arxiv_id,
-                'journal': parser.clean_text(fields.get('journal', '')),
-                'source': 'bibtex',
-                'raw': entry
+                "type": entry["type"],
+                "bibkey": entry["key"],
+                "title": parser.clean_text(fields.get("title", "Untitled")),
+                "authors": parser.clean_text(fields.get("author", "")).split(" and "),
+                "year": fields.get("year", ""),
+                "doi": doi,
+                "arxivId": arxiv_id,
+                "journal": parser.clean_text(fields.get("journal", "")),
+                "source": "bibtex",
+                "raw": entry,
             }
             records.append(record)
 
@@ -190,7 +190,7 @@ def process_json_file(filepath):
     """Process a .json file (bookmarklet capture or other JSON metadata)."""
     records = []
     try:
-        with open(filepath, encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
 
         # Handle single object or array of objects
@@ -203,15 +203,15 @@ def process_json_file(filepath):
                 continue
 
             record = {
-                'type': 'json',
-                'title': entry.get('title', 'Untitled'),
-                'authors': entry.get('authors', []),
-                'abstract': entry.get('abstract', ''),
-                'url': entry.get('url', ''),
-                'doi': entry.get('doi'),
-                'arxivId': entry.get('arxivId'),
-                'source': entry.get('source', 'unknown'),
-                'raw': entry
+                "type": "json",
+                "title": entry.get("title", "Untitled"),
+                "authors": entry.get("authors", []),
+                "abstract": entry.get("abstract", ""),
+                "url": entry.get("url", ""),
+                "doi": entry.get("doi"),
+                "arxivId": entry.get("arxivId"),
+                "source": entry.get("source", "unknown"),
+                "raw": entry,
             }
             records.append(record)
 
@@ -231,21 +231,20 @@ def process_ris_file(filepath):
         entries = parser.parse_file(filepath)
 
         for entry in entries:
-            authors = entry.get('authors', [])
-            arxiv_id = extract_arxiv_id(entry.get('url', '') or
-                                       entry.get('doi', ''))
+            authors = entry.get("authors", [])
+            arxiv_id = extract_arxiv_id(entry.get("url", "") or entry.get("doi", ""))
 
             record = {
-                'type': 'ris',
-                'title': entry.get('title', 'Untitled'),
-                'authors': authors,
-                'year': entry.get('year', ''),
-                'doi': entry.get('doi'),
-                'arxivId': arxiv_id,
-                'abstract': entry.get('abstract', ''),
-                'url': entry.get('url'),
-                'source': 'ris',
-                'raw': entry
+                "type": "ris",
+                "title": entry.get("title", "Untitled"),
+                "authors": authors,
+                "year": entry.get("year", ""),
+                "doi": entry.get("doi"),
+                "arxivId": arxiv_id,
+                "abstract": entry.get("abstract", ""),
+                "url": entry.get("url"),
+                "source": "ris",
+                "raw": entry,
             }
             records.append(record)
 
@@ -261,11 +260,11 @@ def process_file(filepath):
     """Process a single file and return import records."""
     ext = filepath.suffix.lower()
 
-    if ext == '.bib':
+    if ext == ".bib":
         return process_bib_file(filepath)
-    elif ext == '.json':
+    elif ext == ".json":
         return process_json_file(filepath)
-    elif ext == '.ris':
+    elif ext == ".ris":
         return process_ris_file(filepath)
     else:
         return []
@@ -287,9 +286,9 @@ def move_to_processed(filepath):
 
 def summarize_record(record):
     """Return a one-line summary of a record for logging."""
-    title = record.get('title', 'Untitled')[:50]
-    arxiv = f"arXiv:{record.get('arxivId')}" if record.get('arxivId') else ""
-    doi = f"DOI:{record.get('doi')}" if record.get('doi') else ""
+    title = record.get("title", "Untitled")[:50]
+    arxiv = f"arXiv:{record.get('arxivId')}" if record.get("arxivId") else ""
+    doi = f"DOI:{record.get('doi')}" if record.get("doi") else ""
     return f"{title} {arxiv} {doi}".strip()
 
 
@@ -306,7 +305,7 @@ def process_directory(watch_dir, once=False):
         # Find new files
         new_files = []
         for ext in SUPPORTED_EXTENSIONS:
-            for filepath in watch_dir.glob(f'*{ext}'):
+            for filepath in watch_dir.glob(f"*{ext}"):
                 if filepath.is_file() and filepath.name not in processed_files:
                     new_files.append(filepath)
 
@@ -351,9 +350,9 @@ def main():
 
     # Parse arguments
     for arg in sys.argv[1:]:
-        if arg == '--once':
+        if arg == "--once":
             once = True
-        elif not arg.startswith('-'):
+        elif not arg.startswith("-"):
             watch_dir = arg
 
     watch_dir = Path(watch_dir)

@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
 # dependencies until they're needed.
 def _passthrough_process(rest: list[str]) -> int:
     from .ingest import process as _process_mod
+
     saved = sys.argv
     try:
         sys.argv = ["scq process"] + rest
@@ -80,16 +81,19 @@ def _passthrough_process(rest: list[str]) -> int:
 
 def _passthrough_merge(rest: list[str]) -> int:
     from .db import merge as _merge_mod
+
     return _merge_mod.main(rest)
 
 
 def _passthrough_init_db(rest: list[str]) -> int:
     from .db import init as _initdb_mod
+
     return _initdb_mod.main(rest)
 
 
 def _passthrough_digest(rest: list[str]) -> int:
     from .arxiv import digest as _digest_mod
+
     _digest_mod.main(rest)
     return 0
 
@@ -100,8 +104,10 @@ def _passthrough_module(module_path: str, *, supports_argv: bool = True):
     `supports_argv=False` is for modules whose main() reads sys.argv directly
     (legacy ones we haven't updated). Those need argv injected via sys.argv.
     """
+
     def handler(rest: list[str]) -> int:
         import importlib
+
         mod = importlib.import_module(module_path)
         if supports_argv:
             try:
@@ -119,6 +125,7 @@ def _passthrough_module(module_path: str, *, supports_argv: bool = True):
         finally:
             sys.argv = saved
         return 0
+
     return handler
 
 
@@ -128,19 +135,19 @@ _PASSTHROUGH_COMMANDS = {
     "init-db": _passthrough_init_db,
     "digest": _passthrough_digest,
     # Wave 2 (#12): the remaining ingest/overleaf/search tools
-    "mendeley":     _passthrough_module("scq.ingest.mendeley",   supports_argv=False),
-    "inbox":        _passthrough_module("scq.ingest.inbox",      supports_argv=False),
-    "watch":        _passthrough_module("scq.ingest.watch",      supports_argv=False),
-    "overleaf":     _passthrough_module("scq.overleaf.sync",     supports_argv=False),
-    "build-index":  _passthrough_module("scq.search.index",      supports_argv=True),
+    "mendeley": _passthrough_module("scq.ingest.mendeley", supports_argv=False),
+    "inbox": _passthrough_module("scq.ingest.inbox", supports_argv=False),
+    "watch": _passthrough_module("scq.ingest.watch", supports_argv=False),
+    "overleaf": _passthrough_module("scq.overleaf.sync", supports_argv=False),
+    "build-index": _passthrough_module("scq.search.index", supports_argv=True),
     # #12 final move (2026-05-03): serve.py → scq/server.py.
-    "serve":        _passthrough_module("scq.server",            supports_argv=True),
+    "serve": _passthrough_module("scq.server", supports_argv=True),
     # #13 (2026-05-03): rewrite the digest workflow's cron line.
-    "schedule":     _passthrough_module("scq.schedule",          supports_argv=True),
+    "schedule": _passthrough_module("scq.schedule", supports_argv=True),
     # #23 (2026-05-03): convert legacy scraper_config.js → user_config/*.json.
-    "migrate-from-legacy": _passthrough_module("scq.migrate",    supports_argv=True),
+    "migrate-from-legacy": _passthrough_module("scq.migrate", supports_argv=True),
     # monitor: check last digest workflow run health.
-    "monitor":             _passthrough_module("scq.monitor",     supports_argv=True),
+    "monitor": _passthrough_module("scq.monitor", supports_argv=True),
 }
 
 
@@ -148,19 +155,19 @@ _PASSTHROUGH_COMMANDS = {
 # _passthrough_help to fetch the right docstring without invoking main().
 # Keep in sync with _PASSTHROUGH_COMMANDS above.
 _PASSTHROUGH_MODULES = {
-    "process":     "scq.ingest.process",
-    "merge":       "scq.db.merge",
-    "init-db":     "scq.db.init",
-    "digest":      "scq.arxiv.digest",
-    "mendeley":    "scq.ingest.mendeley",
-    "inbox":       "scq.ingest.inbox",
-    "watch":       "scq.ingest.watch",
-    "overleaf":    "scq.overleaf.sync",
+    "process": "scq.ingest.process",
+    "merge": "scq.db.merge",
+    "init-db": "scq.db.init",
+    "digest": "scq.arxiv.digest",
+    "mendeley": "scq.ingest.mendeley",
+    "inbox": "scq.ingest.inbox",
+    "watch": "scq.ingest.watch",
+    "overleaf": "scq.overleaf.sync",
     "build-index": "scq.search.index",
-    "serve":       "scq.server",
-    "schedule":    "scq.schedule",
+    "serve": "scq.server",
+    "schedule": "scq.schedule",
     "migrate-from-legacy": "scq.migrate",
-    "monitor":     "scq.monitor",
+    "monitor": "scq.monitor",
 }
 
 
@@ -174,6 +181,7 @@ def _passthrough_help(name: str) -> int:
     actually live.
     """
     import importlib
+
     mod_path = _PASSTHROUGH_MODULES.get(name)
     if not mod_path:
         print(f"scq {name}: no help available", file=sys.stderr)
@@ -254,11 +262,23 @@ def _build_parser() -> argparse.ArgumentParser:
         add_help=False,
     )
     # Wave 2 of #12 — the remaining ingest/overleaf/search tools
-    sub.add_parser("mendeley",    help="import a Mendeley/Zotero .bib file into the SCQ database",    add_help=False)
-    sub.add_parser("inbox",       help="batch-process PDFs dropped into the inbox/ folder",          add_help=False)
-    sub.add_parser("watch",       help="watch the inbox folder for new .bib/.ris/.json files",       add_help=False)
-    sub.add_parser("overleaf",    help="sync references.bib to your Overleaf project (--setup / --status)", add_help=False)
-    sub.add_parser("build-index", help="(legacy) build a full-text JSON search index from PDFs",     add_help=False)
+    sub.add_parser(
+        "mendeley", help="import a Mendeley/Zotero .bib file into the SCQ database", add_help=False
+    )
+    sub.add_parser(
+        "inbox", help="batch-process PDFs dropped into the inbox/ folder", add_help=False
+    )
+    sub.add_parser(
+        "watch", help="watch the inbox folder for new .bib/.ris/.json files", add_help=False
+    )
+    sub.add_parser(
+        "overleaf",
+        help="sync references.bib to your Overleaf project (--setup / --status)",
+        add_help=False,
+    )
+    sub.add_parser(
+        "build-index", help="(legacy) build a full-text JSON search index from PDFs", add_help=False
+    )
     sub.add_parser(
         "monitor",
         help="check last digest workflow run and report health (--notify / --fix)",
@@ -311,14 +331,20 @@ def _build_parser() -> argparse.ArgumentParser:
     # #22: portable bundle of data/user_config/* (no secrets, no DB).
     p_exp = config_sub.add_parser("export", help="bundle user_config/* into a zip for transfer")
     p_exp.add_argument("path", help="destination .zip path")
-    p_exp.add_argument("--include-paths", action="store_true",
-                       help="also bundle paths.toml (off by default; paths are machine-specific)")
+    p_exp.add_argument(
+        "--include-paths",
+        action="store_true",
+        help="also bundle paths.toml (off by default; paths are machine-specific)",
+    )
     p_exp.set_defaults(func=_cmd_config_export)
 
     p_imp = config_sub.add_parser("import", help="extract a config bundle into user_config/")
     p_imp.add_argument("path", help="source .zip path")
-    p_imp.add_argument("--overwrite", action="store_true",
-                       help="replace existing user_config files (default: skip)")
+    p_imp.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="replace existing user_config files (default: skip)",
+    )
     p_imp.set_defaults(func=_cmd_config_import)
 
     return parser
@@ -329,6 +355,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _cmd_doctor(args: argparse.Namespace) -> int:
     from .doctor import run_doctor
+
     return run_doctor()
 
 
@@ -350,9 +377,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
             row = probe.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='papers'"
             ).fetchone()
-            count = (
-                probe.execute("SELECT COUNT(*) FROM papers").fetchone()[0] if row else 0
-            )
+            count = probe.execute("SELECT COUNT(*) FROM papers").fetchone()[0] if row else 0
         except sqlite3.DatabaseError as e:
             probe.close()
             print(f"error: {db_path} is not a valid SQLite database ({e})", file=sys.stderr)
@@ -455,8 +480,7 @@ def _cmd_has_secret(args: argparse.Namespace) -> int:
 def _cmd_set_secret(args: argparse.Namespace) -> int:
     if not secrets_mod.keyring_available():
         print(
-            "keyring is not installed. Install with:\n"
-            "    pip install scq[keyring]",
+            "keyring is not installed. Install with:\n    pip install scq[keyring]",
             file=sys.stderr,
         )
         return 2
@@ -484,6 +508,7 @@ def _cmd_delete_secret(args: argparse.Namespace) -> int:
 
 def _cmd_config_export(args: argparse.Namespace) -> int:
     from .config.portable import export_config
+
     target = Path(args.path).expanduser().resolve()
     try:
         manifest = export_config(target, include_paths=args.include_paths)
@@ -491,12 +516,15 @@ def _cmd_config_export(args: argparse.Namespace) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 1
     n = len(manifest["contents"])
-    print(f"wrote {target} ({n} file{'s' if n != 1 else ''}, paths={'yes' if args.include_paths else 'no'})")
+    print(
+        f"wrote {target} ({n} file{'s' if n != 1 else ''}, paths={'yes' if args.include_paths else 'no'})"
+    )
     return 0
 
 
 def _cmd_config_import(args: argparse.Namespace) -> int:
     from .config.portable import import_config
+
     source = Path(args.path).expanduser().resolve()
     try:
         result = import_config(source, overwrite=args.overwrite)
@@ -509,8 +537,10 @@ def _cmd_config_import(args: argparse.Namespace) -> int:
     if result["written"]:
         print(f"installed {len(result['written'])} file(s): {', '.join(result['written'])}")
     if result["skipped"]:
-        print(f"skipped {len(result['skipped'])} existing file(s) (use --overwrite to replace): "
-              f"{', '.join(result['skipped'])}")
+        print(
+            f"skipped {len(result['skipped'])} existing file(s) (use --overwrite to replace): "
+            f"{', '.join(result['skipped'])}"
+        )
     return 0
 
 
