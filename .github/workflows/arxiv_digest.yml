@@ -112,33 +112,41 @@ jobs:
           # Determine failure mode and compose title + body
           if [ "$VALIDATE_OUTCOME" = "failure" ]; then
             TITLE="Digest pipeline: missing secrets"
-            BODY="The daily arXiv digest workflow failed because repository secrets are missing.
+            BODY=$(cat <<EOF
+          The daily arXiv digest workflow failed because repository secrets are missing.
 
-**Fix:** Go to Settings → Secrets → Actions and add:
-- \`SCQ_EMAIL_FROM\` — Gmail sender address
-- \`SCQ_EMAIL_APP_PASSWORD\` — Gmail App Password
-- \`SCQ_EMAIL_TO\` — recipient address
+          Fix: Go to Settings > Secrets > Actions and add:
+          - SCQ_EMAIL_FROM (Gmail sender address)
+          - SCQ_EMAIL_APP_PASSWORD (Gmail App Password)
+          - SCQ_EMAIL_TO (recipient address)
 
-This usually happens after a repo recreate (filter-repo, transfer, etc).
+          This usually happens after a repo recreate (filter-repo, transfer, etc).
 
-Run ID: ${RUN_URL}"
+          Run: ${RUN_URL}
+          EOF
+          )
           elif [ "$DIGEST_OUTCOME" = "failure" ]; then
             TITLE="Digest pipeline: email delivery failed"
-            BODY="The daily digest fetched papers successfully but email delivery failed.
+            BODY=$(cat <<EOF
+          The daily digest fetched papers successfully but email delivery failed.
 
-**Possible causes:**
-- Gmail App Password expired or revoked → regenerate at https://myaccount.google.com/apppasswords
-- Gmail account security event (new device, suspicious activity) → check account alerts
-- Temporary SMTP outage → re-run the workflow manually
+          Possible causes:
+          - Gmail App Password expired or revoked (regenerate at https://myaccount.google.com/apppasswords)
+          - Gmail account security event (new device, suspicious activity)
+          - Temporary SMTP outage (re-run the workflow manually)
 
-Run ID: ${RUN_URL}"
+          Run: ${RUN_URL}
+          EOF
+          )
           else
             TITLE="Digest pipeline: unexpected failure"
-            BODY="The daily arXiv digest workflow failed at an unexpected step.
+            BODY=$(cat <<EOF
+          The daily arXiv digest workflow failed at an unexpected step.
+          Check the run log for details.
 
-Check the run log for details.
-
-Run ID: ${RUN_URL}"
+          Run: ${RUN_URL}
+          EOF
+          )
           fi
 
           # Search for an existing open issue with label digest-failure
